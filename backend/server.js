@@ -92,6 +92,19 @@ try { db.exec('ALTER TABLE signal_results ADD COLUMN coin_score INTEGER'); } cat
 try { db.exec('ALTER TABLE users ADD COLUMN password_hash TEXT'); } catch(e) {}
 try { db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email)'); } catch(e) {}
 
+// Admin migration: add is_admin column if missing
+try { db.exec('ALTER TABLE users ADD COLUMN is_admin INTEGER DEFAULT 0'); } catch(e) {}
+
+// Make the first registered user an admin if no admin exists
+const adminExists = db.prepare('SELECT COUNT(*) as count FROM users WHERE is_admin = 1').get();
+if (adminExists.count === 0) {
+  const firstUser = db.prepare('SELECT id FROM users ORDER BY created_at ASC LIMIT 1').get();
+  if (firstUser) {
+    db.prepare('UPDATE users SET is_admin = 1 WHERE id = ?').run(firstUser.id);
+    console.log(`👑 Made user #${firstUser.id} an admin (first registered user)`);
+  }
+}
+
 // ============ AUTH ============
 const crypto = require('crypto');
 
@@ -99,17 +112,19 @@ function hashPassword(password) {
   return crypto.createHash('sha256').update(password).digest('hex');
 }
 
+const JWT_SECRET = process.env.JWT_SECRET || 'kotvukai-secret-key-change-me';
+
 function createToken(userId) {
   const payload = { id: userId, exp: Date.now() + 7 * 24 * 60 * 60 * 1000 };
   const data = Buffer.from(JSON.stringify(payload)).toString('base64');
-  const sig = crypto.createHmac('sha256', 'kotvukai-secret-key').update(data).digest('hex');
+  const sig = crypto.createHmac('sha256', JWT_SECRET).update(data).digest('hex');
   return data + '.' + sig;
 }
 
 function verifyToken(token) {
   if (!token) return null;
   const [data, sig] = token.split('.');
-  const expected = crypto.createHmac('sha256', 'kotvukai-secret-key').update(data).digest('hex');
+  const expected = crypto.createHmac('sha256', JWT_SECRET).update(data).digest('hex');
   if (sig !== expected) return null;
   const payload = JSON.parse(Buffer.from(data, 'base64').toString());
   if (payload.exp < Date.now()) return null;
@@ -122,7 +137,7 @@ function authMiddleware(req, res, next) {
     const payload = verifyToken(auth.slice(7));
     if (payload) {
       req.userId = payload.id;
-      req.user = db.prepare('SELECT id, name, email, plan FROM users WHERE id = ?').get(payload.id);
+      req.user = db.prepare('SELECT id, name, email, plan, is_admin FROM users WHERE id = ?').get(payload.id);
     }
   }
   next();
@@ -938,6 +953,196 @@ setInterval(checkAlerts, 10000);
 setInterval(checkTradeTPSL, 10000);
 setInterval(checkPendingSignals, 60000);
 
+// ============ ADMIN PANEL ROUTES ============
+
+// Admin middleware - check if user is admin
+function requireAdmin(req, res, next) {
+  if (!req.user || !req.user.is_admin) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+  next();
+}
+
+// Create first admin (only works when no admins exist)
+app.post('/api/admin/setup', async (req, res) => {
+  try {
+    const adminExists = db.prepare('SELECT COUNT(*) as count FROM users WHERE is_admin = 1').get();
+    if (adminExists.count > 0) {
+      return res.status(400).json({ error: 'Admin already exists' });
+    }
+
+    const { email, password, name } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
+    }
+    if (password.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters' });
+    }
+
+    const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(email);
+    if (existing) {
+      return res.status(400).json({ error: 'User with this email already exists' });
+    }
+
+    const hash = hashPassword(password);
+    const result = db.prepare('INSERT INTO users (name, email, password_hash, is_admin) VALUES (?, ?, ?, 1)')
+      .run(name || '', email, hash);
+    
+    const token = createToken(result.lastInsertRowid);
+    res.json({ 
+      token, 
+      user: { id: result.lastInsertRowid, name, email, plan: 'Free', is_admin: 1 } 
+    });
+  } catch (e) { 
+    res.status(500).json({ error: e.message }); 
+  }
+});
+
+// Get all users
+app.get('/api/admin/users', requireAdmin, (req, res) => {
+  try {
+    const users = db.prepare('SELECT id, name, email, plan, is_admin, created_at FROM users ORDER BY created_at DESC').all();
+    res.json(users);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Change user plan
+app.patch('/api/admin/users/:id/plan', requireAdmin, (req, res) => {
+  try {
+    const { plan } = req.body;
+    const validPlans = ['Free', 'Pro', 'Premium'];
+    if (!validPlans.includes(plan)) {
+      return res.status(400).json({ error: 'Invalid plan' });
+    }
+    
+    db.prepare('UPDATE users SET plan = ? WHERE id = ?').run(plan, req.params.id);
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Toggle admin status
+app.patch('/api/admin/users/:id/admin', requireAdmin, (req, res) => {
+  try {
+    const { is_admin } = req.body;
+    if (is_admin !== 0 && is_admin !== 1) {
+      return res.status(400).json({ error: 'is_admin must be 0 or 1' });
+    }
+
+    // Prevent user from removing their own admin status
+    if (req.user.id === parseInt(req.params.id) && is_admin === 0) {
+      return res.status(400).json({ error: 'Cannot remove admin status from yourself' });
+    }
+    
+    db.prepare('UPDATE users SET is_admin = ? WHERE id = ?').run(is_admin, req.params.id);
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Delete user
+app.delete('/api/admin/users/:id', requireAdmin, (req, res) => {
+  try {
+    // Prevent admin from deleting themselves
+    if (req.user.id === parseInt(req.params.id)) {
+      return res.status(400).json({ error: 'Cannot delete your own account' });
+    }
+
+    db.prepare('DELETE FROM users WHERE id = ?').run(req.params.id);
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Platform stats
+app.get('/api/admin/stats', requireAdmin, (req, res) => {
+  try {
+    // User stats
+    const totalUsers = db.prepare('SELECT COUNT(*) as count FROM users').get().count;
+    const freeUsers = db.prepare('SELECT COUNT(*) as count FROM users WHERE plan = ?').get('Free').count;
+    const proUsers = db.prepare('SELECT COUNT(*) as count FROM users WHERE plan = ?').get('Pro').count;
+    const premiumUsers = db.prepare('SELECT COUNT(*) as count FROM users WHERE plan = ?').get('Premium').count;
+
+    // Trade stats
+    const totalTrades = db.prepare('SELECT COUNT(*) as count FROM trades').get().count;
+
+    // Signal stats
+    const totalSignals = db.prepare('SELECT COUNT(*) as count FROM signal_results').get().count;
+    const resolvedSignals = db.prepare('SELECT * FROM signal_results WHERE result != ?').all('pending');
+    const tpHit = resolvedSignals.filter(s => s.result === 'tp_hit').length;
+    const signalAccuracy = resolvedSignals.length > 0 ? (tpHit / resolvedSignals.length * 100) : 0;
+
+    res.json({
+      totalUsers,
+      usersByPlan: { Free: freeUsers, Pro: proUsers, Premium: premiumUsers },
+      totalTrades,
+      totalSignals,
+      signalAccuracy: parseFloat(signalAccuracy.toFixed(2))
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Get all signals with pagination
+app.get('/api/admin/signals', requireAdmin, (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 50;
+    const offset = (page - 1) * limit;
+
+    const signals = db.prepare('SELECT * FROM signal_results ORDER BY created_at DESC LIMIT ? OFFSET ?')
+      .all(limit, offset);
+    const total = db.prepare('SELECT COUNT(*) as count FROM signal_results').get().count;
+
+    res.json({
+      signals,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit)
+      }
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Get all settings
+app.get('/api/settings', (req, res) => {
+  try {
+    const settings = db.prepare('SELECT * FROM settings').all();
+    res.json(settings);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Update plan settings
+app.patch('/api/admin/plans/:plan', requireAdmin, (req, res) => {
+  try {
+    const planName = req.params.plan;
+    const validPlans = ['Free', 'Pro', 'Premium'];
+    if (!validPlans.includes(planName)) {
+      return res.status(400).json({ error: 'Invalid plan name' });
+    }
+
+    const planData = req.body;
+    db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)')
+      .run(`plan_${planName}`, JSON.stringify(planData));
+    
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // ============ SERVE STATIC (production) ============
 
 const distPath = path.join(__dirname, '..', 'frontend', 'dist');
@@ -951,5 +1156,5 @@ app.get('*', (req, res) => {
   }
 });
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`KotvukAI backend running on port ${PORT}`));

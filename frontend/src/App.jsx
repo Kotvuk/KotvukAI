@@ -16,6 +16,7 @@ import LearningPanel from './panels/LearningPanel';
 import SettingsPanel from './panels/SettingsPanel';
 import HeatmapPanel from './panels/HeatmapPanel';
 import ScreenerPanel from './panels/ScreenerPanel';
+import AdminPanel from './panels/AdminPanel';
 import AIChat from './panels/AIChat';
 
 const styles = {
@@ -75,7 +76,7 @@ export default function App() {
   }
 
   // Authenticated: show app
-  const PANELS = [
+  const basePanels = [
     { id: 'dashboard', icon: '🏠', labelKey: 'dashboard' },
     { id: 'charts', icon: '📊', labelKey: 'charts' },
     { id: 'ai', icon: '🤖', labelKey: 'aiAnalytics' },
@@ -90,6 +91,11 @@ export default function App() {
     { id: 'learning', icon: '📚', labelKey: 'learning' },
     { id: 'settings', icon: '⚙️', labelKey: 'settings' },
   ];
+
+  // Add admin panel if user is admin
+  const PANELS = user?.is_admin 
+    ? [...basePanels.slice(0, -1), { id: 'admin', icon: '🛡️', labelKey: 'adminPanel' }, basePanels[basePanels.length - 1]]
+    : basePanels;
 
   const renderPanel = () => {
     switch (panel) {
@@ -106,6 +112,7 @@ export default function App() {
       case 'screener': return <ScreenerPanel />;
       case 'learning': return <LearningPanel />;
       case 'settings': return <SettingsPanel />;
+      case 'admin': return <AdminPanel />;
       default: return <DashboardPanel />;
     }
   };

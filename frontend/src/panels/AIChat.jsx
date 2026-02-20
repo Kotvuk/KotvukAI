@@ -1,18 +1,19 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useLang } from '../LangContext';
+import { useTheme } from '../ThemeContext';
 
-const styles = {
+const getStyles = (theme) => ({
   bubble: {
     position: 'fixed', bottom: 24, right: 24, width: 60, height: 60, borderRadius: '50%',
-    background: '#3b82f6', border: 'none', color: '#fff', fontSize: 28, cursor: 'pointer',
+    background: theme.accent, border: 'none', color: theme.name === 'light' ? '#fff' : theme.text, fontSize: 28, cursor: 'pointer',
     display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999,
-    boxShadow: '0 4px 20px rgba(59,130,246,0.4)', transition: 'transform 0.2s'
+    boxShadow: '0 4px 20px ' + theme.accent + '66', transition: 'transform 0.2s'
   },
   window: {
     position: 'fixed', bottom: 96, right: 24, width: 350, height: 500,
-    background: '#0d0d14', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16,
+    background: theme.sidebarBg, border: '1px solid ' + theme.border, borderRadius: 16,
     display: 'flex', flexDirection: 'column', zIndex: 9999, overflow: 'hidden',
-    boxShadow: '0 8px 40px rgba(0,0,0,0.6)'
+    boxShadow: '0 8px 40px ' + theme.overlay
   },
   header: {
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -44,7 +45,7 @@ const styles = {
   typing: {
     alignSelf: 'flex-start', color: '#666', fontSize: 13, padding: '8px 12px'
   }
-};
+});
 
 function formatAIText(text) {
   // Basic markdown: bold and lists
@@ -69,6 +70,8 @@ function formatAIText(text) {
 
 export default function AIChat() {
   const { t } = useLang();
+  const { theme } = useTheme();
+  const styles = getStyles(theme);
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');

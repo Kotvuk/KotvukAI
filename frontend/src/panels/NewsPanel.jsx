@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLang } from '../LangContext';
+import { useTheme } from '../ThemeContext';
 
 const card = { background: '#12121a', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: 20, marginBottom: 16 };
 const btnStyle = { background: 'rgba(59,130,246,0.15)', color: '#3b82f6', border: 'none', padding: '6px 14px', borderRadius: 6, cursor: 'pointer', fontWeight: 600, fontSize: 12, fontFamily: "'Inter',sans-serif" };

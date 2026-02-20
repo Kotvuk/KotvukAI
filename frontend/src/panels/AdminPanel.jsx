@@ -1,20 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { useLang } from '../LangContext';
+import { useTheme } from '../ThemeContext';
 
-const card = { background: '#12121a', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: 20, marginBottom: 16 };
-const btn = (active) => ({ 
-  padding: '6px 14px', borderRadius: 6, 
-  border: '1px solid ' + (active ? '#3b82f6' : 'rgba(255,255,255,0.1)'), 
-  background: active ? 'rgba(59,130,246,0.2)' : 'transparent', 
-  color: active ? '#3b82f6' : '#a0a0b0', cursor: 'pointer', fontSize: 13, fontWeight: 500 
+const getStyles = (theme) => ({
+  card: { background: theme.cardBg, border: '1px solid ' + theme.border, borderRadius: 12, padding: 20, marginBottom: 16 },
+  btn: (active) => ({ 
+    padding: '6px 14px', borderRadius: 6, 
+    border: '1px solid ' + (active ? theme.accent : theme.border), 
+    background: active ? theme.accent + '33' : 'transparent', 
+    color: active ? theme.accent : theme.textSecondary, cursor: 'pointer', fontSize: 13, fontWeight: 500 
+  }),
+  inputStyle: { 
+    width: '100%', background: theme.inputBg, border: '1px solid ' + theme.border, 
+    borderRadius: 8, padding: '10px 14px', color: theme.text, fontSize: 14, outline: 'none' 
+  }
 });
-const inputStyle = { 
-  width: '100%', background: '#1a1a2e', border: '1px solid rgba(255,255,255,0.1)', 
-  borderRadius: 8, padding: '10px 14px', color: '#e0e0e0', fontSize: 14, outline: 'none' 
-};
 
 const AdminPanel = () => {
   const { t } = useLang();
+  const { theme } = useTheme();
+  const styles = getStyles(theme);
   const [activeTab, setActiveTab] = useState('stats');
   const [stats, setStats] = useState(null);
   const [users, setUsers] = useState([]);

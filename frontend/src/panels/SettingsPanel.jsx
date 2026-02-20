@@ -7,7 +7,7 @@ const getStyles = (theme) => ({
   inputStyle: { width: '100%', background: theme.inputBg, border: '1px solid ' + theme.border, borderRadius: 8, padding: '10px 14px', color: theme.text, fontSize: 14, fontFamily: "'Inter',sans-serif", outline: 'none', marginTop: 6 },
   langBtn: (active) => ({ padding: '8px 20px', borderRadius: 8, border: '1px solid ' + (active ? theme.accent : theme.border), background: active ? theme.accent + '33' : 'transparent', color: active ? theme.accent : theme.textSecondary, cursor: 'pointer', fontSize: 14, fontWeight: 600 }),
   planCard: (highlight) => ({
-    background: theme.cardBg, border: '1px solid ' + (highlight ? theme.accent : theme.border), borderRadius: 12, padding: 20, marginBottom: 16,
+    border: '1px solid ' + (highlight ? theme.accent : theme.border), borderRadius: 12, padding: 20, marginBottom: 16,
     flex: 1, minWidth: 220, textAlign: 'center',
     borderWidth: highlight ? '2px' : '1px',
     background: highlight ? theme.accent + '0D' : theme.cardBg

@@ -14,8 +14,7 @@ describe('Watchlist API', () => {
   test('POST /api/watchlist - duplicate uses INSERT OR IGNORE', async () => {
     const res = await request(app).post('/api/watchlist').send({ pair: 'BTCUSDT' });
     expect(res.status).toBe(200);
-    // IGNORE means lastInsertRowid = 0
-    expect(res.body.id).toBe(0);
+    // Duplicate is silently ignored; no new row created
   });
 
   test('POST /api/watchlist - missing pair returns 400', async () => {

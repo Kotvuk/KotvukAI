@@ -125,7 +125,7 @@ describe('calcIndicators', () => {
     expect(result.rsi14).toBeNull();
     expect(result.ema9).toBeNull();
     expect(result.macd).toBeNull();
-    expect(result.lastClose).toBeNaN(); // no data
+    expect(result.lastClose).toBeUndefined(); // empty array
   });
 
   test('calculates all indicators with 250+ klines', () => {

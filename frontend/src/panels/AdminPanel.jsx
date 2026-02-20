@@ -190,7 +190,7 @@ const AdminPanel = () => {
   if (loading) {
     return (
       <div style={card}>
-        <div style={{textAlign: 'center', padding: 40, color: '#a0a0b0'}}>
+        <div style={{textAlign: 'center', padding: 40, color: theme.textSecondary}}>
           {t('loading')}...
         </div>
       </div>
@@ -202,7 +202,7 @@ const AdminPanel = () => {
       <div style={{fontSize: 24, fontWeight: 700, color, marginBottom: 8}}>
         {value}
       </div>
-      <div style={{fontSize: 14, color: '#a0a0b0'}}>{title}</div>
+      <div style={{fontSize: 14, color: theme.textSecondary}}>{title}</div>
     </div>
   );
 
@@ -235,12 +235,12 @@ const AdminPanel = () => {
         <table style={{width: '100%', borderCollapse: 'collapse'}}>
           <thead>
             <tr style={{borderBottom: '1px solid rgba(255,255,255,0.1)'}}>
-              <th style={{padding: '12px 8px', textAlign: 'left', color: '#a0a0b0', fontSize: 13}}>ID</th>
-              <th style={{padding: '12px 8px', textAlign: 'left', color: '#a0a0b0', fontSize: 13}}>{t('name')}</th>
-              <th style={{padding: '12px 8px', textAlign: 'left', color: '#a0a0b0', fontSize: 13}}>{t('email')}</th>
-              <th style={{padding: '12px 8px', textAlign: 'left', color: '#a0a0b0', fontSize: 13}}>{t('adminPlan')}</th>
-              <th style={{padding: '12px 8px', textAlign: 'left', color: '#a0a0b0', fontSize: 13}}>{t('adminIsAdmin')}</th>
-              <th style={{padding: '12px 8px', textAlign: 'left', color: '#a0a0b0', fontSize: 13}}>{t('adminActions')}</th>
+              <th style={{padding: '12px 8px', textAlign: 'left', color: theme.textSecondary, fontSize: 13}}>ID</th>
+              <th style={{padding: '12px 8px', textAlign: 'left', color: theme.textSecondary, fontSize: 13}}>{t('name')}</th>
+              <th style={{padding: '12px 8px', textAlign: 'left', color: theme.textSecondary, fontSize: 13}}>{t('email')}</th>
+              <th style={{padding: '12px 8px', textAlign: 'left', color: theme.textSecondary, fontSize: 13}}>{t('adminPlan')}</th>
+              <th style={{padding: '12px 8px', textAlign: 'left', color: theme.textSecondary, fontSize: 13}}>{t('adminIsAdmin')}</th>
+              <th style={{padding: '12px 8px', textAlign: 'left', color: theme.textSecondary, fontSize: 13}}>{t('adminActions')}</th>
             </tr>
           </thead>
           <tbody>
@@ -279,7 +279,7 @@ const AdminPanel = () => {
                     style={{
                       ...btn(false),
                       border: '1px solid #ef4444',
-                      color: '#ef4444',
+                      color: theme.red,
                       background: 'rgba(239,68,68,0.1)'
                     }}
                   >
@@ -303,10 +303,10 @@ const AdminPanel = () => {
 
     return (
       <div style={card}>
-        <h3 style={{color: '#fff', marginBottom: 16, fontSize: 18}}>{planName}</h3>
+        <h3 style={{color: theme.text, marginBottom: 16, fontSize: 18}}>{planName}</h3>
         <div style={{display: 'grid', gap: 12}}>
           <div>
-            <label style={{display: 'block', marginBottom: 4, fontSize: 13, color: '#a0a0b0'}}>
+            <label style={{display: 'block', marginBottom: 4, fontSize: 13, color: theme.textSecondary}}>
               {t('adminAiAnalyses')}
             </label>
             <input
@@ -317,7 +317,7 @@ const AdminPanel = () => {
             />
           </div>
           <div>
-            <label style={{display: 'block', marginBottom: 4, fontSize: 13, color: '#a0a0b0'}}>
+            <label style={{display: 'block', marginBottom: 4, fontSize: 13, color: theme.textSecondary}}>
               {t('adminPairs')}
             </label>
             <input
@@ -328,7 +328,7 @@ const AdminPanel = () => {
             />
           </div>
           <div>
-            <label style={{display: 'block', marginBottom: 4, fontSize: 13, color: '#a0a0b0'}}>
+            <label style={{display: 'block', marginBottom: 4, fontSize: 13, color: theme.textSecondary}}>
               {t('adminRefreshRate')} (sec)
             </label>
             <input
@@ -339,7 +339,7 @@ const AdminPanel = () => {
             />
           </div>
           <div>
-            <label style={{display: 'block', marginBottom: 4, fontSize: 13, color: '#a0a0b0'}}>
+            <label style={{display: 'block', marginBottom: 4, fontSize: 13, color: theme.textSecondary}}>
               {t('adminSignals')}
             </label>
             <input
@@ -356,7 +356,7 @@ const AdminPanel = () => {
               marginTop: 8,
               background: '#3b82f6',
               border: '1px solid #3b82f6',
-              color: '#fff'
+              color: theme.text
             }}
           >
             {t('save')}
@@ -381,13 +381,13 @@ const AdminPanel = () => {
       <table style={{width: '100%', borderCollapse: 'collapse'}}>
         <thead>
           <tr style={{borderBottom: '1px solid rgba(255,255,255,0.1)'}}>
-            <th style={{padding: '12px 8px', textAlign: 'left', color: '#a0a0b0', fontSize: 13}}>ID</th>
-            <th style={{padding: '12px 8px', textAlign: 'left', color: '#a0a0b0', fontSize: 13}}>{t('pair')}</th>
-            <th style={{padding: '12px 8px', textAlign: 'left', color: '#a0a0b0', fontSize: 13}}>{t('direction')}</th>
-            <th style={{padding: '12px 8px', textAlign: 'left', color: '#a0a0b0', fontSize: 13}}>{t('entry')}</th>
-            <th style={{padding: '12px 8px', textAlign: 'left', color: '#a0a0b0', fontSize: 13}}>{t('result')}</th>
-            <th style={{padding: '12px 8px', textAlign: 'left', color: '#a0a0b0', fontSize: 13}}>Score</th>
-            <th style={{padding: '12px 8px', textAlign: 'left', color: '#a0a0b0', fontSize: 13}}>Date</th>
+            <th style={{padding: '12px 8px', textAlign: 'left', color: theme.textSecondary, fontSize: 13}}>ID</th>
+            <th style={{padding: '12px 8px', textAlign: 'left', color: theme.textSecondary, fontSize: 13}}>{t('pair')}</th>
+            <th style={{padding: '12px 8px', textAlign: 'left', color: theme.textSecondary, fontSize: 13}}>{t('direction')}</th>
+            <th style={{padding: '12px 8px', textAlign: 'left', color: theme.textSecondary, fontSize: 13}}>{t('entry')}</th>
+            <th style={{padding: '12px 8px', textAlign: 'left', color: theme.textSecondary, fontSize: 13}}>{t('result')}</th>
+            <th style={{padding: '12px 8px', textAlign: 'left', color: theme.textSecondary, fontSize: 13}}>Score</th>
+            <th style={{padding: '12px 8px', textAlign: 'left', color: theme.textSecondary, fontSize: 13}}>Date</th>
           </tr>
         </thead>
         <tbody>
@@ -428,7 +428,7 @@ const AdminPanel = () => {
   return (
     <div>
       <div style={{display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24}}>
-        <span style={{fontSize: 24, fontWeight: 700, color: '#fff'}}>
+        <span style={{fontSize: 24, fontWeight: 700, color: theme.text}}>
           🛡️ {t('adminPanel')}
         </span>
       </div>

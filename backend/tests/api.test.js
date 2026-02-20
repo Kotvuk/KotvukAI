@@ -1,133 +1,153 @@
-const { app } = require('./setup');
+const { app, mockFetch, createTestUser } = require('./setup');
 const request = require('supertest');
 
 describe('API Integration Tests', () => {
-  // Mock fetch for Binance endpoints
   beforeEach(() => {
-    global.fetch.mockReset();
-    global.fetch.mockResolvedValue({
-      json: () => Promise.resolve([]),
-      ok: true,
-    });
+    mockFetch.mockReset();
+    mockFetch.mockResolvedValue({ json: () => Promise.resolve({}), ok: true });
   });
 
-  describe('Binance proxy routes', () => {
+  describe('Market proxy routes', () => {
     test('GET /api/klines', async () => {
-      global.fetch.mockResolvedValueOnce({
-        json: () => Promise.resolve([[1, '100', '110', '90', '105', '1000']]),
+      mockFetch.mockResolvedValueOnce({
+        json: () => Promise.resolve([[1, '100', '110', '90', '105', '1000']])
       });
       const res = await request(app).get('/api/klines?symbol=BTCUSDT&interval=1h&limit=10');
       expect(res.status).toBe(200);
+      expect(mockFetch).toHaveBeenCalled();
     });
 
     test('GET /api/price - with symbol', async () => {
-      global.fetch.mockResolvedValueOnce({
-        json: () => Promise.resolve({ symbol: 'BTCUSDT', price: '50000.00' }),
+      mockFetch.mockResolvedValueOnce({
+        json: () => Promise.resolve({ symbol: 'BTCUSDT', price: '50000.00' })
       });
       const res = await request(app).get('/api/price?symbol=BTCUSDT');
       expect(res.status).toBe(200);
     });
 
-    test('GET /api/price - without symbol', async () => {
+    test('GET /api/price - without symbol returns 400', async () => {
       const res = await request(app).get('/api/price');
       expect(res.status).toBe(400);
     });
 
-    test('GET /api/prices', async () => {
-      global.fetch.mockResolvedValueOnce({
+    test('GET /api/prices - with symbols', async () => {
+      mockFetch.mockResolvedValueOnce({
         json: () => Promise.resolve([
           { symbol: 'BTCUSDT', price: '50000' },
-          { symbol: 'ETHUSDT', price: '3000' }
-        ]),
+          { symbol: 'ETHUSDT', price: '3000' },
+          { symbol: 'DOGUSDT', price: '0.1' }
+        ])
       });
       const res = await request(app).get('/api/prices?symbols=BTCUSDT,ETHUSDT');
       expect(res.status).toBe(200);
+      expect(Array.isArray(res.body)).toBe(true);
     });
 
-    test('GET /api/prices - no symbols', async () => {
+    test('GET /api/prices - no symbols returns empty array', async () => {
       const res = await request(app).get('/api/prices');
       expect(res.status).toBe(200);
       expect(res.body).toEqual([]);
     });
 
     test('GET /api/ticker24h', async () => {
-      global.fetch.mockResolvedValueOnce({
+      mockFetch.mockResolvedValueOnce({
         json: () => Promise.resolve([
-          { symbol: 'BTCUSDT', priceChangePercent: '2.5', quoteVolume: '1000000' }
-        ]),
+          { symbol: 'BTCUSDT', priceChangePercent: '2.5', quoteVolume: '1000000' },
+          { symbol: 'XYZUSDT', priceChangePercent: '1.0', quoteVolume: '500' }
+        ])
       });
       const res = await request(app).get('/api/ticker24h');
       expect(res.status).toBe(200);
+      // Should filter to only known pairs
+      expect(res.body.every(t => ['BTCUSDT','ETHUSDT','BNBUSDT','XRPUSDT','ADAUSDT','SOLUSDT','DOGEUSDT','DOTUSDT','MATICUSDT','AVAXUSDT'].includes(t.symbol))).toBe(true);
     });
 
     test('GET /api/ticker24h/single - with symbol', async () => {
-      global.fetch.mockResolvedValueOnce({
-        json: () => Promise.resolve({ symbol: 'BTCUSDT', priceChangePercent: '2.5' }),
+      mockFetch.mockResolvedValueOnce({
+        json: () => Promise.resolve({ symbol: 'BTCUSDT', priceChangePercent: '2.5' })
       });
       const res = await request(app).get('/api/ticker24h/single?symbol=BTCUSDT');
       expect(res.status).toBe(200);
     });
 
-    test('GET /api/ticker24h/single - without symbol', async () => {
+    test('GET /api/ticker24h/single - without symbol returns 400', async () => {
       const res = await request(app).get('/api/ticker24h/single');
       expect(res.status).toBe(400);
     });
 
     test('GET /api/fng', async () => {
-      global.fetch.mockResolvedValueOnce({
-        json: () => Promise.resolve({ data: [{ value: '75', value_classification: 'Greed' }] }),
+      mockFetch.mockResolvedValueOnce({
+        json: () => Promise.resolve({ data: [{ value: '75', value_classification: 'Greed' }] })
       });
       const res = await request(app).get('/api/fng');
       expect(res.status).toBe(200);
     });
 
     test('GET /api/exchangeInfo', async () => {
-      global.fetch.mockResolvedValueOnce({
+      mockFetch.mockResolvedValueOnce({
         json: () => Promise.resolve({
           symbols: [
             { symbol: 'BTCUSDT', quoteAsset: 'USDT', status: 'TRADING' },
-            { symbol: 'ETHBTC', quoteAsset: 'BTC', status: 'TRADING' }
+            { symbol: 'ETHBTC', quoteAsset: 'BTC', status: 'TRADING' },
+            { symbol: 'XRPUSDT', quoteAsset: 'USDT', status: 'BREAK' }
           ]
-        }),
+        })
       });
       const res = await request(app).get('/api/exchangeInfo');
       expect(res.status).toBe(200);
-      expect(res.body).toEqual(['BTCUSDT']);
+      expect(res.body).toEqual(['BTCUSDT']); // only USDT+TRADING
     });
 
     test('GET /api/heatmap', async () => {
-      global.fetch.mockResolvedValueOnce({
+      mockFetch.mockResolvedValueOnce({
         json: () => Promise.resolve([
-          { symbol: 'BTCUSDT', quoteVolume: '5000000', priceChangePercent: '1.5' }
-        ]),
+          { symbol: 'BTCUSDT', quoteVolume: '5000000' },
+          { symbol: 'BTCUPUSDT', quoteVolume: '1000000' } // should be filtered (has UP)
+        ])
       });
       const res = await request(app).get('/api/heatmap');
       expect(res.status).toBe(200);
     });
 
     test('GET /api/screener', async () => {
-      global.fetch.mockResolvedValueOnce({
-        json: () => Promise.resolve([
-          { symbol: 'BTCUSDT', quoteVolume: '5000000' }
-        ]),
+      mockFetch.mockResolvedValueOnce({
+        json: () => Promise.resolve([{ symbol: 'BTCUSDT', quoteVolume: '5000000' }])
       });
       const res = await request(app).get('/api/screener');
       expect(res.status).toBe(200);
+    });
+
+    test('GET /api/level2', async () => {
+      mockFetch.mockResolvedValueOnce({
+        json: () => Promise.resolve({ bids: [['50000', '1']], asks: [['50001', '1']] })
+      });
+      const res = await request(app).get('/api/level2?symbol=BTCUSDT');
+      expect(res.status).toBe(200);
+    });
+
+    test('GET /api/level2/spread', async () => {
+      mockFetch.mockResolvedValueOnce({
+        json: () => Promise.resolve({ bids: [['50000', '1']], asks: [['50001', '1']] })
+      });
+      const res = await request(app).get('/api/level2/spread?symbol=BTCUSDT');
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty('spread');
+      expect(res.body).toHaveProperty('spreadPct');
     });
   });
 
   describe('Whale routes', () => {
     test('GET /api/whale/orderbook', async () => {
-      global.fetch.mockResolvedValueOnce({
-        json: () => Promise.resolve({ bids: [], asks: [] }),
+      mockFetch.mockResolvedValueOnce({
+        json: () => Promise.resolve({ bids: [], asks: [] })
       });
       const res = await request(app).get('/api/whale/orderbook?symbol=BTCUSDT');
       expect(res.status).toBe(200);
     });
 
     test('GET /api/whale/trades', async () => {
-      global.fetch
-        .mockResolvedValueOnce({ json: () => Promise.resolve([{ q: '1', p: '50000' }]) })
+      mockFetch
+        .mockResolvedValueOnce({ json: () => Promise.resolve([{ q: '2', p: '50000' }]) })
         .mockResolvedValueOnce({ json: () => Promise.resolve({ price: '50000' }) });
       const res = await request(app).get('/api/whale/trades?symbol=BTCUSDT');
       expect(res.status).toBe(200);
@@ -136,11 +156,12 @@ describe('API Integration Tests', () => {
 
   describe('News', () => {
     test('GET /api/news', async () => {
-      global.fetch.mockResolvedValueOnce({
-        json: () => Promise.resolve({ Data: [{ title: 'BTC hits ATH' }] }),
+      mockFetch.mockResolvedValueOnce({
+        json: () => Promise.resolve({ Data: [{ title: 'BTC hits ATH' }] })
       });
       const res = await request(app).get('/api/news');
       expect(res.status).toBe(200);
+      expect(Array.isArray(res.body)).toBe(true);
     });
   });
 
@@ -149,19 +170,32 @@ describe('API Integration Tests', () => {
       const res = await request(app).get('/api/settings');
       expect(res.status).toBe(200);
       expect(Array.isArray(res.body)).toBe(true);
+      // Default plans should be seeded
+      expect(res.body.some(s => s.key === 'plan_Free')).toBe(true);
     });
   });
 
   describe('Dashboard', () => {
     test('GET /api/dashboard', async () => {
-      // Mock the two fetch calls (ticker + fng)
-      global.fetch
-        .mockResolvedValueOnce({ json: () => Promise.resolve([{ symbol: 'BTCUSDT', priceChangePercent: '2.5', quoteVolume: '1000000' }]) })
-        .mockResolvedValueOnce({ json: () => Promise.resolve({ data: [{ value: '50' }] }) });
+      mockFetch
+        .mockResolvedValueOnce({ json: () => Promise.resolve([]) })   // ticker24h
+        .mockResolvedValueOnce({ json: () => Promise.resolve({ data: [{ value: '50' }] }) }); // fng
       const res = await request(app).get('/api/dashboard');
       expect(res.status).toBe(200);
       expect(res.body).toHaveProperty('totalPnl');
       expect(res.body).toHaveProperty('signalAccuracy');
+      expect(res.body).toHaveProperty('totalSignals');
+    });
+
+    test('GET /api/dashboard/recommendation', async () => {
+      mockFetch.mockResolvedValueOnce({
+        json: () => Promise.resolve({
+          choices: [{ message: { content: 'Торгуйте осторожно сегодня' } }]
+        })
+      });
+      const res = await request(app).get('/api/dashboard/recommendation');
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty('recommendation');
     });
   });
 
@@ -176,11 +210,63 @@ describe('API Integration Tests', () => {
   });
 
   describe('Error handling', () => {
-    test('fetch failure returns 500', async () => {
-      global.fetch.mockRejectedValueOnce(new Error('Network error'));
+    test('fetch failure returns 500 on proxy routes', async () => {
+      mockFetch.mockRejectedValueOnce(new Error('Network error'));
       const res = await request(app).get('/api/klines');
       expect(res.status).toBe(500);
       expect(res.body).toHaveProperty('error');
+    });
+
+    test('fetch failure on price route', async () => {
+      mockFetch.mockRejectedValueOnce(new Error('Timeout'));
+      const res = await request(app).get('/api/price?symbol=BTCUSDT');
+      expect(res.status).toBe(500);
+    });
+  });
+
+  describe('Admin routes', () => {
+    let adminToken;
+
+    beforeAll(() => {
+      const admin = createTestUser({ email: `admin_${Date.now()}@test.com`, is_admin: 1 });
+      adminToken = admin.token;
+    });
+
+    test('GET /api/admin/users - requires admin', async () => {
+      const res = await request(app).get('/api/admin/users');
+      expect(res.status).toBe(403);
+    });
+
+    test('GET /api/admin/users - with admin token', async () => {
+      const res = await request(app).get('/api/admin/users')
+        .set('Authorization', `Bearer ${adminToken}`);
+      expect(res.status).toBe(200);
+      expect(Array.isArray(res.body)).toBe(true);
+    });
+
+    test('GET /api/admin/stats', async () => {
+      const res = await request(app).get('/api/admin/stats')
+        .set('Authorization', `Bearer ${adminToken}`);
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty('totalUsers');
+      expect(res.body).toHaveProperty('usersByPlan');
+    });
+
+    test('PATCH /api/admin/users/:id/plan', async () => {
+      const user = createTestUser({ email: `plan_${Date.now()}@test.com` });
+      const res = await request(app).patch(`/api/admin/users/${user.id}/plan`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ plan: 'Pro' });
+      expect(res.status).toBe(200);
+      expect(res.body.ok).toBe(true);
+    });
+
+    test('PATCH /api/admin/users/:id/plan - invalid plan', async () => {
+      const user = createTestUser({ email: `badplan_${Date.now()}@test.com` });
+      const res = await request(app).patch(`/api/admin/users/${user.id}/plan`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ plan: 'Ultimate' });
+      expect(res.status).toBe(400);
     });
   });
 });

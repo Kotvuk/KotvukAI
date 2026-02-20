@@ -188,6 +188,40 @@ for (const [k, v] of Object.entries(plans)) upsert.run(`plan_${k}`, JSON.stringi
 
 const GROQ_KEY = process.env.GROQ_API_KEY || '';
 
+// ============ RATE LIMITING ============
+
+// Track daily AI usage per user (in-memory, resets on restart)
+const dailyAiUsage = {};
+
+function getAiUsageKey(userId) {
+  const today = new Date().toISOString().slice(0, 10);
+  return `${userId || 'anon'}_${today}`;
+}
+
+function checkAiLimit(req, res) {
+  const plan = req.user?.plan || 'Free';
+  const limits = { Free: 5, Pro: 50, Premium: -1 };
+  const limit = limits[plan];
+  if (limit === -1) return true; // unlimited
+  
+  const key = getAiUsageKey(req.userId);
+  const used = dailyAiUsage[key] || 0;
+  if (used >= limit) {
+    res.status(429).json({ 
+      error: 'limit_reached',
+      message: plan === 'Free' 
+        ? 'Вы достигли лимита в 5 AI анализов на бесплатном плане. Перейдите на Pro для 50 анализов в день.'
+        : `Вы достигли лимита в ${limit} AI анализов. Перейдите на Premium для безлимитного доступа.`,
+      used,
+      limit,
+      plan
+    });
+    return false;
+  }
+  dailyAiUsage[key] = used + 1;
+  return true;
+}
+
 // ============ TECHNICAL INDICATORS ============
 
 function calcEMA(closes, period) {
@@ -572,15 +606,18 @@ app.get('/api/news', async (req, res) => {
 });
 
 app.post('/api/news/summary', async (req, res) => {
+  if (!checkAiLimit(req, res)) return;
+  
   try {
-    const { title, body } = req.body;
+    const { title, body, lang } = req.body;
+    const replyLang = lang === 'en' ? 'English' : 'Russian (русский язык)';
     const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${GROQ_KEY}` },
       body: JSON.stringify({
         model: 'moonshotai/kimi-k2-instruct',
         messages: [
-          { role: 'system', content: 'You are a crypto news analyst. Summarize the news article in 2-3 sentences. Include key takeaways and potential market impact. Reply in the same language as the question.' },
+          { role: 'system', content: `You are a crypto news analyst. Summarize the news article in 2-3 sentences. Include key takeaways and potential market impact. ALWAYS reply in ${replyLang}.` },
           { role: 'user', content: `Title: ${title}\n\n${body || ''}` }
         ],
         temperature: 0.5,
@@ -594,12 +631,22 @@ app.post('/api/news/summary', async (req, res) => {
 
 // ============ AI ANALYSIS (Enhanced with multi-timeframe, indicators, BTC correlation, self-learning) ============
 
+app.get('/api/ai/usage', (req, res) => {
+  const plan = req.user?.plan || 'Free';
+  const limits = { Free: 5, Pro: 50, Premium: -1 };
+  const limit = limits[plan];
+  const key = getAiUsageKey(req.userId);
+  const used = dailyAiUsage[key] || 0;
+  res.json({ used, limit, remaining: limit === -1 ? 'unlimited' : Math.max(0, limit - used), plan });
+});
+
 app.post('/api/ai/analyze', async (req, res) => {
+  if (!checkAiLimit(req, res)) return;
   try {
     const { symbol, price, change24h, high, low, volume, fng, marketData } = req.body;
 
-    // 1. Fetch multi-timeframe klines
-    const timeframes = ['1h', '4h', '1d'];
+    // 1. Fetch multi-timeframe klines (6 timeframes)
+    const timeframes = ['5m', '15m', '1h', '4h', '1d', '1w'];
     const klinesData = {};
     const indicators = {};
     for (const tf of timeframes) {
@@ -664,7 +711,7 @@ app.post('/api/ai/analyze', async (req, res) => {
         : `\n\n⚠️ Timeframes DISAGREE: ${Object.entries(tfSignals).map(([k, v]) => `${k}=${v}`).join(', ')} — be cautious`;
     }
 
-    const prompt = `Проанализируй криптовалюту ${symbol || 'BTCUSDT'}.
+    const prompt = `Проанализируй криптовалюту ${symbol || 'BTCUSDT'} по 6 таймфреймам.
 
 Текущие данные:
 - Цена: $${price}
@@ -675,17 +722,42 @@ app.post('/api/ai/analyze', async (req, res) => {
 - Индекс страха и жадности: ${fng || 'N/A'}
 ${marketData ? `- Дополнительные данные рынка: ${JSON.stringify(marketData)}` : ''}
 
-📐 Рассчитанные технические индикаторы:${indicatorText}${tfAgreement}${btcContext}${learningContext}
+📐 Рассчитанные технические индикаторы по 6 таймфреймам:${indicatorText}${tfAgreement}${btcContext}${learningContext}
 
-Дай подробный анализ:
+Дай структурированный анализ:
 
-## 📊 Технический анализ
-(используй предоставленные индикаторы RSI, EMA, MACD)
-## 📈 Фундаментальный анализ
-## 🎯 Торговый сигнал (LONG/SHORT/НЕЙТРАЛЬНО с точками входа, TP, SL)
-## 💡 Объяснение
-## 📊 Уверенность: X% (число от 0 до 100)
-## ⭐ Оценка монеты: X/10 (число от 1 до 10 — общая привлекательность для торговли)`;
+## 📊 Общий Анализ
+- **Общий тренд**: (Bullish/Bearish/Neutral) с учетом всех таймфреймов
+- **Согласие таймфреймов**: X/6 TF показывают бычий сигнал
+- **Общая уверенность**: X% (число от 0 до 100)
+- **Оценка монеты**: X/10 (число от 1 до 10)
+
+## 📈 Анализ по таймфреймам
+### 5M: (тренд, RSI, EMA статус, MACD сигнал)
+### 15M: (тренд, RSI, EMA статус, MACD сигнал) 
+### 1H: (тренд, RSI, EMA статус, MACD сигнал)
+### 4H: (тренд, RSI, EMA статус, MACD сигнал)
+### 1D: (тренд, RSI, EMA статус, MACD сигнал)
+### 1W: (тренд, RSI, EMA статус, MACD сигнал)
+
+## 🎯 Торговый Сигнал
+- **Направление**: LONG/SHORT/НЕЙТРАЛЬНО
+- **Точка входа**: $X
+- **Take Profit**: $X
+- **Stop Loss**: $X
+- **Соотношение риск/прибыль**: X:X
+
+## 🔍 Анализ Рисков
+- Основные риски позиции
+- Уровень волатильности
+- Рекомендуемый размер позиции
+
+## 🔑 Ключевые Факторы
+- Важные уровни поддержки/сопротивления  
+- Триггеры для изменения мнения
+- Макроэкономические факторы
+
+Структурируй ответ точно по этим разделам с markdown форматированием.`;
 
     const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
@@ -739,6 +811,8 @@ ${marketData ? `- Дополнительные данные рынка: ${JSON.s
 });
 
 app.post('/api/ai/chat', async (req, res) => {
+  if (!checkAiLimit(req, res)) return;
+  
   try {
     const { message, history = [] } = req.body;
     const messages = [

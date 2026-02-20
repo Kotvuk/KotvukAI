@@ -1,16 +1,32 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useLang } from '../LangContext';
+import { useTheme } from '../ThemeContext';
 
-const card = { background: '#12121a', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: 20, marginBottom: 16 };
-const inputStyle = { background: '#1a1a24', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: '8px 12px', color: '#e0e0e0', fontSize: 13, fontFamily: "'Inter',sans-serif", width: 120 };
-const btnStyle = (active) => ({ background: active ? 'rgba(59,130,246,0.2)' : 'rgba(255,255,255,0.05)', border: active ? '1px solid #3b82f6' : '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: '8px 16px', color: active ? '#3b82f6' : '#a0a0b0', cursor: 'pointer', fontSize: 13, fontFamily: "'Inter',sans-serif" });
+const getStyles = (theme) => ({
+  card: { background: theme.cardBg, border: '1px solid ' + theme.border, borderRadius: 12, padding: 20, marginBottom: 16 },
+  inputStyle: { background: theme.inputBg, border: '1px solid ' + theme.border, borderRadius: 8, padding: '8px 12px', color: theme.text, fontSize: 13, fontFamily: "'Inter',sans-serif", width: 120 },
+  btnStyle: (active) => ({ background: active ? theme.accent + '33' : theme.border, border: '1px solid ' + (active ? theme.accent : theme.border), borderRadius: 8, padding: '8px 16px', color: active ? theme.accent : theme.textSecondary, cursor: 'pointer', fontSize: 13, fontFamily: "'Inter',sans-serif" })
+});
 
 export default function ScreenerPanel() {
   const { t } = useLang();
+  const { theme } = useTheme();
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState({ minPrice: '', maxPrice: '', minChange: '', maxChange: '', sortBy: 'volume' });
-  const [preset, setPreset] = useState('all');
+  
+  // State with localStorage persistence
+  const [filters, setFilters] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('screener_filters')) || { minPrice: '', maxPrice: '', minChange: '', maxChange: '', sortBy: 'volume' }; } catch { return { minPrice: '', maxPrice: '', minChange: '', maxChange: '', sortBy: 'volume' }; }
+  });
+  const [preset, setPreset] = useState(() => {
+    try { return localStorage.getItem('screener_preset') || 'all'; } catch { return 'all'; }
+  });
+
+  const styles = getStyles(theme);
+  
+  // Save to localStorage
+  useEffect(() => { localStorage.setItem('screener_filters', JSON.stringify(filters)); }, [filters]);
+  useEffect(() => { localStorage.setItem('screener_preset', preset); }, [preset]);
 
   const fetchData = useCallback(() => {
     fetch('/api/screener').then(r => r.json()).then(d => {

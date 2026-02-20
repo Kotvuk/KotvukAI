@@ -1,18 +1,46 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useLang } from '../LangContext';
+import { useTheme } from '../ThemeContext';
 
-const card = { background: '#12121a', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: 20, marginBottom: 16 };
-const inputStyle = { width: '100%', background: '#1a1a2e', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: '10px 14px', color: '#e0e0e0', fontSize: 14, fontFamily: "'Inter',sans-serif", outline: 'none', boxSizing: 'border-box' };
-const resultCard = (color) => ({ ...card, borderLeft: `3px solid ${color}`, textAlign: 'center' });
+const getStyles = (theme) => ({
+  card: { background: theme.cardBg, border: '1px solid ' + theme.border, borderRadius: 12, padding: 20, marginBottom: 16 },
+  inputStyle: { width: '100%', background: theme.inputBg, border: '1px solid ' + theme.border, borderRadius: 8, padding: '10px 14px', color: theme.text, fontSize: 14, fontFamily: "'Inter',sans-serif", outline: 'none', boxSizing: 'border-box' },
+  resultCard: (color) => ({ background: theme.cardBg, border: '1px solid ' + theme.border, borderRadius: 12, padding: 20, marginBottom: 16, borderLeft: `3px solid ${color}`, textAlign: 'center' }),
+});
 
 export default function CalculatorPanel() {
   const { t } = useLang();
-  const [deposit, setDeposit] = useState(10000);
-  const [riskPct, setRiskPct] = useState(2);
-  const [entryPrice, setEntryPrice] = useState(95000);
-  const [stopLoss, setStopLoss] = useState(93000);
-  const [takeProfit, setTakeProfit] = useState(100000);
-  const [leverage, setLeverage] = useState(1);
+  const { theme } = useTheme();
+  
+  // State with localStorage persistence
+  const [deposit, setDeposit] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('calc_deposit')) || 10000; } catch { return 10000; }
+  });
+  const [riskPct, setRiskPct] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('calc_risk')) || 2; } catch { return 2; }
+  });
+  const [entryPrice, setEntryPrice] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('calc_entry')) || 95000; } catch { return 95000; }
+  });
+  const [stopLoss, setStopLoss] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('calc_sl')) || 93000; } catch { return 93000; }
+  });
+  const [takeProfit, setTakeProfit] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('calc_tp')) || 100000; } catch { return 100000; }
+  });
+  const [leverage, setLeverage] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('calc_leverage')) || 1; } catch { return 1; }
+  });
+
+  const styles = getStyles(theme);
+
+  // Save to localStorage
+  useEffect(() => { localStorage.setItem('calc_deposit', JSON.stringify(deposit)); }, [deposit]);
+  useEffect(() => { localStorage.setItem('calc_risk', JSON.stringify(riskPct)); }, [riskPct]);
+  useEffect(() => { localStorage.setItem('calc_entry', JSON.stringify(entryPrice)); }, [entryPrice]);
+  useEffect(() => { localStorage.setItem('calc_sl', JSON.stringify(stopLoss)); }, [stopLoss]);
+  useEffect(() => { localStorage.setItem('calc_tp', JSON.stringify(takeProfit)); }, [takeProfit]);
+  useEffect(() => { localStorage.setItem('calc_leverage', JSON.stringify(leverage)); }, [leverage]);
 
   const calc = useMemo(() => {
     const riskAmount = deposit * (riskPct / 100);
@@ -40,11 +68,11 @@ export default function CalculatorPanel() {
 
   return (
     <div>
-      <h2 style={{ color: '#fff', fontSize: 20, marginBottom: 16 }}>🧮 {t('calculatorTitle')}</h2>
+      <h2 style={{ color: theme.text, fontSize: 20, marginBottom: 16 }}>🧮 {t('calculatorTitle')}</h2>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
         {/* Inputs */}
-        <div style={card}>
+        <div style={styles.card}>
           <div style={{ display: 'grid', gap: 14 }}>
             {[
               { label: t('deposit') + ' ($)', value: deposit, set: setDeposit },
@@ -55,8 +83,8 @@ export default function CalculatorPanel() {
               { label: t('leverage') + ' x', value: leverage, set: setLeverage, min: 1, max: 125 },
             ].map((f, i) => (
               <div key={i}>
-                <label style={{ color: '#888', fontSize: 12, marginBottom: 4, display: 'block' }}>{f.label}</label>
-                <input style={inputStyle} type="number" value={f.value} onChange={e => f.set(+e.target.value)} step={f.step || 'any'} min={f.min} max={f.max} />
+                <label style={{ color: theme.textMuted, fontSize: 12, marginBottom: 4, display: 'block' }}>{f.label}</label>
+                <input style={styles.inputStyle} type="number" value={f.value} onChange={e => f.set(+e.target.value)} step={f.step || 'any'} min={f.min} max={f.max} />
               </div>
             ))}
           </div>
@@ -64,12 +92,12 @@ export default function CalculatorPanel() {
           {/* Risk Scale */}
           {calc && (
             <div style={{ marginTop: 20 }}>
-              <label style={{ color: '#888', fontSize: 12, marginBottom: 8, display: 'block' }}>{t('riskScale')}</label>
+              <label style={{ color: theme.textMuted, fontSize: 12, marginBottom: 8, display: 'block' }}>{t('riskScale')}</label>
               <div style={{ display: 'flex', gap: 4, marginBottom: 6 }}>
                 {['low', 'medium', 'high', 'veryHigh'].map(level => (
                   <div key={level} style={{
                     flex: 1, height: 8, borderRadius: 4,
-                    background: calc.riskLevel === level ? riskColors[level] : 'rgba(255,255,255,0.06)',
+                    background: calc.riskLevel === level ? riskColors[level] : theme.border,
                     transition: 'all 0.3s'
                   }} />
                 ))}
@@ -85,37 +113,37 @@ export default function CalculatorPanel() {
         <div>
           {calc ? (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-              <div style={resultCard('#3b82f6')}>
-                <div style={{ fontSize: 12, color: '#888' }}>{t('positionSize')}</div>
-                <div style={{ fontSize: 22, fontWeight: 700, color: '#3b82f6' }}>${calc.positionSize.toFixed(2)}</div>
+              <div style={styles.resultCard(theme.accent)}>
+                <div style={{ fontSize: 12, color: theme.textMuted }}>{t('positionSize')}</div>
+                <div style={{ fontSize: 22, fontWeight: 700, color: theme.accent }}>${calc.positionSize.toFixed(2)}</div>
               </div>
-              <div style={resultCard('#8b5cf6')}>
-                <div style={{ fontSize: 12, color: '#888' }}>{t('coins')}</div>
+              <div style={styles.resultCard('#8b5cf6')}>
+                <div style={{ fontSize: 12, color: theme.textMuted }}>{t('coins')}</div>
                 <div style={{ fontSize: 22, fontWeight: 700, color: '#8b5cf6' }}>{calc.coins.toFixed(6)}</div>
               </div>
-              <div style={resultCard('#ef4444')}>
-                <div style={{ fontSize: 12, color: '#888' }}>{t('maxLoss')}</div>
-                <div style={{ fontSize: 22, fontWeight: 700, color: '#ef4444' }}>-${calc.maxLoss.toFixed(2)}</div>
+              <div style={styles.resultCard(theme.red)}>
+                <div style={{ fontSize: 12, color: theme.textMuted }}>{t('maxLoss')}</div>
+                <div style={{ fontSize: 22, fontWeight: 700, color: theme.red }}>-${calc.maxLoss.toFixed(2)}</div>
               </div>
-              <div style={resultCard('#22c55e')}>
-                <div style={{ fontSize: 12, color: '#888' }}>{t('potentialProfit')}</div>
-                <div style={{ fontSize: 22, fontWeight: 700, color: '#22c55e' }}>+${calc.potentialProfit.toFixed(2)}</div>
+              <div style={styles.resultCard(theme.green)}>
+                <div style={{ fontSize: 12, color: theme.textMuted }}>{t('potentialProfit')}</div>
+                <div style={{ fontSize: 22, fontWeight: 700, color: theme.green }}>+${calc.potentialProfit.toFixed(2)}</div>
               </div>
-              <div style={resultCard('#eab308')}>
-                <div style={{ fontSize: 12, color: '#888' }}>{t('riskReward')}</div>
-                <div style={{ fontSize: 22, fontWeight: 700, color: '#eab308' }}>1:{calc.riskReward.toFixed(2)}</div>
+              <div style={styles.resultCard(theme.yellow)}>
+                <div style={{ fontSize: 12, color: theme.textMuted }}>{t('riskReward')}</div>
+                <div style={{ fontSize: 22, fontWeight: 700, color: theme.yellow }}>1:{calc.riskReward.toFixed(2)}</div>
               </div>
-              <div style={resultCard('#f97316')}>
-                <div style={{ fontSize: 12, color: '#888' }}>{t('liquidationPrice')}</div>
+              <div style={styles.resultCard('#f97316')}>
+                <div style={{ fontSize: 12, color: theme.textMuted }}>{t('liquidationPrice')}</div>
                 <div style={{ fontSize: 22, fontWeight: 700, color: '#f97316' }}>${calc.liquidationPrice.toFixed(2)}</div>
               </div>
-              <div style={{ ...resultCard('#666'), gridColumn: 'span 2' }}>
-                <div style={{ fontSize: 12, color: '#888' }}>{t('commission')}</div>
-                <div style={{ fontSize: 22, fontWeight: 700, color: '#888' }}>${calc.commission.toFixed(2)}</div>
+              <div style={{ ...styles.resultCard(theme.textMuted), gridColumn: 'span 2' }}>
+                <div style={{ fontSize: 12, color: theme.textMuted }}>{t('commission')}</div>
+                <div style={{ fontSize: 22, fontWeight: 700, color: theme.textMuted }}>${calc.commission.toFixed(2)}</div>
               </div>
             </div>
           ) : (
-            <div style={{ ...card, textAlign: 'center', color: '#555', padding: 40 }}>
+            <div style={{ ...styles.card, textAlign: 'center', color: theme.textSecondary, padding: 40 }}>
               {t('loading')}
             </div>
           )}

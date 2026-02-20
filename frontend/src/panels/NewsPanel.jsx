@@ -5,7 +5,7 @@ const card = { background: '#12121a', border: '1px solid rgba(255,255,255,0.06)'
 const btnStyle = { background: 'rgba(59,130,246,0.15)', color: '#3b82f6', border: 'none', padding: '6px 14px', borderRadius: 6, cursor: 'pointer', fontWeight: 600, fontSize: 12, fontFamily: "'Inter',sans-serif" };
 
 export default function NewsPanel() {
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const [news, setNews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [summaries, setSummaries] = useState({});
@@ -27,8 +27,16 @@ export default function NewsPanel() {
     try {
       const r = await fetch('/api/news/summary', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: item.title, body: item.body || '' })
+        body: JSON.stringify({ title: item.title, body: item.body || '', lang })
       });
+
+      if (r.status === 429) {
+        const errorData = await r.json();
+        setSummaries(p => ({ ...p, [index]: `⚡ ${errorData.message}` }));
+        setSummarizing(p => ({ ...p, [index]: false }));
+        return;
+      }
+
       const data = await r.json();
       setSummaries(p => ({ ...p, [index]: data.summary || 'Error' }));
     } catch (e) {

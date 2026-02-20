@@ -1,14 +1,27 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useLang } from '../LangContext';
+import { useTheme } from '../ThemeContext';
 
-const card = { background: '#12121a', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: 20, marginBottom: 16 };
-const selStyle = { background: '#1a1a2e', color: '#e0e0e0', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: '8px 14px', fontSize: 14, fontFamily: "'Inter',sans-serif", outline: 'none' };
+const getStyles = (theme) => ({
+  card: { background: theme.cardBg, border: '1px solid ' + theme.border, borderRadius: 12, padding: 20, marginBottom: 16 },
+  selStyle: { background: theme.inputBg, color: theme.text, border: '1px solid ' + theme.border, borderRadius: 8, padding: '8px 14px', fontSize: 14, fontFamily: "'Inter',sans-serif", outline: 'none' }
+});
 
 const PAIRS = ['BTCUSDT','ETHUSDT','BNBUSDT','XRPUSDT','SOLUSDT'];
 
 export default function WhalePanel() {
   const { t } = useLang();
-  const [pair, setPair] = useState('BTCUSDT');
+  const { theme } = useTheme();
+  
+  // State with localStorage persistence
+  const [pair, setPair] = useState(() => {
+    try { return localStorage.getItem('whale_pair') || 'BTCUSDT'; } catch { return 'BTCUSDT'; }
+  });
+
+  const styles = getStyles(theme);
+  
+  // Save to localStorage
+  useEffect(() => { localStorage.setItem('whale_pair', pair); }, [pair]);
   const [orderBook, setOrderBook] = useState(null);
   const [whaleTrades, setWhaleTrades] = useState([]);
   const [loading, setLoading] = useState(false);

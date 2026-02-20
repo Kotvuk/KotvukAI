@@ -1,18 +1,23 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useLang } from '../LangContext';
+import { useTheme } from '../ThemeContext';
 
-const card = { background: '#12121a', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: 20, marginBottom: 16 };
-const grid = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 20 };
-const inputStyle = { width: '100%', background: '#1a1a2e', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: '10px 14px', color: '#e0e0e0', fontSize: 14, fontFamily: "'Inter',sans-serif", outline: 'none', boxSizing: 'border-box' };
-const btnPrimary = { background: '#3b82f6', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: 8, cursor: 'pointer', fontWeight: 600, fontSize: 14, fontFamily: "'Inter',sans-serif" };
-const btnDanger = { background: 'rgba(239,68,68,0.15)', color: '#ef4444', border: 'none', padding: '6px 14px', borderRadius: 6, cursor: 'pointer', fontWeight: 600, fontSize: 12, fontFamily: "'Inter',sans-serif" };
-const selStyle = { background: '#1a1a2e', color: '#e0e0e0', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: '10px 14px', fontSize: 14, fontFamily: "'Inter',sans-serif", outline: 'none' };
-const dirBtn = (active, color) => ({ padding: '10px 20px', borderRadius: 8, border: '1px solid ' + (active ? color : 'rgba(255,255,255,0.1)'), background: active ? (color === '#22c55e' ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)') : 'transparent', color: active ? color : '#a0a0b0', cursor: 'pointer', fontWeight: 600, fontSize: 14, fontFamily: "'Inter',sans-serif" });
+const getStyles = (theme) => ({
+  card: { background: theme.cardBg, border: '1px solid ' + theme.border, borderRadius: 12, padding: 20, marginBottom: 16 },
+  grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 20 },
+  inputStyle: { width: '100%', background: theme.inputBg, border: '1px solid ' + theme.border, borderRadius: 8, padding: '10px 14px', color: theme.text, fontSize: 14, fontFamily: "'Inter',sans-serif", outline: 'none', boxSizing: 'border-box' },
+  btnPrimary: { background: theme.accent, color: theme.name === 'light' ? '#fff' : theme.text, border: 'none', padding: '10px 20px', borderRadius: 8, cursor: 'pointer', fontWeight: 600, fontSize: 14, fontFamily: "'Inter',sans-serif" },
+  btnDanger: { background: theme.redBg, color: theme.red, border: 'none', padding: '6px 14px', borderRadius: 6, cursor: 'pointer', fontWeight: 600, fontSize: 12, fontFamily: "'Inter',sans-serif" },
+  selStyle: { background: theme.inputBg, color: theme.text, border: '1px solid ' + theme.border, borderRadius: 8, padding: '10px 14px', fontSize: 14, fontFamily: "'Inter',sans-serif", outline: 'none' },
+  dirBtn: (active, color) => ({ padding: '10px 20px', borderRadius: 8, border: '1px solid ' + (active ? color : theme.border), background: active ? (color === theme.green ? theme.greenBg : theme.redBg) : 'transparent', color: active ? color : theme.textSecondary, cursor: 'pointer', fontWeight: 600, fontSize: 14, fontFamily: "'Inter',sans-serif" })
+});
 
 const PAIRS = ['BTCUSDT','ETHUSDT','BNBUSDT','XRPUSDT','ADAUSDT','SOLUSDT','DOGEUSDT','DOTUSDT','AVAXUSDT'];
 
 export default function TradesPanel() {
   const { t } = useLang();
+  const { theme } = useTheme();
+  const styles = getStyles(theme);
   const [pair, setPair] = useState('BTCUSDT');
   const [direction, setDirection] = useState('long');
   const [quantity, setQuantity] = useState('');

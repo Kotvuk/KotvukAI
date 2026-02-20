@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useLang } from './LangContext';
 import { useAuth } from './AuthContext';
+import { useTheme } from './ThemeContext';
 import LandingPage from './LandingPage';
 import AuthPage from './AuthPage';
 import DashboardPanel from './panels/DashboardPanel';
@@ -19,46 +20,49 @@ import ScreenerPanel from './panels/ScreenerPanel';
 import AdminPanel from './panels/AdminPanel';
 import AIChat from './panels/AIChat';
 
-const styles = {
-  app: { display: 'flex', height: '100vh', background: '#0a0a0f', color: '#e0e0e0', fontFamily: "'Inter', sans-serif", overflow: 'hidden' },
+const getStyles = (theme) => ({
+  app: { display: 'flex', height: '100vh', background: theme.bg, color: theme.text, fontFamily: "'Inter', sans-serif", overflow: 'hidden' },
   sidebar: (open) => ({
-    width: open ? 240 : 0, background: '#0d0d14', borderRight: '1px solid rgba(255,255,255,0.06)',
+    width: open ? 240 : 0, background: theme.sidebarBg, borderRight: '1px solid ' + theme.border,
     transition: 'width 0.25s', overflow: 'hidden', flexShrink: 0, display: 'flex', flexDirection: 'column'
   }),
   sidebarInner: { width: 240, padding: '1rem 0' },
   navItem: (active) => ({
     display: 'flex', alignItems: 'center', gap: 12, padding: '10px 20px', cursor: 'pointer',
-    background: active ? 'rgba(59,130,246,0.15)' : 'transparent', color: active ? '#3b82f6' : '#a0a0b0',
+    background: active ? theme.accent + '26' : 'transparent', color: active ? theme.accent : theme.textSecondary,
     border: 'none', width: '100%', textAlign: 'left', fontSize: 14, fontFamily: "'Inter',sans-serif",
-    borderLeft: active ? '3px solid #3b82f6' : '3px solid transparent', transition: 'all 0.15s'
+    borderLeft: active ? '3px solid ' + theme.accent : '3px solid transparent', transition: 'all 0.15s'
   }),
   main: { flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' },
   header: {
     display: 'flex', alignItems: 'center', gap: 16, padding: '12px 20px',
-    borderBottom: '1px solid rgba(255,255,255,0.06)', background: '#0d0d14', flexShrink: 0
+    borderBottom: '1px solid ' + theme.border, background: theme.sidebarBg, flexShrink: 0
   },
-  burger: { background: 'none', border: 'none', color: '#e0e0e0', fontSize: 22, cursor: 'pointer', padding: 4 },
+  burger: { background: 'none', border: 'none', color: theme.text, fontSize: 22, cursor: 'pointer', padding: 4 },
   content: { flex: 1, overflow: 'auto', padding: 20 },
-  logo: { fontSize: 16, fontWeight: 700, color: '#fff', letterSpacing: -0.5, flex: 1 },
-  accent: { color: '#3b82f6' },
+  logo: { fontSize: 16, fontWeight: 700, color: theme.text, letterSpacing: -0.5, flex: 1 },
+  accent: { color: theme.accent },
   logoutBtn: {
-    padding: '6px 16px', borderRadius: 8, border: '1px solid rgba(239,68,68,0.3)',
-    background: 'rgba(239,68,68,0.1)', color: '#ef4444', fontSize: 13, fontWeight: 500,
+    padding: '6px 16px', borderRadius: 8, border: '1px solid ' + theme.red + '4D',
+    background: theme.redBg, color: theme.red, fontSize: 13, fontWeight: 500,
     cursor: 'pointer', fontFamily: "'Inter',sans-serif", transition: 'all 0.2s'
   },
-  userInfo: { fontSize: 13, color: '#808090', marginRight: 12 },
+  userInfo: { fontSize: 13, color: theme.textMuted, marginRight: 12 },
   loadingScreen: {
     display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh',
-    background: '#0a0a0f', color: '#3b82f6', fontSize: 18, fontFamily: "'Inter',sans-serif"
+    background: theme.bg, color: theme.accent, fontSize: 18, fontFamily: "'Inter',sans-serif"
   },
-};
+});
 
 export default function App() {
   const { t } = useLang();
   const { user, loading, logout } = useAuth();
+  const { theme } = useTheme();
   const [panel, setPanel] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [authView, setAuthView] = useState(null); // null = landing, 'login', 'register'
+
+  const styles = getStyles(theme);
 
   if (loading) {
     return <div style={styles.loadingScreen}>⏳ {t('loading')}</div>;
@@ -121,8 +125,8 @@ export default function App() {
     <div style={styles.app}>
       <div style={styles.sidebar(sidebarOpen)}>
         <div style={styles.sidebarInner}>
-          <div style={{ padding: '8px 20px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)', marginBottom: 8 }}>
-            <span style={{ fontSize: 18, fontWeight: 700, color: '#fff' }}>Kotvuk<span style={styles.accent}>AI</span></span>
+          <div style={{ padding: '8px 20px 20px', borderBottom: '1px solid ' + theme.border, marginBottom: 8 }}>
+            <span style={{ fontSize: 18, fontWeight: 700, color: theme.text }}>Kotvuk<span style={styles.accent}>AI</span></span>
           </div>
           {PANELS.map(p => (
             <button key={p.id} style={styles.navItem(panel === p.id)} onClick={() => setPanel(p.id)}>

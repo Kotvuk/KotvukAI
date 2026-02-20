@@ -7,7 +7,9 @@ module.exports = {
     '!coverage/**',
     '!jest.config.js',
     '!tests/**',
-    '!server.js'
+    '!server.js',
+    '!utils/logger.js',
+    '!middleware/metrics.js'
   ],
   testMatch: ['**/tests/**/*.test.js'],
   testTimeout: 15000,

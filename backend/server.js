@@ -414,7 +414,7 @@ async function generateReflection(signalId) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${GROQ_KEY}` },
       body: JSON.stringify({
-        model: 'llama-3.1-8b-instant',
+        model: 'llama-3.3-70b-versatile',
         messages: [
           { role: 'system', content: 'Ты крипто-аналитик, анализирующий свои прошлые сигналы. Будь самокритичен и конкретен. Отвечай на русском.' },
           { role: 'user', content: prompt }
@@ -578,7 +578,7 @@ app.post('/api/news/summary', async (req, res) => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${GROQ_KEY}` },
       body: JSON.stringify({
-        model: 'llama-3.1-8b-instant',
+        model: 'llama-3.3-70b-versatile',
         messages: [
           { role: 'system', content: 'You are a crypto news analyst. Summarize the news article in 2-3 sentences. Include key takeaways and potential market impact. Reply in the same language as the question.' },
           { role: 'user', content: `Title: ${title}\n\n${body || ''}` }
@@ -691,7 +691,7 @@ ${marketData ? `- Дополнительные данные рынка: ${JSON.s
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${GROQ_KEY}` },
       body: JSON.stringify({
-        model: 'llama-3.1-8b-instant',
+        model: 'llama-3.3-70b-versatile',
         messages: [
           { role: 'system', content: 'Ты — профессиональный крипто-аналитик с системой самообучения. Отвечай подробно на русском языке. Используй markdown форматирование. ОБЯЗАТЕЛЬНО укажи числовую уверенность (0-100%) и оценку монеты (1-10).' },
           { role: 'user', content: prompt }
@@ -749,7 +749,7 @@ app.post('/api/ai/chat', async (req, res) => {
     const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${GROQ_KEY}` },
-      body: JSON.stringify({ model: 'llama-3.1-8b-instant', messages, temperature: 0.7, max_tokens: 1500 })
+      body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages, temperature: 0.7, max_tokens: 1500 })
     });
     const data = await r.json();
     const reply = data?.choices?.[0]?.message?.content || data?.error?.message || 'Ошибка';
@@ -806,7 +806,7 @@ app.get('/api/dashboard/recommendation', async (req, res) => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${GROQ_KEY}` },
       body: JSON.stringify({
-        model: 'llama-3.1-8b-instant',
+        model: 'llama-3.3-70b-versatile',
         messages: [
           { role: 'system', content: 'Ты крипто-аналитик. Дай ОДНО короткое предложение — рекомендация дня для трейдера. Максимум 15 слов. На русском.' },
           { role: 'user', content: `Дата: ${new Date().toISOString().slice(0, 10)}. Дай рекомендацию дня.` }

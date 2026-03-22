@@ -1,0 +1,25 @@
+export const dynamic = 'force-dynamic'
+import { NextRequest, NextResponse } from 'next/server'
+import { verifyToken } from '@/lib/firebase-admin'
+import { upsertUser, initDB } from '@/lib/db'
+
+export async function POST(req: NextRequest) {
+  try {
+    await initDB()
+    const { token } = await req.json()
+    if (!token) return NextResponse.json({ ok: false, error: 'No token' }, { status: 400 })
+
+    const uid = await verifyToken(token)
+    if (!uid) return NextResponse.json({ ok: false, error: 'Invalid token' }, { status: 401 })
+
+    // Get email from token
+    const { adminAuth } = await import('@/lib/firebase-admin')
+    const fbUser = await adminAuth.getUser(uid)
+    const user = await upsertUser(uid, fbUser.email || '')
+
+    return NextResponse.json({ ok: true, user: { id: user.id, email: user.email, nickname: user.nickname, lang: user.lang } })
+  } catch (e: unknown) {
+    console.error('auth/sync:', e)
+    return NextResponse.json({ ok: false, error: 'Server error' }, { status: 500 })
+  }
+}

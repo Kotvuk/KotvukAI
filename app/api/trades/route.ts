@@ -6,7 +6,10 @@ import { getTrades, createTrade } from '@/lib/db'
 export async function GET(req: NextRequest) {
   const user = await getUser(req)
   if (!user) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 })
-  const trades = await getTrades(user.id)
+  const accountType = req.nextUrl.searchParams.get('account') as 'user' | 'ai' | null
+  const limit  = Math.min(500, Math.max(1, parseInt(req.nextUrl.searchParams.get('limit')  || '200')))
+  const offset = Math.max(0, parseInt(req.nextUrl.searchParams.get('offset') || '0'))
+  const trades = await getTrades(user.id, accountType ?? undefined, limit, offset)
   return NextResponse.json({ ok: true, trades })
 }
 
@@ -17,7 +20,7 @@ export async function POST(req: NextRequest) {
   if (!body.pair || !body.direction || !body.amount) {
     return NextResponse.json({ ok: false, error: 'pair, direction, amount required' }, { status: 400 })
   }
-  // Auto-fetch entry price for market orders
+
   if (body.order_type === 'market' && !body.entry_price) {
     try {
       const sym = body.pair.replace('/', '')
@@ -26,6 +29,6 @@ export async function POST(req: NextRequest) {
       if (d.price) body.entry_price = parseFloat(d.price)
     } catch {}
   }
-  const trade = await createTrade(user.id, body)
+  const trade = await createTrade(user.id, { ...body, account_type: body.account_type ?? 'user' })
   return NextResponse.json({ ok: true, trade })
 }

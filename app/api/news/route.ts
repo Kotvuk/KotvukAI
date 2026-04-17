@@ -49,7 +49,6 @@ export async function GET() {
     const results = await Promise.allSettled(RSS_FEEDS.map(fetchRSS))
     const all: RSSItem[] = results.flatMap(r => r.status === 'fulfilled' ? r.value : [])
 
-    // Sort by date
     all.sort((a, b) => new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime())
 
     const items = all.slice(0, 30).map(item => ({

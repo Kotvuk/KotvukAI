@@ -425,3 +425,150 @@ input[type=range]::-moz-range-thumb { width: 11px; height: 11px; background: var
   .chat-panel { width: calc(100vw - 32px); right: 16px; }
   .chat-fab { right: 16px; bottom: 16px; }
 }
+
+/* ── Landing page animations & utilities ───────────────────────────────── */
+@keyframes fadeUp    { from { opacity:0; transform:translateY(32px); } to { opacity:1; transform:translateY(0); } }
+@keyframes fadeIn    { from { opacity:0; } to { opacity:1; } }
+@keyframes lp-pulse  { 0%,100%{opacity:1;} 50%{opacity:.4;} }
+@keyframes scanline  { 0%{top:-10%;} 100%{top:110%;} }
+@keyframes ticker    { 0%{transform:translateX(0);} 100%{transform:translateX(-50%);} }
+@keyframes lp-glow   { 0%,100%{box-shadow:0 0 20px rgba(0,212,255,.2);} 50%{box-shadow:0 0 40px rgba(0,212,255,.5);} }
+@keyframes lp-float  { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-8px);} }
+@keyframes loading-bar { 0%{left:-40%} 100%{left:140%} }
+
+.fade-up   { animation: fadeUp .7s ease both; }
+.fade-up-1 { animation: fadeUp .7s .1s ease both; }
+.fade-up-2 { animation: fadeUp .7s .2s ease both; }
+.fade-up-3 { animation: fadeUp .7s .3s ease both; }
+.fade-in   { animation: fadeIn .8s ease both; }
+
+/* ─── SUBSCRIPTION TAGS ─────────────────────────────────────────────────── */
+.tag-free    { background: #55555522; color: #888; border: 1px solid #55555544; }
+.tag-starter { background: #0a84ff22; color: #0a84ff; border: 1px solid #0a84ff44; }
+.tag-pro     { background: #30d15822; color: #30d158; border: 1px solid #30d15844; }
+.tag-elite   { background: #ffd60a22; color: #ffd60a; border: 1px solid #ffd60a44; }
+.sub-bar { background: var(--bg2); border: 1px solid var(--line2); padding: 12px 14px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; }
+.sub-bar-info { flex: 1; }
+.sub-bar-tier { font-size: .62rem; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 3px; }
+.sub-bar-usage { font-size: .58rem; color: var(--muted); }
+.sub-bar-progress { height: 2px; background: var(--line2); margin-top: 6px; }
+.sub-bar-fill { height: 100%; background: var(--cyan); transition: width .4s; }
+.tag-pending   { background: rgba(255,179,0,.1); color: var(--wait); border: 1px solid rgba(255,179,0,.25); }
+.tag-cancelled { background: rgba(80,80,80,.15); color: #666; border: 1px solid #333; }
+
+/* ─── MOBILE (≤768px) ────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  /* Разрешить скролл на мобилке */
+  html, body { overflow: auto; overflow-x: hidden; }
+
+  /* Структура: header + content + bottom-nav */
+  #app { grid-template-rows: 42px 1fr; padding-bottom: 56px; }
+
+  /* Скрыть горизонтальный тикер, оставить только лого */
+  .ticker { display: none; }
+  #hdr { padding: 0 12px; }
+
+  /* Навигация — нижняя фиксированная панель */
+  #nav {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 500;
+    display: flex; align-items: stretch;
+    border-top: 1px solid var(--line2); border-bottom: none;
+    background: var(--bg2);
+    padding: 0;
+    height: 56px;
+    overflow: hidden;
+  }
+  .nb {
+    flex: 1; flex-direction: column;
+    gap: 2px; padding: 6px 4px;
+    font-size: .48rem;
+    border-bottom: none;
+    border-top: 2px solid transparent;
+    justify-content: center;
+  }
+  .nb.active { border-top-color: var(--cyan); border-bottom: none; }
+  .nb svg { width: 16px; height: 16px; }
+  .nb-dot { top: 3px; right: 3px; }
+
+  /* Контент — скролл на всю высоту */
+  #content { overflow-y: auto; height: 100%; }
+  .panel { padding: 10px 12px; }
+
+  /* AI layout — одна колонка */
+  .ai-layout { grid-template-columns: 1fr; }
+  .ai-sidebar { order: -1; }
+
+  /* KPI 2 колонки */
+  .kpi-grid { grid-template-columns: 1fr 1fr; }
+  .kpi-v { font-size: 1.2rem; }
+
+  /* Pipeline и levels — 1 или 2 колонки */
+  .pipe  { grid-template-columns: 1fr; }
+  .levels { grid-template-columns: 1fr 1fr 1fr; }
+
+  /* Verdict компактнее */
+  .verdict { grid-template-columns: auto 1fr; gap: 10px; padding: 10px 12px; }
+  .vsig { font-size: 2rem; }
+  .vstats { grid-column: 1 / -1; flex-wrap: wrap; gap: 10px; }
+  .vst { min-width: 60px; }
+
+  /* Таблицы — горизонтальный скролл */
+  .twrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .tbl { min-width: 500px; }
+
+  /* Форма — одна колонка */
+  .fg { grid-template-columns: 1fr; }
+  .twocol { grid-template-columns: 1fr; }
+
+  /* Инсайты — 1 колонка */
+  .ins-grid { grid-template-columns: 1fr; }
+
+  /* Чат — над нижней навигацией */
+  .chat-fab {
+    bottom: 68px; right: 12px;
+    padding: 8px 12px;
+  }
+  .chat-fab-label { display: none; }
+  .chat-panel {
+    bottom: 124px; right: 8px; left: 8px; width: auto;
+    max-height: calc(100vh - 180px);
+  }
+
+  /* Меньше полей для экономии места */
+  .ai-bar { gap: 6px; }
+  .vl-result { font-size: .63rem; }
+  .desc { font-size: .64rem; }
+
+  /* Auth страницы */
+  .auth-box { width: calc(100vw - 32px); padding: 24px; }
+}
+
+@media (max-width: 480px) {
+  .kpi-v { font-size: 1rem; }
+  .kpi { padding: 9px 10px; }
+  .vsig { font-size: 1.6rem; }
+  .pipe { grid-template-columns: 1fr; }
+  .levels { grid-template-columns: 1fr 1fr; }
+  .nb { font-size: .42rem; }
+  .nb svg { width: 15px; height: 15px; }
+}
+
+.section-hidden  { opacity:0; transform:translateY(24px); }
+.section-visible { opacity:1; transform:translateY(0); transition: opacity .7s ease, transform .7s ease; }
+
+.feature-card { transition: border-top-color .25s, transform .2s; }
+.feature-card:hover { transform: translateY(-2px); }
+
+.cta-btn { transition: transform .15s, box-shadow .15s; }
+.cta-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,212,255,.3); }
+
+.nav-link:hover { color: #d0d0d0 !important; border-color: #444 !important; }
+.compare-row { transition: background .15s; }
+.compare-row:hover { background: #111 !important; }
+
+.lp-glow  { animation: lp-glow 3s ease infinite; }
+.lp-float { animation: lp-float 4s ease infinite; }
+.lp-pulse { animation: lp-pulse 2s ease infinite; }
+.lp-pulse-d { animation: lp-pulse 2s .5s ease infinite; }
+.lp-scanline { position:absolute; left:0; right:0; height:2px; background:linear-gradient(transparent,rgba(0,212,255,.04),transparent); animation:scanline 8s linear infinite; }
+.lp-ticker { display:flex; gap:40px; animation:ticker 30s linear infinite; white-space:nowrap; }

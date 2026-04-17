@@ -1,16 +1,19 @@
 {
   "name": "kotvuk-ai",
-  "version": "0.1.0",
+  "version": "1.0.0",
+  "description": "KotvukAI — AI-платформа для анализа криптовалютных рынков",
   "private": true,
+  "main": "electron/main.js",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "electron:dev": "electron .",
+    "electron:build": "next build && electron-builder build --win --x64",
+    "electron:build:dir": "next build && electron-builder build --win --x64 --dir"
   },
   "dependencies": {
-    "@napi-rs/canvas": "^0.1.97",
     "@neondatabase/serverless": "^0.9.3",
-    "docx": "^9.6.1",
     "firebase": "^10.12.0",
     "firebase-admin": "^12.2.0",
     "klinecharts": "^9.8.6",
@@ -21,9 +24,55 @@
   },
   "devDependencies": {
     "@types/node": "^20",
-    "@types/node-fetch": "^2.6.11",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "electron": "^41.1.1",
+    "electron-builder": "^26.8.1",
     "typescript": "^5"
+  },
+  "build": {
+    "appId": "com.kotvukai.app",
+    "productName": "KotvukAI",
+    "copyright": "Copyright © 2025 KotvukAI",
+    "directories": {
+      "output": "dist-electron"
+    },
+    "files": [
+      "electron/**/*",
+      "next.config.mjs",
+      "public/**/*",
+      ".next/**/*",
+      "node_modules/**/*",
+      "package.json"
+    ],
+    "extraResources": [],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "electron/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "allowElevation": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "KotvukAI",
+      "language": "1049"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "electron/icon.icns"
+    },
+    "linux": {
+      "target": "AppImage",
+      "icon": "electron/icon.png"
+    }
   }
 }

@@ -1,67 +1,60 @@
-// lib/smc.ts — Enhanced Smart Money Concepts analysis engine
-
 export interface Candle {
   timestamp: number
   open: number; high: number; low: number; close: number; volume: number
 }
 
-// ── Enhanced Order Block ─────────────────────────────────────────────────────
 export interface OrderBlock {
   type: 'bullish' | 'bearish'
   high: number; low: number; mid: number
   timestamp: number
   strength: 'weak' | 'moderate' | 'strong'
   quality: 'A+' | 'A' | 'B' | 'C'
-  impulseSize: number       // % size of impulse after OB
-  touchCount: number        // how many times price revisited
-  isMitigated: boolean      // price entered the OB zone
-  mitigationPct: number     // 0-100: how deep price went into OB
-  ageCandles: number        // candles since formation
-  volume: number            // volume at OB candle
-  relVolume: number         // relative volume vs 20-bar avg
+  impulseSize: number
+  touchCount: number
+  isMitigated: boolean
+  mitigationPct: number
+  ageCandles: number
+  volume: number
+  relVolume: number
 }
 
-// ── Breaker Block ─────────────────────────────────────────────────────────────
 export interface BreakerBlock {
-  type: 'bullish' | 'bearish'   // bullish = broken bearish OB (now acts as support)
+  type: 'bullish' | 'bearish'
   high: number; low: number; mid: number
   timestamp: number
-  breakTimestamp: number         // when it was broken
+  breakTimestamp: number
   strength: 'weak' | 'moderate' | 'strong'
 }
 
-// ── Mitigation Block ──────────────────────────────────────────────────────────
 export interface MitigationBlock {
   type: 'bullish' | 'bearish'
   high: number; low: number
   timestamp: number
-  mitigationPct: number          // % filled (50-99, not fully mitigated)
-  returnProbability: number      // estimated probability of return
+  mitigationPct: number
+  returnProbability: number
 }
 
-// ── Enhanced FVG ──────────────────────────────────────────────────────────────
 export interface FVG {
   type: 'bullish' | 'bearish'
   high: number; low: number; mid: number
-  gapSize: number                // absolute gap size
-  gapPct: number                 // gap as % of price
+  gapSize: number
+  gapPct: number
   startTimestamp: number; endTimestamp: number
   ageCandles: number
   isFilled: boolean
-  fillPct: number                // 0-100
+  fillPct: number
   quality: 'A+' | 'A' | 'B' | 'C'
 }
 
-// ── Liquidity Level ───────────────────────────────────────────────────────────
 export interface LiquidityLevel {
   type: 'buy' | 'sell'
   price: number
+  timestamp: number
   strength: 'weak' | 'moderate' | 'strong'
   touchCount: number
-  isSwept: boolean               // has price swept through this level
+  isSwept: boolean
 }
 
-// ── Full SMC Data ─────────────────────────────────────────────────────────────
 export interface SMCData {
   orderBlocks: OrderBlock[]
   breakerBlocks: BreakerBlock[]
@@ -69,28 +62,28 @@ export interface SMCData {
   fvgs: FVG[]
   liquidityLevels: LiquidityLevel[]
   bosLevel: number | null
-  cob: number | null             // Change of Character level
+  cob: number | null
   trend: 'bullish' | 'bearish' | 'ranging'
   htfBias: 'bullish' | 'bearish' | 'neutral'
-  sweepCount: number             // recent liquidity sweeps (last 10 candles)
-  // Probability model output
+  sweepCount: number
+
   probability: ProbabilityResult
 }
 
 export interface ProbabilityResult {
   scenario: 'LONG' | 'SHORT' | 'NEUTRAL'
-  probability: number           // 0-100
-  confidence: number            // 0-100
-  riskReward: number            // e.g. 2.5
-  expectedR: number             // expected R value
-  recommendation: string        // human-readable action
+  probability: number
+  confidence: number
+  riskReward: number
+  expectedR: number
+  recommendation: string
   factors: {
-    htfStructure: number        // 0-25
-    confluenceZones: number     // 0-20
-    volumeProfile: number       // 0-15
-    temporalContext: number     // 0-15
-    historicalStats: number     // 0-20
-    marketSentiment: number     // 0-5
+    htfStructure: number
+    confluenceZones: number
+    volumeProfile: number
+    temporalContext: number
+    historicalStats: number
+    marketSentiment: number
   }
   alerts: Alert[]
 }
@@ -105,33 +98,20 @@ export interface Alert {
   confidence: number
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// MAIN ENTRY POINT
-// ─────────────────────────────────────────────────────────────────────────────
 export function calcEnhancedSMC(candles: Candle[], fundingRate: number | null = null): SMCData {
-  const recent = candles.slice(-100)
+  const recent = candles
   const price = recent[recent.length - 1].close
 
-  // Volume baseline (20-bar avg)
   const avgVol = recent.slice(-20).reduce((s, c) => s + c.volume, 0) / 20
 
-  // ── Order Blocks ─────────────────────────────────────────────────────────
   const rawOBs = detectOrderBlocks(recent, price, avgVol)
   const { orderBlocks, breakerBlocks, mitigationBlocks } = classifyOBs(rawOBs, recent, price)
 
-  // ── FVGs ──────────────────────────────────────────────────────────────────
   const fvgs = detectFVGs(recent, price)
 
-  // ── Liquidity Levels ─────────────────────────────────────────────────────
   const liquidityLevels = detectLiquidity(recent, price)
-
-  // ── BOS / COB / Trend ────────────────────────────────────────────────────
   const { trend, bosLevel, cob, htfBias } = detectStructure(recent)
-
-  // ── Sweeps ───────────────────────────────────────────────────────────────
   const sweepCount = countRecentSweeps(recent.slice(-10), liquidityLevels)
-
-  // ── Probability Model ─────────────────────────────────────────────────────
   const probability = calcProbability({
     price, trend, htfBias,
     orderBlocks, fvgs, liquidityLevels,
@@ -139,60 +119,137 @@ export function calcEnhancedSMC(candles: Candle[], fundingRate: number | null = 
   })
 
   return {
-    orderBlocks: orderBlocks.slice(0, 6),
-    breakerBlocks: breakerBlocks.slice(0, 4),
-    mitigationBlocks: mitigationBlocks.slice(0, 3),
-    fvgs: fvgs.slice(0, 6),
-    liquidityLevels: liquidityLevels.slice(0, 8),
+    orderBlocks,
+    breakerBlocks,
+    mitigationBlocks,
+    fvgs,
+    liquidityLevels,
     bosLevel, cob, trend, htfBias, sweepCount,
     probability,
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// ORDER BLOCK DETECTION
-// ─────────────────────────────────────────────────────────────────────────────
 interface RawOB {
   type: 'bullish' | 'bearish'
   high: number; low: number; mid: number
   timestamp: number; index: number
+  bosIndex: number
   impulseSize: number; volume: number; relVolume: number
 }
 
-function detectOrderBlocks(candles: Candle[], price: number, avgVol: number): RawOB[] {
+function calcATR(candles: Candle[], period = 200): number[] {
+  const atrs: number[] = []
+  let prev = 0
+  for (let i = 0; i < candles.length; i++) {
+    const tr = i === 0
+      ? candles[i].high - candles[i].low
+      : Math.max(
+          candles[i].high - candles[i].low,
+          Math.abs(candles[i].high - candles[i - 1].close),
+          Math.abs(candles[i].low  - candles[i - 1].close),
+        )
+    if (i === 0) { prev = tr; atrs.push(tr); continue }
+    const k = i < period ? 1 / (i + 1) : 1 / period
+    prev = prev * (1 - k) + tr * k
+    atrs.push(prev)
+  }
+  return atrs
+}
+
+function computeParsed(candles: Candle[]) {
+  // Используем реальные high/low без инверсии — инверсия давала ложные OB
+  return {
+    parsedHighs: candles.map(c => c.high),
+    parsedLows:  candles.map(c => c.low),
+  }
+}
+
+function detectPivots(candles: Candle[], N: number) {
+  const highs: Array<{ idx: number; price: number; ts: number }> = []
+  const lows:  Array<{ idx: number; price: number; ts: number }> = []
+  for (let i = N; i < candles.length - N; i++) {
+    let ph = true, pl = true
+    for (let j = 1; j <= N; j++) {
+      if (candles[i - j].high >= candles[i].high || candles[i + j].high >= candles[i].high) { ph = false }
+      if (candles[i - j].low  <= candles[i].low  || candles[i + j].low  <= candles[i].low)  { pl = false }
+    }
+    if (ph) highs.push({ idx: i, price: candles[i].high, ts: candles[i].timestamp })
+    if (pl) lows.push({  idx: i, price: candles[i].low,  ts: candles[i].timestamp })
+  }
+  return { highs, lows }
+}
+
+function detectOrderBlocks(candles: Candle[], _price: number, avgVol: number): RawOB[] {
   const obs: RawOB[] = []
 
-  for (let i = 2; i < candles.length - 4; i++) {
+  // Адаптивный N: чем выше волатильность, тем больше свечей нужно для подтверждения пивота
+  const atrs = calcATR(candles)
+  const lastATR = atrs[atrs.length - 1] || 1
+  const lastPrice = candles[candles.length - 1].close || 1
+  const relVol = lastATR / lastPrice
+  const N = relVol > 0.015 ? 5 : relVol > 0.005 ? 3 : 2
+
+  const { parsedHighs, parsedLows } = computeParsed(candles)
+  const { highs: pivHighs, lows: pivLows } = detectPivots(candles, N)
+
+  type PE = { idx: number; type: 'H' | 'L'; price: number; ts: number }
+  const events: PE[] = [
+    ...pivHighs.map(p => ({ idx: p.idx, type: 'H' as const, price: p.price, ts: p.ts })),
+    ...pivLows.map(p  => ({ idx: p.idx, type: 'L' as const, price: p.price, ts: p.ts })),
+  ].sort((a, b) => a.idx - b.idx)
+
+  let swingHigh: { idx: number; price: number; crossed: boolean } | null = null
+  let swingLow:  { idx: number; price: number; crossed: boolean } | null = null
+  let evtPtr = 0
+
+  for (let i = N; i < candles.length; i++) {
     const c = candles[i]
-    const isBearishCandle = c.close < c.open
-    const isBullishCandle = c.close > c.open
 
-    // Measure impulse over next 3 candles
-    const next3 = candles.slice(i + 1, i + 4)
-    const impulseHigh = Math.max(...next3.map(x => x.high))
-    const impulseLow  = Math.min(...next3.map(x => x.low))
-    const impulseSize = Math.abs(impulseHigh - impulseLow) / c.close * 100
+    while (evtPtr < events.length && events[evtPtr].idx + N <= i) {
+      const ev = events[evtPtr++]
+      if (ev.type === 'H') swingHigh = { idx: ev.idx, price: ev.price, crossed: false }
+      else                  swingLow  = { idx: ev.idx, price: ev.price, crossed: false }
+    }
 
-    if (impulseSize < 0.3) continue // too small
+    if (swingHigh && !swingHigh.crossed && c.close > swingHigh.price) {
+      swingHigh.crossed = true
+      const from = swingHigh.idx, to = i
 
-    const relVol = c.volume / avgVol
+      let minPL = Infinity, obIdx = from
+      for (let j = from; j <= to; j++) {
+        if (parsedLows[j] < minPL) { minPL = parsedLows[j]; obIdx = j }
+      }
 
-    // Bullish OB: bearish candle before upward impulse
-    if (isBearishCandle && impulseHigh > c.high * 1.001) {
+      const obH = Math.max(parsedHighs[obIdx], parsedLows[obIdx])
+      const obL = Math.min(parsedHighs[obIdx], parsedLows[obIdx])
       obs.push({
         type: 'bullish',
-        high: c.high, low: c.low, mid: (c.high + c.low) / 2,
-        timestamp: c.timestamp, index: i,
-        impulseSize, volume: c.volume, relVolume: relVol,
+        high: obH, low: obL, mid: (obH + obL) / 2,
+        timestamp: candles[obIdx].timestamp, index: obIdx, bosIndex: i,
+        impulseSize: Math.abs(c.close - candles[from].close) / candles[from].close * 100,
+        volume: candles[obIdx].volume,
+        relVolume: candles[obIdx].volume / avgVol,
       })
     }
-    // Bearish OB: bullish candle before downward impulse
-    else if (isBullishCandle && impulseLow < c.low * 0.999) {
+
+    if (swingLow && !swingLow.crossed && c.close < swingLow.price) {
+      swingLow.crossed = true
+      const from = swingLow.idx, to = i
+
+      let maxPH = -Infinity, obIdx = from
+      for (let j = from; j <= to; j++) {
+        if (parsedHighs[j] > maxPH) { maxPH = parsedHighs[j]; obIdx = j }
+      }
+
+      const obH = Math.max(parsedHighs[obIdx], parsedLows[obIdx])
+      const obL = Math.min(parsedHighs[obIdx], parsedLows[obIdx])
       obs.push({
         type: 'bearish',
-        high: c.high, low: c.low, mid: (c.high + c.low) / 2,
-        timestamp: c.timestamp, index: i,
-        impulseSize, volume: c.volume, relVolume: relVol,
+        high: obH, low: obL, mid: (obH + obL) / 2,
+        timestamp: candles[obIdx].timestamp, index: obIdx, bosIndex: i,
+        impulseSize: Math.abs(candles[from].close - c.close) / candles[from].close * 100,
+        volume: candles[obIdx].volume,
+        relVolume: candles[obIdx].volume / avgVol,
       })
     }
   }
@@ -211,10 +268,11 @@ function classifyOBs(
   const totalCandles = candles.length
 
   for (const ob of rawOBs) {
-    const future = candles.slice(ob.index + 4)
-    const ageCandles = totalCandles - ob.index - 4
 
-    // Count touches (price entering OB zone)
+    const startScan = Math.max(ob.bosIndex + 1, ob.index + 1)
+    const future = candles.slice(startScan)
+    const ageCandles = totalCandles - startScan
+
     let touchCount = 0
     let minFill = ob.type === 'bullish' ? ob.high : ob.low
     let maxFill = ob.type === 'bullish' ? ob.high : ob.low
@@ -232,12 +290,10 @@ function classifyOBs(
         else maxFill = Math.max(maxFill, fc.high)
       }
 
-      // Check if OB is broken (price closes beyond OB)
-      if (ob.type === 'bullish' && fc.close < ob.low) { isBroken = true; breakIdx = j; break }
-      if (ob.type === 'bearish' && fc.close > ob.high) { isBroken = true; breakIdx = j; break }
+      if (ob.type === 'bullish' && fc.low  < ob.low)  { isBroken = true; breakIdx = j; break }
+      if (ob.type === 'bearish' && fc.high > ob.high) { isBroken = true; breakIdx = j; break }
     }
 
-    // Calculate mitigation %
     const obSize = ob.high - ob.low
     let mitigationPct = 0
     if (ob.type === 'bullish' && obSize > 0) {
@@ -246,15 +302,12 @@ function classifyOBs(
       mitigationPct = Math.min(100, ((maxFill - ob.low) / obSize) * 100)
     }
 
-    // Is currently mitigated (price inside zone)
     const isMitigated = ob.type === 'bullish'
       ? (price <= ob.high && price >= ob.low)
       : (price >= ob.low && price <= ob.high)
 
-    // Strength based on impulse size
     const strength: OrderBlock['strength'] = ob.impulseSize > 2 ? 'strong' : ob.impulseSize > 0.8 ? 'moderate' : 'weak'
 
-    // Quality grade
     const isFresh = touchCount === 0
     const highRelVol = ob.relVolume > 1.5
     const isRecent = ageCandles < 20
@@ -265,16 +318,19 @@ function classifyOBs(
     else quality = 'C'
 
     if (isBroken) {
-      // Becomes a Breaker Block
-      breakerBlocks.push({
-        type: ob.type === 'bullish' ? 'bearish' : 'bullish', // flip
-        high: ob.high, low: ob.low, mid: ob.mid,
-        timestamp: ob.timestamp,
-        breakTimestamp: future[breakIdx]?.timestamp ?? ob.timestamp,
-        strength,
-      })
-    } else if (mitigationPct >= 50 && mitigationPct < 100) {
-      // Partial mitigation — Mitigation Block
+
+      if (ob.bosIndex >= candles.length - 150) {
+        breakerBlocks.push({
+          type: ob.type === 'bullish' ? 'bearish' : 'bullish',
+          high: ob.high, low: ob.low, mid: ob.mid,
+          timestamp: ob.timestamp,
+          breakTimestamp: future[breakIdx]?.timestamp ?? ob.timestamp,
+          strength,
+        })
+      }
+
+    } else if (mitigationPct >= 80 && mitigationPct < 100) {
+
       mitigationBlocks.push({
         type: ob.type, high: ob.high, low: ob.low,
         timestamp: ob.timestamp, mitigationPct,
@@ -291,16 +347,12 @@ function classifyOBs(
     }
   }
 
-  // Sort: quality A+ > A > B > C, then by recency
   const qRank = (q: string) => ({ 'A+': 4, 'A': 3, 'B': 2, 'C': 1 }[q] ?? 0)
   orderBlocks.sort((a, b) => qRank(b.quality) - qRank(a.quality) || b.timestamp - a.timestamp)
 
   return { orderBlocks, breakerBlocks, mitigationBlocks }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// FVG DETECTION
-// ─────────────────────────────────────────────────────────────────────────────
 function detectFVGs(candles: Candle[], price: number): FVG[] {
   const fvgs: FVG[] = []
 
@@ -309,13 +361,11 @@ function detectFVGs(candles: Candle[], price: number): FVG[] {
     const curr = candles[i]
     const next = candles[i + 1]
 
-    // Bullish FVG: gap between prev.high and next.low
     const bullGap = next.low - prev.high
     if (bullGap > 0 && bullGap / curr.close > 0.001) {
       const gapLow = prev.high, gapHigh = next.low, gapMid = (gapLow + gapHigh) / 2
       const ageCandles = candles.length - 1 - i
 
-      // Check fill
       let fillPct = 0
       for (let j = i + 2; j < candles.length; j++) {
         const fc = candles[j]
@@ -335,7 +385,6 @@ function detectFVGs(candles: Candle[], price: number): FVG[] {
       })
     }
 
-    // Bearish FVG: gap between next.high and prev.low
     const bearGap = prev.low - next.high
     if (bearGap > 0 && bearGap / curr.close > 0.001) {
       const gapHigh = prev.low, gapLow = next.high, gapMid = (gapLow + gapHigh) / 2
@@ -361,22 +410,16 @@ function detectFVGs(candles: Candle[], price: number): FVG[] {
     }
   }
 
-  // Filter: unfilled FVGs near price, sort by recency
   return fvgs
     .filter(f => !f.isFilled)
     .sort((a, b) => a.ageCandles - b.ageCandles)
-    .slice(0, 8)
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// LIQUIDITY DETECTION
-// ─────────────────────────────────────────────────────────────────────────────
 function detectLiquidity(candles: Candle[], price: number): LiquidityLevel[] {
   const levels: LiquidityLevel[] = []
-  const tol = price * 0.003  // 0.3% tolerance
-  const recent20 = candles.slice(-30)
+  const tol = price * 0.003
+  const recent20 = candles.slice(-200)
 
-  // Equal Highs → sell liquidity (stops above)
   const highs = recent20.map((c, i) => ({ price: c.high, idx: i, ts: c.timestamp }))
   for (let i = 0; i < highs.length; i++) {
     const matches = highs.filter((h, j) => j !== i && Math.abs(h.price - highs[i].price) < tol)
@@ -385,8 +428,11 @@ function detectLiquidity(candles: Candle[], price: number): LiquidityLevel[] {
       if (!levels.find(l => l.type === 'sell' && Math.abs(l.price - lvlPrice) < tol)) {
         const touchCount = matches.length + 1
         const isSwept = candles.slice(-5).some(c => c.high > lvlPrice)
+
+        const allTs = [highs[i], ...matches].map(h => h.ts)
+        const ts = Math.min(...allTs)
         levels.push({
-          type: 'sell', price: lvlPrice,
+          type: 'sell', price: lvlPrice, timestamp: ts,
           strength: touchCount >= 3 ? 'strong' : touchCount === 2 ? 'moderate' : 'weak',
           touchCount, isSwept,
         })
@@ -394,7 +440,6 @@ function detectLiquidity(candles: Candle[], price: number): LiquidityLevel[] {
     }
   }
 
-  // Equal Lows → buy liquidity (stops below)
   const lows = recent20.map((c, i) => ({ price: c.low, idx: i, ts: c.timestamp }))
   for (let i = 0; i < lows.length; i++) {
     const matches = lows.filter((l, j) => j !== i && Math.abs(l.price - lows[i].price) < tol)
@@ -403,8 +448,10 @@ function detectLiquidity(candles: Candle[], price: number): LiquidityLevel[] {
       if (!levels.find(l => l.type === 'buy' && Math.abs(l.price - lvlPrice) < tol)) {
         const touchCount = matches.length + 1
         const isSwept = candles.slice(-5).some(c => c.low < lvlPrice)
+        const allTs = [lows[i], ...matches].map(l => l.ts)
+        const ts = Math.min(...allTs)
         levels.push({
-          type: 'buy', price: lvlPrice,
+          type: 'buy', price: lvlPrice, timestamp: ts,
           strength: touchCount >= 3 ? 'strong' : touchCount === 2 ? 'moderate' : 'weak',
           touchCount, isSwept,
         })
@@ -412,18 +459,13 @@ function detectLiquidity(candles: Candle[], price: number): LiquidityLevel[] {
     }
   }
 
-  // Sort: strong first, then by proximity to price
   return levels
     .sort((a, b) => {
       const sRank = (s: string) => ({ strong: 3, moderate: 2, weak: 1 }[s] ?? 0)
       return sRank(b.strength) - sRank(a.strength)
     })
-    .slice(0, 8)
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// MARKET STRUCTURE
-// ─────────────────────────────────────────────────────────────────────────────
 function detectStructure(candles: Candle[]): {
   trend: SMCData['trend']; bosLevel: number | null; cob: number | null; htfBias: SMCData['htfBias']
 } {
@@ -431,23 +473,19 @@ function detectStructure(candles: Candle[]): {
   const last30 = candles.slice(-30)
   const last5  = candles.slice(-5)
 
-  // Short-term: last 10 candles
   const hhs = last10.filter((c, i) => i > 0 && c.high > last10[i - 1].high).length
   const lls = last10.filter((c, i) => i > 0 && c.low < last10[i - 1].low).length
 
-  // HTF bias: last 30 candles
   const htfHHs = last30.filter((c, i) => i > 0 && c.high > last30[i - 1].high).length
   const htfLLs = last30.filter((c, i) => i > 0 && c.low < last30[i - 1].low).length
   const htfBias: SMCData['htfBias'] = htfHHs > htfLLs * 1.4 ? 'bullish' : htfLLs > htfHHs * 1.4 ? 'bearish' : 'neutral'
 
   const trend: SMCData['trend'] = hhs > 6 ? 'bullish' : lls > 6 ? 'bearish' : 'ranging'
 
-  // BOS level = most recent swing high/low
   const bosLevel = trend !== 'ranging' ? parseFloat(
     (trend === 'bullish' ? Math.max(...last10.map(c => c.high)) : Math.min(...last10.map(c => c.low))).toFixed(2)
   ) : null
 
-  // COB (Change of Character): recent candles broke against trend
   const prevTrend = last30.slice(0, 20)
   const prevHHs = prevTrend.filter((c, i) => i > 0 && c.high > prevTrend[i - 1].high).length
   const prevLLs = prevTrend.filter((c, i) => i > 0 && c.low < prevTrend[i - 1].low).length
@@ -473,9 +511,6 @@ function countRecentSweeps(recentCandles: Candle[], levels: LiquidityLevel[]): n
   return sweeps
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// PROBABILITY MODEL — 6 factors
-// ─────────────────────────────────────────────────────────────────────────────
 interface ProbInput {
   price: number
   trend: SMCData['trend']
@@ -493,8 +528,7 @@ interface ProbInput {
 function calcProbability(inp: ProbInput): ProbabilityResult {
   const { price, trend, htfBias, orderBlocks, fvgs, liquidityLevels, candles, avgVol, fundingRate, sweepCount } = inp
 
-  // ── Factor 1: HTF Structure (max 25) ─────────────────────────────────────
-  let f1 = 10 // baseline neutral
+  let f1 = 10
   if (htfBias === 'bullish' && trend === 'bullish') f1 = 25
   else if (htfBias === 'bearish' && trend === 'bearish') f1 = 25
   else if (htfBias !== 'neutral' && trend === 'ranging') f1 = 15
@@ -502,8 +536,6 @@ function calcProbability(inp: ProbInput): ProbabilityResult {
 
   const htfDir: 'LONG' | 'SHORT' | 'NEUTRAL' = htfBias === 'bullish' ? 'LONG' : htfBias === 'bearish' ? 'SHORT' : 'NEUTRAL'
 
-  // ── Factor 2: Confluence Zones (max 20) ──────────────────────────────────
-  // Count how many zones (OB + FVG + S/R) are near current price (within 1%)
   const nearZoneThreshold = price * 0.01
   const nearBullOBs = orderBlocks.filter(o => o.type === 'bullish' && price - o.high < nearZoneThreshold && price > o.low).length
   const nearBearOBs = orderBlocks.filter(o => o.type === 'bearish' && o.low - price < nearZoneThreshold && price < o.high).length
@@ -511,51 +543,44 @@ function calcProbability(inp: ProbInput): ProbabilityResult {
   const confluence = nearBullOBs + nearBearOBs + nearFVGs
   let f2 = Math.min(20, confluence * 6 + (orderBlocks.some(o => o.quality === 'A+') ? 4 : 0))
 
-  // ── Factor 3: Volume Profile (max 15) ─────────────────────────────────────
   const last5Vols = candles.slice(-5).map(c => c.volume)
   const recentAvgVol = last5Vols.reduce((a, b) => a + b, 0) / 5
   const volRatio = recentAvgVol / avgVol
-  let f3 = 7 // baseline
+  let f3 = 7
   if (volRatio > 1.5) f3 = 15
   else if (volRatio > 1.2) f3 = 12
   else if (volRatio > 0.8) f3 = 7
-  else f3 = 4 // low volume — unreliable
+  else f3 = 4
 
-  // ── Factor 4: Temporal Context (max 15) ───────────────────────────────────
   const hour = new Date().getUTCHours()
-  // Key sessions: London (7-16), NY (13-21), Asia (0-8)
+
   const inLondon = hour >= 7 && hour < 16
   const inNY = hour >= 13 && hour < 21
   const inAsiaOpen = hour >= 0 && hour < 3
-  let f4 = 8 // baseline
-  if (inLondon && inNY) f4 = 15  // overlap — highest volatility
+  let f4 = 8
+  if (inLondon && inNY) f4 = 15
   else if (inLondon || inNY) f4 = 12
   else if (inAsiaOpen) f4 = 8
-  else f4 = 5  // dead hours
+  else f4 = 5
 
-  // Liquidity sweeps boost f4 (swept liquidity = likely reversal/continuation)
   if (sweepCount >= 2) f4 = Math.min(15, f4 + 3)
 
-  // ── Factor 5: Historical Stats (max 20) ───────────────────────────────────
-  // Proxy: A+/A quality OBs with unmitigated status = high historical win rate
   const aPlusCount = orderBlocks.filter(o => o.quality === 'A+').length
   const aCount = orderBlocks.filter(o => o.quality === 'A').length
   const freshFVGs = fvgs.filter(f => f.quality === 'A+' || f.quality === 'A').length
   let f5 = Math.min(20, aPlusCount * 8 + aCount * 4 + freshFVGs * 3)
-  if (f5 < 4) f5 = 4  // min baseline
+  if (f5 < 4) f5 = 4
 
-  // ── Factor 6: Market Sentiment (max 5) ───────────────────────────────────
-  let f6 = 2 // neutral baseline
+  let f6 = 2
   if (fundingRate !== null) {
-    if (fundingRate > 0.05) f6 = htfDir === 'SHORT' ? 4 : 1  // overheated longs: bearish bias
-    else if (fundingRate < -0.01) f6 = htfDir === 'LONG' ? 4 : 1  // negative: bearish sentiment
-    else f6 = 3  // neutral funding
+    if (fundingRate > 0.05) f6 = htfDir === 'SHORT' ? 4 : 1
+    else if (fundingRate < -0.01) f6 = htfDir === 'LONG' ? 4 : 1
+    else f6 = 3
   }
 
   const totalScore = f1 + f2 + f3 + f4 + f5 + f6
   const probability = Math.min(95, Math.max(20, totalScore))
 
-  // Determine scenario direction
   let scenario: ProbabilityResult['scenario']
   if (probability >= 60 && htfDir !== 'NEUTRAL') scenario = htfDir
   else if (probability >= 45) scenario = htfDir === 'NEUTRAL' ? 'NEUTRAL' : htfDir
@@ -563,13 +588,12 @@ function calcProbability(inp: ProbInput): ProbabilityResult {
 
   const confidence = Math.round(probability * 0.95)
 
-  // Estimate R:R from nearest OB/FVG vs nearest liquidity
   const nearestBullOB = orderBlocks.filter(o => o.type === 'bullish' && o.high < price).sort((a, b) => b.high - a.high)[0]
   const nearestBearOB = orderBlocks.filter(o => o.type === 'bearish' && o.low > price).sort((a, b) => a.low - b.low)[0]
   const nearestSellLiq = liquidityLevels.filter(l => l.type === 'sell' && l.price > price).sort((a, b) => a.price - b.price)[0]
   const nearestBuyLiq  = liquidityLevels.filter(l => l.type === 'buy' && l.price < price).sort((a, b) => b.price - a.price)[0]
 
-  let riskReward = 1.5 // default
+  let riskReward = 1.5
   if (scenario === 'LONG' && nearestBullOB && nearestSellLiq) {
     const reward = nearestSellLiq.price - price
     const risk   = price - nearestBullOB.low
@@ -582,7 +606,6 @@ function calcProbability(inp: ProbInput): ProbabilityResult {
   riskReward = Math.max(0.5, Math.min(10, riskReward))
   const expectedR = parseFloat((riskReward * (probability / 100) - (1 - probability / 100)).toFixed(2))
 
-  // Recommendation
   let recommendation: string
   if (probability >= 75 && scenario !== 'NEUTRAL') {
     recommendation = `Сильный сетап ${scenario} — входить при подтверждении на младшем ТФ`
@@ -594,10 +617,11 @@ function calcProbability(inp: ProbInput): ProbabilityResult {
     recommendation = 'Низкая вероятность — пропустить этот сетап'
   }
 
-  // ── Alerts ────────────────────────────────────────────────────────────────
+  const pair_placeholder = (s: string) =>
+    s === 'LONG' ? '🟢 LONG' : s === 'SHORT' ? '🔴 SHORT' : '⚪ NEUTRAL'
+
   const alerts: Alert[] = []
 
-  // Stage 1 — Watchlist: good HTF + forming confluence
   if (f1 >= 15 && probability >= 45) {
     alerts.push({
       stage: 1, level: 'watchlist', color: 'yellow',
@@ -606,7 +630,6 @@ function calcProbability(inp: ProbInput): ProbabilityResult {
     })
   }
 
-  // Stage 2 — Setup Ready: all criteria met
   if (probability >= 60 && riskReward >= 1.5 && confluence >= 2) {
     alerts.push({
       stage: 2, level: 'setup_ready', color: 'orange',
@@ -615,7 +638,6 @@ function calcProbability(inp: ProbInput): ProbabilityResult {
     })
   }
 
-  // Stage 3 — Execute: fresh sweep + OB touch
   if (sweepCount >= 1 && probability >= 70 && (nearBullOBs > 0 || nearBearOBs > 0)) {
     alerts.push({
       stage: 3, level: 'execute', color: scenario === 'LONG' ? 'green' : 'red',
@@ -631,17 +653,38 @@ function calcProbability(inp: ProbInput): ProbabilityResult {
   }
 }
 
-function pair_placeholder(s: string) {
-  return s === 'LONG' ? '🟢 LONG' : s === 'SHORT' ? '🔴 SHORT' : '⚪ NEUTRAL'
-}
+/**
+ * Оценка надёжности Order Block: 0-100.
+ * Чем выше — тем выше вероятность отработки зоны.
+ */
+export function scoreOrderBlock(ob: OrderBlock): {
+  score: number
+  factors: Record<string, number>
+  verdict: string
+} {
+  const f: Record<string, number> = {}
 
-// ── Legacy compat (used by existing ollama.ts SMCData interface) ──────────────
-export function toOllamaFormat(smc: SMCData) {
-  return {
-    orderBlocks: smc.orderBlocks.map(o => ({ type: o.type, high: o.high, low: o.low, timestamp: o.timestamp })),
-    fvgs: smc.fvgs.map(f => ({ type: f.type, high: f.high, low: f.low, startTimestamp: f.startTimestamp, endTimestamp: f.endTimestamp })),
-    liquidityLevels: smc.liquidityLevels.map(l => ({ type: l.type, price: l.price })),
-    bosLevel: smc.bosLevel,
-    trend: smc.trend,
-  }
+  // Нетронутость (свежесть)
+  f.freshness = ob.touchCount === 0 ? 30 : ob.touchCount === 1 ? 15 : ob.touchCount === 2 ? 5 : 0
+
+  // Относительный объём на формировании
+  f.volume = ob.relVolume >= 2.5 ? 20 : ob.relVolume >= 2.0 ? 17 : ob.relVolume >= 1.5 ? 13 : ob.relVolume >= 1.0 ? 7 : 2
+
+  // Импульс от зоны (% движения)
+  f.impulse = ob.impulseSize >= 3 ? 20 : ob.impulseSize >= 2 ? 15 : ob.impulseSize >= 1 ? 9 : 3
+
+  // Свежесть по возрасту (свечей назад)
+  f.recency = ob.ageCandles <= 5 ? 15 : ob.ageCandles <= 15 ? 11 : ob.ageCandles <= 30 ? 7 : ob.ageCandles <= 60 ? 4 : 1
+
+  // Бонус за качество (A+/A/B/C)
+  f.quality = ob.quality === 'A+' ? 15 : ob.quality === 'A' ? 10 : ob.quality === 'B' ? 3 : 0
+
+  const score = Math.min(100, Math.round(Object.values(f).reduce((a, b) => a + b, 0)))
+  const verdict =
+    score >= 80 ? '🟢 Высокая надёжность' :
+    score >= 60 ? '🟡 Умеренная надёжность' :
+    score >= 40 ? '🟠 Слабая надёжность' :
+                  '🔴 Низкая надёжность'
+
+  return { score, factors: f, verdict }
 }

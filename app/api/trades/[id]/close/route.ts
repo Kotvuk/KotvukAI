@@ -1,17 +1,23 @@
 export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { getUser } from '@/lib/auth-helper'
-import { closeTrade, getTradeById } from '@/lib/db'
+import { closeTrade, cancelTrade, getTradeById } from '@/lib/db'
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   const user = await getUser(req)
   if (!user) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 })
 
-  const { pnl, pnl_pct } = await req.json().catch(() => ({}))
+  const body = await req.json().catch(() => ({}))
+  const { pnl, pnl_pct, cancel } = body as { pnl?: number; pnl_pct?: number; cancel?: boolean }
+
+  if (cancel) {
+    await cancelTrade(parseInt(params.id), user.id)
+    return NextResponse.json({ ok: true })
+  }
+
   let finalPnl: number | null = pnl ?? null
   let finalPnlPct: number | null = pnl_pct ?? null
 
-  // Auto-calculate PnL from current Binance price if not supplied
   if (finalPnl === null) {
     try {
       const trade = await getTradeById(parseInt(params.id), user.id)

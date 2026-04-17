@@ -13,15 +13,15 @@ interface AuthCtx {
 const AuthContext = createContext<AuthCtx>({ user: null, loading: true, logout: async () => {}, getValidToken: async () => null })
 
 async function setTokenCookie(u: User) {
-  const token = await u.getIdToken(true) // force refresh
+  const token = await u.getIdToken(true)
   document.cookie = `fb_token=${token}; path=/; max-age=3600; SameSite=Strict`
   return token
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
-  const userRef = useRef<User | null>(null)
+  const [user, setUser] = useState<User | null>(auth.currentUser)
+  const [loading, setLoading] = useState(!auth.currentUser)
+  const userRef = useRef<User | null>(auth.currentUser)
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (u) => {
@@ -29,8 +29,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       userRef.current = u
       if (u) {
         const token = await setTokenCookie(u)
-        // Sync user to DB
-        await fetch('/api/auth/sync', {
+        fetch('/api/auth/sync', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ token }),
@@ -41,7 +40,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false)
     })
 
-    // Refresh token every 50 minutes (Firebase tokens expire in 60 min)
     const refreshInterval = setInterval(async () => {
       if (userRef.current) await setTokenCookie(userRef.current)
     }, 50 * 60 * 1000)

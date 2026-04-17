@@ -1,6 +1,5 @@
 import { neon, type NeonQueryFunction } from '@neondatabase/serverless'
 
-// Lazy initialization — does not throw at build time when env var is absent
 let _sql: NeonQueryFunction<false, false> | null = null
 
 function getSQL(): NeonQueryFunction<false, false> {
@@ -11,8 +10,6 @@ function getSQL(): NeonQueryFunction<false, false> {
   return _sql
 }
 
-// Proxy so call sites can use `sql\`...\`` as before
-// IMPORTANT: target must be a function for the apply trap to work with tagged templates
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const sql: NeonQueryFunction<false, false> = new Proxy(function () {} as any, {
   apply(_t, _this, args) {
@@ -24,14 +21,16 @@ export const sql: NeonQueryFunction<false, false> = new Proxy(function () {} as 
   },
 })
 
-// ── Types ────────────────────────────────────────────────────────────────────
-
 export interface User {
   id: number
   firebase_uid: string
   email: string | null
   nickname: string | null
   lang: string
+  ai_trade_amount: number   // сумма AI-сделки в USDT (default 100)
+  ai_max_leverage: number   // макс плечо для AI-сделок (default 20)
+  ai_balance?: number       // депозит для расчёта риска (default 1000)
+  ai_risk_per_trade?: number // риск на сделку в % (default 1.0)
   created_at: string
 }
 
@@ -64,11 +63,31 @@ export interface Trade {
   tp_price: number | null
   sl_price: number | null
   leverage: number
-  status: 'open' | 'closed'
+  status: 'open' | 'closed' | 'pending' | 'cancelled'
+  limit_price: number | null   // цена триггера для pending ордеров
+  expires_at: string | null    // авто-отмена через 7 дней
+  account_type: 'user' | 'ai'
   pnl: number | null
   pnl_pct: number | null
   closed_at: string | null
   created_at: string
+}
+
+export interface Subscription {
+  id: number
+  user_id: number
+  tier: 'free' | 'starter' | 'pro' | 'elite'
+  analyses_today: number
+  last_reset_date: string   // DATE
+  expires_at: string | null
+  created_at: string
+}
+
+export const SUBSCRIPTION_LIMITS: Record<string, number> = {
+  free:    3,
+  starter: 10,
+  pro:     30,
+  elite:   100,
 }
 
 export interface Notification {
@@ -79,7 +98,68 @@ export interface Notification {
   created_at: string
 }
 
-// ── User helpers ──────────────────────────────────────────────────────────────
+export interface LevelAlert {
+  id: number
+  user_id: number
+  pair: string
+  zone_type: string
+  price_high: number
+  price_low: number
+  label: string | null
+  is_triggered: boolean
+  triggered_at: string | null
+  created_at: string
+}
+
+export async function getLevelAlerts(userId: number): Promise<LevelAlert[]> {
+  const rows = await sql`
+    SELECT * FROM level_alerts
+    WHERE user_id = ${userId} AND is_triggered = FALSE
+    ORDER BY created_at DESC LIMIT 50
+  `
+  return rows as LevelAlert[]
+}
+
+export async function createLevelAlert(userId: number, data: {
+  pair: string; zone_type: string; price_high: number; price_low: number; label?: string
+}): Promise<LevelAlert> {
+  const rows = await sql`
+    INSERT INTO level_alerts (user_id, pair, zone_type, price_high, price_low, label)
+    VALUES (${userId}, ${data.pair}, ${data.zone_type}, ${data.price_high}, ${data.price_low}, ${data.label ?? null})
+    RETURNING *
+  `
+  return rows[0] as LevelAlert
+}
+
+export async function deleteLevelAlert(id: number, userId: number): Promise<boolean> {
+  const rows = await sql`
+    DELETE FROM level_alerts WHERE id = ${id} AND user_id = ${userId} RETURNING id
+  `
+  return rows.length > 0
+}
+
+export async function triggerLevelAlert(id: number, userId: number, pair: string, label: string | null): Promise<void> {
+  await sql`
+    UPDATE level_alerts SET is_triggered = TRUE, triggered_at = NOW()
+    WHERE id = ${id} AND user_id = ${userId}
+  `
+  const msg = `🔔 Цена вошла в зону: ${label || pair}`
+  await sql`INSERT INTO notifications (user_id, message) VALUES (${userId}, ${msg})`
+}
+
+export async function checkAndTriggerAlerts(userId: number, prices: Record<string, number>): Promise<number> {
+  const alerts = await getLevelAlerts(userId)
+  let triggered = 0
+  for (const alert of alerts) {
+    const price = prices[alert.pair]
+    if (price === undefined) continue
+    if (price >= alert.price_low && price <= alert.price_high) {
+      await triggerLevelAlert(alert.id, userId, alert.pair, alert.label)
+      triggered++
+    }
+  }
+  return triggered
+}
 
 export async function upsertUser(firebaseUid: string, email: string): Promise<User> {
   const rows = await sql`
@@ -96,8 +176,6 @@ export async function getUserByFirebaseUid(uid: string): Promise<User | null> {
   return (rows[0] as User) || null
 }
 
-// ── Signal helpers ────────────────────────────────────────────────────────────
-
 export async function saveSignal(userId: number, data: Partial<Signal>) {
   const rows = await sql`
     INSERT INTO signals (
@@ -107,19 +185,23 @@ export async function saveSignal(userId: number, data: Partial<Signal>) {
       ${userId}, ${data.pair!}, ${data.timeframe!}, ${data.final_verdict ?? null},
       ${data.final_confidence ?? null}, ${data.final_entry ?? null},
       ${data.final_tp ?? null}, ${data.final_sl ?? null},
-      ${data.final_leverage ?? null}, ${data.final_risk_score ?? null},
+      ${data.final_leverage ?? null}, ${data.final_risk_score != null ? Math.round(data.final_risk_score) : null},
       ${JSON.stringify(data.raw_response ?? {})}
     ) RETURNING *
   `
   return rows[0] as Signal
 }
 
-export async function getSignals(userId: number, limit = 100): Promise<Signal[]> {
+export async function getSignals(userId: number, limit = 100, offset = 0): Promise<Signal[]> {
   const rows = await sql`
     SELECT * FROM signals WHERE user_id = ${userId}
-    ORDER BY created_at DESC LIMIT ${limit}
+    ORDER BY created_at DESC LIMIT ${limit} OFFSET ${offset}
   `
   return rows as Signal[]
+}
+
+export async function clearSignals(userId: number) {
+  await sql`DELETE FROM signals WHERE user_id = ${userId}`
 }
 
 export async function updateSignalOutcome(id: number, userId: number, outcome: string) {
@@ -160,12 +242,66 @@ export async function getStats(userId: number) {
   }
 }
 
-// ── Trade helpers ─────────────────────────────────────────────────────────────
-
-export async function getTrades(userId: number): Promise<Trade[]> {
+export async function getAdvancedStats(userId: number) {
+  // Все разрешённые сигналы с PnL для расчёта метрик
   const rows = await sql`
-    SELECT * FROM trades WHERE user_id = ${userId} ORDER BY created_at DESC
+    SELECT actual_pnl_pct, outcome
+    FROM signals
+    WHERE user_id = ${userId} AND outcome IS NOT NULL AND actual_pnl_pct IS NOT NULL
+    ORDER BY created_at ASC
   `
+  if (!rows.length) return null
+
+  const pnls = rows.map(r => Number(r.actual_pnl_pct))
+  const wins  = pnls.filter(p => p > 0)
+  const losses = pnls.filter(p => p <= 0)
+
+  // Profit Factor = сумма прибылей / |сумма убытков|
+  const grossWin  = wins.reduce((s, p) => s + p, 0)
+  const grossLoss = Math.abs(losses.reduce((s, p) => s + p, 0))
+  const profitFactor = grossLoss > 0 ? parseFloat((grossWin / grossLoss).toFixed(2)) : null
+
+  // Max Drawdown — максимальная просадка от пика
+  let peak = 0, equity = 0, maxDD = 0
+  for (const p of pnls) {
+    equity += p
+    if (equity > peak) peak = equity
+    const dd = peak - equity
+    if (dd > maxDD) maxDD = dd
+  }
+
+  // Sharpe Ratio (упрощённый, без risk-free rate)
+  const avg = pnls.reduce((s, p) => s + p, 0) / pnls.length
+  const variance = pnls.reduce((s, p) => s + Math.pow(p - avg, 2), 0) / pnls.length
+  const stdDev = Math.sqrt(variance)
+  const sharpe = stdDev > 0 ? parseFloat((avg / stdDev).toFixed(2)) : null
+
+  // Expectancy = (WR * avgWin) - (LR * avgLoss)
+  const wr = wins.length / pnls.length
+  const avgWin  = wins.length  ? grossWin  / wins.length  : 0
+  const avgLoss = losses.length ? grossLoss / losses.length : 0
+  const expectancy = parseFloat(((wr * avgWin) - ((1 - wr) * avgLoss)).toFixed(2))
+
+  return {
+    profit_factor: profitFactor,
+    max_drawdown: parseFloat(maxDD.toFixed(2)),
+    sharpe_ratio: sharpe,
+    expectancy,
+    avg_win:  parseFloat(avgWin.toFixed(2)),
+    avg_loss: parseFloat(avgLoss.toFixed(2)),
+    total_resolved: pnls.length,
+  }
+}
+
+export async function getTrades(
+  userId: number,
+  accountType?: 'user' | 'ai',
+  limit = 200,
+  offset = 0,
+): Promise<Trade[]> {
+  const rows = accountType
+    ? await sql`SELECT * FROM trades WHERE user_id = ${userId} AND account_type = ${accountType} ORDER BY created_at DESC LIMIT ${limit} OFFSET ${offset}`
+    : await sql`SELECT * FROM trades WHERE user_id = ${userId} ORDER BY created_at DESC LIMIT ${limit} OFFSET ${offset}`
   return rows as Trade[]
 }
 
@@ -176,13 +312,24 @@ export async function getTradeById(id: number, userId: number): Promise<Trade | 
 
 export async function createTrade(userId: number, data: Partial<Trade>): Promise<Trade> {
   const rows = await sql`
-    INSERT INTO trades (user_id, pair, direction, order_type, amount, entry_price, tp_price, sl_price, leverage)
-    VALUES (${userId}, ${data.pair!}, ${data.direction!}, ${data.order_type!},
+    INSERT INTO trades (user_id, pair, direction, order_type, amount, entry_price, tp_price, sl_price,
+                        leverage, account_type, status, limit_price, expires_at)
+    VALUES (${userId}, ${data.pair!}, ${data.direction!}, ${data.order_type ?? 'market'},
             ${data.amount!}, ${data.entry_price ?? null}, ${data.tp_price ?? null},
-            ${data.sl_price ?? null}, ${data.leverage ?? 1})
+            ${data.sl_price ?? null}, ${data.leverage ?? 1}, ${data.account_type ?? 'user'},
+            ${data.status ?? 'open'}, ${data.limit_price ?? null}, ${data.expires_at ?? null})
     RETURNING *
   `
   return rows[0] as Trade
+}
+
+export async function updateTrade(id: number, userId: number, data: { tp_price?: number | null; sl_price?: number | null }) {
+  await sql`
+    UPDATE trades SET
+      tp_price = CASE WHEN ${data.tp_price ?? null} IS NOT NULL THEN ${data.tp_price ?? null} ELSE tp_price END,
+      sl_price = CASE WHEN ${data.sl_price ?? null} IS NOT NULL THEN ${data.sl_price ?? null} ELSE sl_price END
+    WHERE id = ${id} AND user_id = ${userId} AND status = 'open'
+  `
 }
 
 export async function closeTrade(id: number, userId: number, pnl: number | null, pnlPct: number | null) {
@@ -191,8 +338,6 @@ export async function closeTrade(id: number, userId: number, pnl: number | null,
     WHERE id = ${id} AND user_id = ${userId}
   `
 }
-
-// ── Notification helpers ──────────────────────────────────────────────────────
 
 export async function getNotifications(userId: number): Promise<Notification[]> {
   const rows = await sql`
@@ -216,19 +361,189 @@ export async function clearNotifications(userId: number) {
   await sql`DELETE FROM notifications WHERE user_id = ${userId}`
 }
 
-// ── Settings helpers ──────────────────────────────────────────────────────────
+// ─── AI Memory: last signals for pair ────────────────────────────────────────
+export async function getSignalsForPair(userId: number, pair: string, limit = 5): Promise<Signal[]> {
+  const rows = await sql`
+    SELECT id, pair, timeframe, final_verdict, final_confidence,
+           final_entry, final_tp, final_sl, final_leverage, outcome, actual_pnl_pct, created_at
+    FROM signals
+    WHERE user_id = ${userId} AND pair = ${pair}
+    ORDER BY created_at DESC LIMIT ${limit}
+  `
+  return rows as Signal[]
+}
 
-export async function updateUserSettings(userId: number, data: { nickname?: string; email?: string; lang?: string }) {
+// ─── Auto win/loss: pending signals with TP/SL ───────────────────────────────
+export async function getPendingSignals(userId: number): Promise<Signal[]> {
+  const rows = await sql`
+    SELECT * FROM signals
+    WHERE user_id = ${userId}
+      AND outcome IS NULL
+      AND final_verdict IN ('LONG','SHORT')
+      AND final_tp IS NOT NULL
+      AND final_sl IS NOT NULL
+      AND created_at < NOW() - INTERVAL '5 minutes'
+    ORDER BY created_at DESC LIMIT 50
+  `
+  return rows as Signal[]
+}
+
+export async function setSignalOutcome(id: number, outcome: 'win' | 'loss', pnlPct: number, userId: number) {
+  await sql`
+    UPDATE signals SET outcome = ${outcome}, actual_pnl_pct = ${pnlPct}
+    WHERE id = ${id} AND user_id = ${userId}
+  `
+}
+
+// ─── Chart drawings ──────────────────────────────────────────────────────────
+export async function getDrawings(userId: number, pair: string, timeframe: string): Promise<unknown[]> {
+  const rows = await sql`
+    SELECT drawings FROM chart_drawings
+    WHERE user_id = ${userId} AND pair = ${pair} AND timeframe = ${timeframe}
+    LIMIT 1
+  `
+  return rows[0] ? (rows[0].drawings as unknown[]) : []
+}
+
+export async function saveDrawings(userId: number, pair: string, timeframe: string, drawings: unknown[]) {
+  await sql`
+    INSERT INTO chart_drawings (user_id, pair, timeframe, drawings, updated_at)
+    VALUES (${userId}, ${pair}, ${timeframe}, ${JSON.stringify(drawings)}, NOW())
+    ON CONFLICT (user_id, pair, timeframe)
+    DO UPDATE SET drawings = ${JSON.stringify(drawings)}, updated_at = NOW()
+  `
+}
+
+export async function updateUserSettings(userId: number, data: {
+  nickname?: string; email?: string; lang?: string
+  ai_trade_amount?: number; ai_max_leverage?: number
+  ai_balance?: number; ai_risk_per_trade?: number
+}) {
   await sql`
     UPDATE users SET
-      nickname = COALESCE(${data.nickname ?? null}, nickname),
-      email    = COALESCE(${data.email ?? null}, email),
-      lang     = COALESCE(${data.lang ?? null}, lang)
+      nickname          = COALESCE(${data.nickname ?? null}, nickname),
+      email             = COALESCE(${data.email ?? null}, email),
+      lang              = COALESCE(${data.lang ?? null}, lang),
+      ai_trade_amount   = COALESCE(${data.ai_trade_amount ?? null}, ai_trade_amount),
+      ai_max_leverage   = COALESCE(${data.ai_max_leverage ?? null}, ai_max_leverage),
+      ai_balance        = COALESCE(${data.ai_balance ?? null}, ai_balance),
+      ai_risk_per_trade = COALESCE(${data.ai_risk_per_trade ?? null}, ai_risk_per_trade)
     WHERE id = ${userId}
   `
 }
 
-// ── Init DB (run once) ────────────────────────────────────────────────────────
+// ─── Subscriptions ───────────────────────────────────────────────────────────
+export async function getSubscription(userId: number): Promise<Subscription> {
+  const rows = await sql`
+    SELECT * FROM subscriptions WHERE user_id = ${userId} LIMIT 1
+  `
+  if (rows[0]) return rows[0] as Subscription
+  // Создать free подписку если нет
+  const created = await sql`
+    INSERT INTO subscriptions (user_id, tier, analyses_today, last_reset_date)
+    VALUES (${userId}, 'free', 0, CURRENT_DATE)
+    ON CONFLICT (user_id) DO UPDATE SET user_id = EXCLUDED.user_id
+    RETURNING *
+  `
+  return created[0] as Subscription
+}
+
+export async function checkAndIncrementAnalysis(userId: number): Promise<{ allowed: boolean; remaining: number; tier: string; limit: number }> {
+  const sub = await getSubscription(userId)
+  const today = new Date().toISOString().slice(0, 10)
+  const limit = SUBSCRIPTION_LIMITS[sub.tier] ?? 3
+
+  // Сбросить счётчик если новый день
+  if (sub.last_reset_date !== today) {
+    await sql`
+      UPDATE subscriptions
+      SET analyses_today = 0, last_reset_date = CURRENT_DATE
+      WHERE user_id = ${userId}
+    `
+    sub.analyses_today = 0
+  }
+
+  if (sub.analyses_today >= limit) {
+    return { allowed: false, remaining: 0, tier: sub.tier, limit }
+  }
+
+  await sql`
+    UPDATE subscriptions SET analyses_today = analyses_today + 1 WHERE user_id = ${userId}
+  `
+  return { allowed: true, remaining: limit - sub.analyses_today - 1, tier: sub.tier, limit }
+}
+
+export async function updateSubscriptionTier(userId: number, tier: string, expiresAt?: Date) {
+  await sql`
+    INSERT INTO subscriptions (user_id, tier, analyses_today, last_reset_date, expires_at)
+    VALUES (${userId}, ${tier}, 0, CURRENT_DATE, ${expiresAt ?? null})
+    ON CONFLICT (user_id) DO UPDATE SET
+      tier = EXCLUDED.tier,
+      expires_at = EXCLUDED.expires_at,
+      analyses_today = 0,
+      last_reset_date = CURRENT_DATE
+  `
+}
+
+// ─── Pending limit orders ─────────────────────────────────────────────────────
+export async function getPendingTrades(userId: number): Promise<Trade[]> {
+  const rows = await sql`
+    SELECT * FROM trades
+    WHERE user_id = ${userId} AND status = 'pending'
+    ORDER BY created_at DESC
+  `
+  return rows as Trade[]
+}
+
+export async function activateTrade(id: number, userId: number, entryPrice: number): Promise<boolean> {
+  // Атомарная активация: WHERE status='pending' гарантирует что два параллельных
+  // запроса не активируют один ордер дважды (без SELECT FOR UPDATE)
+  const rows = await sql`
+    UPDATE trades SET status = 'open', entry_price = ${entryPrice}
+    WHERE id = ${id} AND user_id = ${userId} AND status = 'pending'
+    RETURNING id
+  `
+  return rows.length > 0
+}
+
+export async function cancelTrade(id: number, userId: number): Promise<boolean> {
+  const rows = await sql`
+    UPDATE trades SET status = 'cancelled', closed_at = NOW()
+    WHERE id = ${id} AND user_id = ${userId} AND status = 'pending'
+    RETURNING id
+  `
+  return rows.length > 0
+}
+
+// ─── Admin functions ──────────────────────────────────────────────────────────
+export async function getAllUsersWithSubscriptions() {
+  const rows = await sql`
+    SELECT u.id, u.firebase_uid, u.email, u.nickname, u.lang, u.created_at,
+           s.tier, s.analyses_today, s.last_reset_date, s.expires_at
+    FROM users u
+    LEFT JOIN subscriptions s ON s.user_id = u.id
+    ORDER BY u.created_at DESC
+  `
+  return rows
+}
+
+export async function getAdminStats() {
+  const [totals] = await sql`
+    SELECT
+      COUNT(DISTINCT u.id) AS total_users,
+      COUNT(DISTINCT s.id) FILTER (WHERE s.tier = 'free')    AS free_users,
+      COUNT(DISTINCT s.id) FILTER (WHERE s.tier = 'starter') AS starter_users,
+      COUNT(DISTINCT s.id) FILTER (WHERE s.tier = 'pro')     AS pro_users,
+      COUNT(DISTINCT s.id) FILTER (WHERE s.tier = 'elite')   AS elite_users,
+      COUNT(DISTINCT sig.id) AS total_signals,
+      COUNT(DISTINCT t.id)   AS total_trades
+    FROM users u
+    LEFT JOIN subscriptions s ON s.user_id = u.id
+    LEFT JOIN signals sig ON sig.user_id = u.id
+    LEFT JOIN trades t ON t.user_id = u.id
+  `
+  return totals
+}
 
 export async function initDB() {
   await sql`
@@ -238,9 +553,15 @@ export async function initDB() {
       email TEXT,
       nickname TEXT,
       lang TEXT DEFAULT 'ru',
+      ai_trade_amount NUMERIC DEFAULT 100,
+      ai_max_leverage INTEGER DEFAULT 3,
       created_at TIMESTAMPTZ DEFAULT NOW()
     )
   `
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS ai_trade_amount NUMERIC DEFAULT 100`
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS ai_max_leverage INTEGER DEFAULT 20`
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS ai_balance NUMERIC DEFAULT 1000`
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS ai_risk_per_trade NUMERIC DEFAULT 1.0`
   await sql`
     CREATE TABLE IF NOT EXISTS signals (
       id SERIAL PRIMARY KEY,
@@ -273,10 +594,27 @@ export async function initDB() {
       sl_price NUMERIC,
       leverage INTEGER DEFAULT 1,
       status TEXT DEFAULT 'open',
+      limit_price NUMERIC,
+      expires_at TIMESTAMPTZ,
+      account_type TEXT DEFAULT 'user',
       pnl NUMERIC,
       pnl_pct NUMERIC,
       closed_at TIMESTAMPTZ,
       created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `
+  await sql`ALTER TABLE trades ADD COLUMN IF NOT EXISTS account_type TEXT DEFAULT 'user'`
+  await sql`ALTER TABLE trades ADD COLUMN IF NOT EXISTS limit_price NUMERIC`
+  await sql`ALTER TABLE trades ADD COLUMN IF NOT EXISTS expires_at TIMESTAMPTZ`
+  await sql`
+    CREATE TABLE IF NOT EXISTS chart_drawings (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER REFERENCES users(id),
+      pair TEXT NOT NULL,
+      timeframe TEXT NOT NULL,
+      drawings JSONB NOT NULL DEFAULT '[]',
+      updated_at TIMESTAMPTZ DEFAULT NOW(),
+      UNIQUE(user_id, pair, timeframe)
     )
   `
   await sql`
@@ -285,6 +623,31 @@ export async function initDB() {
       user_id INTEGER REFERENCES users(id),
       message TEXT NOT NULL,
       read BOOLEAN DEFAULT FALSE,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `
+  await sql`
+    CREATE TABLE IF NOT EXISTS subscriptions (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER REFERENCES users(id) UNIQUE NOT NULL,
+      tier TEXT DEFAULT 'free',
+      analyses_today INTEGER DEFAULT 0,
+      last_reset_date DATE DEFAULT CURRENT_DATE,
+      expires_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `
+  await sql`
+    CREATE TABLE IF NOT EXISTS level_alerts (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER REFERENCES users(id),
+      pair TEXT NOT NULL,
+      zone_type TEXT NOT NULL,
+      price_high NUMERIC NOT NULL,
+      price_low NUMERIC NOT NULL,
+      label TEXT,
+      is_triggered BOOLEAN DEFAULT FALSE,
+      triggered_at TIMESTAMPTZ,
       created_at TIMESTAMPTZ DEFAULT NOW()
     )
   `

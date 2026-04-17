@@ -11,12 +11,22 @@ export async function GET(req: NextRequest) {
   try {
     let url = `https://fapi.binance.com/fapi/v1/klines?symbol=${symbol}&interval=${interval}&limit=${Math.min(Number(limit), 1500)}`
     if (endTime) url += `&endTime=${endTime}`
-    const r = await fetch(url, { next: { revalidate: 0 } })
+
+    const isHistorical = !!endTime && Number(endTime) < Date.now() - 60_000
+    const r = await fetch(url, {
+      next: { revalidate: isHistorical ? 60 : 0 },
+    })
     if (!r.ok) {
       return NextResponse.json({ ok: false, error: 'Binance error' }, { status: 502 })
     }
     const data = await r.json()
-    return NextResponse.json(data)
+
+    const res = NextResponse.json(data)
+
+    if (isHistorical) {
+      res.headers.set('Cache-Control', 'public, max-age=30, stale-while-revalidate=60')
+    }
+    return res
   } catch (e: unknown) {
     return NextResponse.json({ ok: false, error: e instanceof Error ? e.message : 'fetch error' }, { status: 500 })
   }

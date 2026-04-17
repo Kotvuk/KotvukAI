@@ -12,7 +12,6 @@ export async function POST(req: NextRequest) {
     const uid = await verifyToken(token)
     if (!uid) return NextResponse.json({ ok: false, error: 'Invalid token' }, { status: 401 })
 
-    // Get email from token
     const { adminAuth } = await import('@/lib/firebase-admin')
     const fbUser = await adminAuth.getUser(uid)
     const user = await upsertUser(uid, fbUser.email || '')

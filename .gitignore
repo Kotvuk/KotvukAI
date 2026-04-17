@@ -36,3 +36,23 @@ Thumbs.db
 
 # Vercel
 .vercel
+
+# Claude Code — dev tool config
+CLAUDE.md
+.claude/
+
+# Personal / diploma files
+diploma_content.txt
+diploma_screenshots/
+gost_content.txt
+Дипломная\ работа/
+
+# Third-party tools
+agent-browser/
+
+# Electron build artifacts (keep source, ignore builds)
+electron/dist/
+electron/out/
+
+# TypeScript build cache
+tsconfig.tsbuildinfo

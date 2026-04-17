@@ -148,7 +148,7 @@ export default function DrawingSettingsModal({ info, onClose, onSave, onDelete }
 
   useEffect(() => {
     if (!info) return
-    if (info.name === 'rect') {
+    if (info.name === 'priceRect') {
       const st = info.styles as { polygon?: { color?: string; borderColor?: string; borderSize?: number } } | null
       setRectFill(st?.polygon?.color || 'rgba(0,230,118,0.15)')
       setRectBorder(st?.polygon?.borderColor || '#00e676')
@@ -163,7 +163,7 @@ export default function DrawingSettingsModal({ info, onClose, onSave, onDelete }
 
   const handleSave = useCallback(() => {
     if (!info) return
-    if (info.name === 'rect') {
+    if (info.name === 'priceRect') {
       onSave(info.id, { styles: { polygon: { color: rectFill, borderColor: rectBorder, borderSize: rectBorderSize } } })
     } else {
       onSave(info.id, { styles: { line: { color: lineColor, size: lineWidth, style: lineStyle } } })
@@ -173,7 +173,7 @@ export default function DrawingSettingsModal({ info, onClose, onSave, onDelete }
 
   if (!info) return null
 
-  const isRect = info.name === 'rect'
+  const isRect = info.name === 'priceRect'
   const titleMap: Record<string, string> = {
     segment: 'Линия тренда',
     rayLine: 'Луч',
@@ -182,11 +182,11 @@ export default function DrawingSettingsModal({ info, onClose, onSave, onDelete }
     priceLine: 'Ценовая линия',
     parallelStraightLine: 'Параллельный канал',
     priceChannelLine: 'Ценовой канал',
-    rect: 'Прямоугольник',
+    priceRect: 'Прямоугольник',
     circle: 'Окружность',
     polygon: 'Многоугольник',
     polyline: 'Траектория',
-    fibonacciLine: 'Фибоначчи',
+    fibRetracement: 'Фибоначчи',
   }
 
   return (

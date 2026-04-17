@@ -63,7 +63,7 @@ export default function AiChat({ onNavigate, getContext }: Props) {
         dispatchAction(action)
       }
     } catch {
-      setMessages(prev => [...prev, { role: 'assistant', text: 'Ошибка соединения. Проверьте Ollama.' }])
+      setMessages(prev => [...prev, { role: 'assistant', text: 'Ошибка соединения. Проверьте GROQ_API_KEY.' }])
     }
     setThinking(false)
   }, [input, thinking, getContext])
@@ -76,7 +76,6 @@ export default function AiChat({ onNavigate, getContext }: Props) {
       return
     }
 
-    // Dispatch to chart/panels via custom events
     window.dispatchEvent(new CustomEvent(`kotvuk:${type}`, { detail: action }))
   }
 
@@ -86,7 +85,7 @@ export default function AiChat({ onNavigate, getContext }: Props) {
 
   return (
     <>
-      {/* Floating button */}
+      {}
       <button
         className={`chat-fab ${open ? 'active' : ''}`}
         onClick={() => setOpen(v => !v)}
@@ -100,7 +99,7 @@ export default function AiChat({ onNavigate, getContext }: Props) {
         {!open && <span className="chat-fab-label">{t('nav_chat')}</span>}
       </button>
 
-      {/* Chat panel */}
+      {}
       {open && (
         <div className="chat-panel">
           <div className="chat-header">

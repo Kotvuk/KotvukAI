@@ -1,12 +1,20 @@
 export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { getUser } from '@/lib/auth-helper'
-import { getSignals } from '@/lib/db'
+import { getSignals, clearSignals } from '@/lib/db'
 
 export async function GET(req: NextRequest) {
   const user = await getUser(req)
   if (!user) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 })
-  const limit = parseInt(req.nextUrl.searchParams.get('limit') || '100')
-  const signals = await getSignals(user.id, limit)
+  const limit  = Math.min(1000, Math.max(1, parseInt(req.nextUrl.searchParams.get('limit')  || '100')))
+  const offset = Math.max(0, parseInt(req.nextUrl.searchParams.get('offset') || '0'))
+  const signals = await getSignals(user.id, limit, offset)
   return NextResponse.json({ ok: true, signals })
+}
+
+export async function DELETE(req: NextRequest) {
+  const user = await getUser(req)
+  if (!user) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 })
+  await clearSignals(user.id)
+  return NextResponse.json({ ok: true })
 }

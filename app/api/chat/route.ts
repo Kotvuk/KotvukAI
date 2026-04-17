@@ -1,10 +1,8 @@
 export const dynamic = 'force-dynamic'
-export const maxDuration = 120
+export const maxDuration = 60
 import { NextRequest, NextResponse } from 'next/server'
 import { getUser } from '@/lib/auth-helper'
-
-const BASE = process.env.OLLAMA_BASE_URL || 'http://localhost:11434'
-const TEXT_MODEL = process.env.OLLAMA_TEXT_MODEL || 'qwen3:1.7b'
+import { loadGroqKeys, getGroqModel, GROQ_URL } from '@/lib/groq'
 
 export interface ChatAction {
   type:
@@ -15,20 +13,13 @@ export interface ChatAction {
     | 'set_opacity'
     | 'set_color'
     | 'navigate_panel'
-  // update_markup
   tp?: number; sl?: number; entry?: number
-  // draw_zone (OB or FVG)
-  zoneType?: 'ob_bullish' | 'ob_bearish' | 'fvg_bullish' | 'fvg_bearish'
+  zoneType?: 'ob_bullish' | 'ob_bearish' | 'ob_all' | 'fvg_bullish' | 'fvg_bearish' | 'fvg_all'
   priceFrom?: number; priceTo?: number; label?: string; color?: string
-  // draw_liquidity
   level?: number; side?: 'buy' | 'sell'
-  // clear_zones
   target?: 'all' | 'ob' | 'fvg' | 'liquidity' | 'markup'
-  // set_opacity
   group?: string; opacityValue?: number
-  // set_color
   colorTarget?: string; colorValue?: string
-  // navigate_panel
   panel?: 'dash' | 'ai' | 'trades' | 'news' | 'notifs' | 'history'
 }
 
@@ -54,68 +45,72 @@ export async function POST(req: NextRequest) {
   const smcLiqs = ctx.smc?.liquidityLevels?.slice(0, 4) || []
 
   const prompt = `/no_think
-You are KotvukAI assistant for a crypto trading platform. Parse the user's request and respond with a JSON object.
+Ты ИИ-ассистент KotvukAI для криптотрейдинга. Разбери запрос пользователя и ответь JSON-объектом.
 
-CURRENT CONTEXT:
-- Pair: ${ctx.pair || 'BTC/USDT'}, Timeframe: ${ctx.tf || '1h'}
-- Price: $${ctx.price || 'unknown'}
-- Signal: ${ctx.verdict || 'none'} | Entry: $${ctx.entry || '?'} | TP: $${ctx.tp || '?'} | SL: $${ctx.sl || '?'}
+КОНТЕКСТ:
+- Пара: ${ctx.pair || 'BTC/USDT'}, Таймфрейм: ${ctx.tf || '1h'}
+- Цена: $${ctx.price || 'неизвестна'}
+- Сигнал: ${ctx.verdict || 'нет'} | Вход: $${ctx.entry || '?'} | TP: $${ctx.tp || '?'} | SL: $${ctx.sl || '?'}
 - SMC Order Blocks: ${JSON.stringify(smcOBs)}
 - SMC FVGs: ${JSON.stringify(smcFVGs)}
-- SMC Liquidity: ${JSON.stringify(smcLiqs)}
+- SMC Ликвидность: ${JSON.stringify(smcLiqs)}
 
-USER REQUEST: "${message}"
+ЗАПРОС ПОЛЬЗОВАТЕЛЯ: "${message}"
 
-SUPPORTED ACTIONS:
-- update_markup: { tp, sl, entry } — change TP/SL/entry levels on chart
-- draw_zone: { zoneType: "ob_bullish"|"ob_bearish"|"fvg_bullish"|"fvg_bearish", priceFrom, priceTo, label, color } — draw a price zone
-- draw_liquidity: { level, side: "buy"|"sell" } — draw a liquidity level
-- clear_zones: { target: "all"|"ob"|"fvg"|"liquidity"|"markup" } — clear drawings
-- set_opacity: { group: "ob"|"fvg"|"liquidity"|"all", opacityValue: 0.1-0.9 } — change opacity
-- set_color: { colorTarget: "ob"|"fvg"|"tp"|"sl"|"entry", colorValue: "#hexcolor" } — change color
-- navigate_panel: { panel: "dash"|"trades"|"news"|"notifs"|"history" } — switch panel
+ДОСТУПНЫЕ ДЕЙСТВИЯ:
+- update_markup: { tp, sl, entry } — изменить уровни TP/SL/вход на графике
+- draw_zone: { zoneType: "ob_bullish"|"ob_bearish"|"fvg_bullish"|"fvg_bearish"|"ob_all"|"fvg_all", priceFrom, priceTo, label, color } — нарисовать зону
+- draw_liquidity: { level, side: "buy"|"sell" } — нарисовать уровень ликвидности
+- clear_zones: { target: "all"|"ob"|"fvg"|"liquidity"|"markup" } — очистить разметку
+- set_opacity: { group: "ob"|"fvg"|"liquidity"|"all", opacityValue: 0.1-0.9 } — прозрачность зон
+- set_color: { colorTarget: "ob"|"fvg"|"tp"|"sl"|"entry", colorValue: "#hex" } — изменить цвет
+- navigate_panel: { panel: "dash"|"trades"|"news"|"notifs"|"history" } — перейти в панель
 
-RULES:
-- If user says "нарисуй OB" / "draw OB" / "order block" — use draw_zone with ob_bullish or ob_bearish based on context
-- If user says "FVG" / "фвг" / "fair value gap" — use draw_zone with fvg type
-- If user says "ликвидность" / "liquidity" — use draw_liquidity
-- If user says "сделки" / "trades" / "журнал" — use navigate_panel with trades
-- If user says "сделай прозрачнее" / "more transparent" — use set_opacity with lower value (0.15-0.3)
-- If user says "измени цвет" / "change color" — use set_color
-- If user says "очисти" / "clear" / "убери" — use clear_zones
-- For price values, use the context SMC data if available and user doesn't specify exact levels
-- Respond in Russian if user writes in Russian, in English if English
+Если пользователь говорит "нарисуй OB" / "все OB" / "order block" — draw_zone с ob_all. Только если явно сказано бычьи/медвежьи — ob_bullish/ob_bearish.
+Если говорит "FVG" / "фвг" — draw_zone с fvg_all.
+Если говорит "ликвидность" — draw_liquidity.
+Если говорит "сделки" / "журнал" — navigate_panel trades.
+Если говорит "прозрачнее" — set_opacity 0.15–0.3.
+Если говорит "очисти" / "убери" — clear_zones.
 
-Return ONLY valid JSON:
-{
-  "text": "<natural language response in user's language, 1-2 sentences>",
-  "action": { "type": "<action_type>", ...fields } or null if just chatting
-}`
+Ответь на том же языке, на котором пользователь написал запрос.
+
+Ответь ТОЛЬКО валидным JSON:
+{"text":"<ответ пользователю 1-2 предложения>","action":{"type":"<тип>","...поля"} или null если просто чат}`
+
+  const GROQ_KEYS = loadGroqKeys()
+  const GROQ_MODEL = getGroqModel()
+  const shuffledKeys = [...GROQ_KEYS].sort(() => Math.random() - 0.5)
+
+  if (GROQ_KEYS.length === 0) {
+    return NextResponse.json({ ok: true, text: 'GROQ_API_KEY не задан. Добавьте ключ в переменные окружения.', action: null })
+  }
 
   try {
-    const res = await fetch(`${BASE}/api/generate`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: TEXT_MODEL,
-        prompt,
-        stream: false,
-        think: false,
-        options: { temperature: 0.3, num_predict: 400 },
-      }),
-      signal: AbortSignal.timeout(60_000),
-    })
+    let raw = ''
+    for (let attempt = 0; attempt < shuffledKeys.length; attempt++) {
+      const res = await fetch(GROQ_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${shuffledKeys[attempt]}` },
+        body: JSON.stringify({
+          model: GROQ_MODEL,
+          messages: [{ role: 'user', content: prompt }],
+          temperature: 0.3,
+          max_tokens: 400,
+          stream: false,
+        }),
+        signal: AbortSignal.timeout(30_000),
+      })
+      if (res.status === 429) continue
+      if (!res.ok) throw new Error(`Groq error: ${res.status}`)
+      const data = await res.json()
+      raw = data.choices?.[0]?.message?.content || ''
+      break
+    }
 
-    if (!res.ok) throw new Error(`Ollama error: ${res.status}`)
-    const data = await res.json()
-    const raw: string = data.response || ''
-
-    // Clean think blocks
-    const cleaned = raw.replace(/<think>[\s\S]*?<\/think>/gi, '').trim()
-    const match = cleaned.match(/```json\s*([\s\S]*?)```/) || cleaned.match(/(\{[\s\S]*\})/)
-
+    const match = raw.match(/```json\s*([\s\S]*?)```/) || raw.match(/(\{[\s\S]*\})/)
     if (!match) {
-      return NextResponse.json({ ok: true, text: cleaned || 'Готово!', action: null })
+      return NextResponse.json({ ok: true, text: raw || 'Готово!', action: null })
     }
 
     const json = JSON.parse(match[1])
@@ -127,11 +122,6 @@ Return ONLY valid JSON:
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : 'AI error'
     console.error('chat:', msg)
-    // Fallback: try to give a helpful response without AI
-    return NextResponse.json({
-      ok: true,
-      text: 'Ollama недоступен. Убедитесь что Ollama запущен: ollama serve',
-      action: null,
-    })
+    return NextResponse.json({ ok: true, text: 'Ошибка AI. Проверьте GROQ_API_KEY.', action: null })
   }
 }

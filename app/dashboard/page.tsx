@@ -1,47 +1,77 @@
 'use client'
 import { useState, useEffect, useRef, useCallback } from 'react'
+import dynamic from 'next/dynamic'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { useLang } from '@/contexts/LangContext'
 import Header from '@/components/app/Header'
 import Toast from '@/components/ui/Toast'
 import DashPanel from '@/components/app/panels/DashPanel'
-import AiPanel from '@/components/app/panels/AiPanel'
-import TradesPanel from '@/components/app/panels/TradesPanel'
-import NewsPanel from '@/components/app/panels/NewsPanel'
-import NotifsPanel from '@/components/app/panels/NotifsPanel'
-import HistoryPanel from '@/components/app/panels/HistoryPanel'
-import SettingsPanel from '@/components/app/panels/SettingsPanel'
-import AiChat from '@/components/app/AiChat'
+
+const AiPanel      = dynamic(() => import('@/components/app/panels/AiPanel'),      { ssr: false })
+const TradesPanel  = dynamic(() => import('@/components/app/panels/TradesPanel'),  { ssr: false })
+const NewsPanel    = dynamic(() => import('@/components/app/panels/NewsPanel'),    { ssr: false })
+const NotifsPanel  = dynamic(() => import('@/components/app/panels/NotifsPanel'), { ssr: false })
+const HistoryPanel = dynamic(() => import('@/components/app/panels/HistoryPanel'), { ssr: false })
+const SettingsPanel= dynamic(() => import('@/components/app/panels/SettingsPanel'),{ ssr: false })
+const AiChat       = dynamic(() => import('@/components/app/AiChat'),              { ssr: false })
+
+// Список емейлов с доступом к /admin
+const ADMIN_EMAILS = ['kotvukai@gmail.com']
 
 type Panel = 'dash' | 'ai' | 'trades' | 'news' | 'notifs' | 'history' | 'settings'
 
 export default function DashboardPage() {
-  const { user, loading } = useAuth()
+  const { user, loading, getValidToken } = useAuth()
   const { t } = useLang()
   const router = useRouter()
   const [active, setActive] = useState<Panel>('dash')
   const [notifCount, setNotifCount] = useState(0)
+  // Флаг: нужно ли открыть вкладку AI в TradesPanel
+  const [tradeTabAi, setTradeTabAi] = useState(false)
   const chatContextFnRef = useRef<(() => Record<string, unknown>) | null>(null)
   const getChatContext = useCallback(() => chatContextFnRef.current?.() || {}, [])
+
+  // AiPanel монтируется один раз и остаётся в DOM (скрывается через CSS)
+  const [aiMounted, setAiMounted] = useState(false)
+  useEffect(() => {
+    if (active === 'ai' && !aiMounted) setAiMounted(true)
+  }, [active, aiMounted])
 
   useEffect(() => {
     if (!loading && !user) router.push('/login')
   }, [user, loading, router])
 
-  if (loading) {
-    return (
-      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#080808' }}>
-        <div className="loading">
-          <div className="ld-bar" />
-          <div className="ld-t">KOTVUK AI</div>
-          <div className="ld-s">инициализация...</div>
-        </div>
-      </div>
-    )
-  }
+  // Авто-проверка win/loss и pending ордеров каждые 60 секунд
+  useEffect(() => {
+    if (loading || !user) return
+    const runChecks = async () => {
+      try {
+        const token = await getValidToken().catch(() => null)
+        await Promise.allSettled([
+          fetch('/api/signals/check-outcomes', { method: 'POST' }),
+          fetch('/api/trades/check-pending',   { method: 'POST' }),
+          token
+            ? fetch('/api/alerts/check', { method: 'POST', headers: { Authorization: `Bearer ${token}` } })
+            : Promise.resolve(),
+        ])
+        // Обновить счётчик уведомлений
+        const res = await fetch('/api/notifications')
+        if (res.ok) {
+          const data = await res.json()
+          const unread = (data.notifications || []).filter((n: { read: boolean }) => !n.read).length
+          setNotifCount(unread)
+        }
+      } catch { /* silent */ }
+    }
+    runChecks()
+    const interval = setInterval(runChecks, 60_000)
+    return () => clearInterval(interval)
+  }, [user, loading])
 
-  if (!user) return null
+  if (!loading && !user) return null
+
+  const isAdmin = ADMIN_EMAILS.includes((user?.email || '').toLowerCase())
 
   const navItems: { id: Panel; label: string; icon: React.ReactNode; dot?: boolean }[] = [
     {
@@ -74,6 +104,35 @@ export default function DashboardPage() {
     },
   ]
 
+  if (loading) {
+    return (
+      <div id="app">
+        <div style={{ height: 48, background: '#111', borderBottom: '1px solid #1e1e1e', display: 'flex', alignItems: 'center', padding: '0 16px', gap: 12 }}>
+          <div style={{ width: 90, height: 18, background: '#1e1e1e', borderRadius: 4 }} />
+          <div style={{ flex: 1, height: 14, background: '#1a1a1a', borderRadius: 4, maxWidth: 400 }} />
+        </div>
+        <nav id="nav" style={{ opacity: 0.3, pointerEvents: 'none' }}>
+          {navItems.map(item => (
+            <button key={item.id} className="nb">{item.icon}{item.label}</button>
+          ))}
+        </nav>
+        <div id="content" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 'calc(100vh - 96px)' }}>
+          <div className="loading">
+            <div className="ld-bar" />
+            <div className="ld-t">KOTVUK AI</div>
+            <div className="ld-s">инициализация...</div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Навигация из AiPanel в trades → сразу открыть вкладку AI
+  const handleNavigate = (panel: Panel) => {
+    if (panel === 'trades') setTradeTabAi(true)
+    setActive(panel)
+  }
+
   return (
     <>
       <Toast />
@@ -92,12 +151,40 @@ export default function DashboardPage() {
               {item.dot && <span className="nb-dot" />}
             </button>
           ))}
+          {/* Кнопка Админ — только для kotvukai@gmail.com */}
+          {isAdmin && (
+            <button
+              className="nb"
+              onClick={() => router.push('/admin')}
+              style={{ color: '#ffd60a' }}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+              </svg>
+              Админ
+            </button>
+          )}
         </nav>
 
         <div id="content">
           {active === 'dash'     && <DashPanel />}
-          {active === 'ai'       && <AiPanel active={active === 'ai'} onGetContext={fn => { chatContextFnRef.current = fn }} />}
-          {active === 'trades'   && <TradesPanel />}
+
+          {/* AiPanel: монтируется при первом визите и остаётся в DOM навсегда.
+              Видимость управляется внутри самого AiPanel через style.display */}
+          {aiMounted && (
+            <AiPanel
+              active={active === 'ai'}
+              onGetContext={fn => { chatContextFnRef.current = fn }}
+              onNavigate={handleNavigate}
+            />
+          )}
+
+          {active === 'trades'   && (
+            <TradesPanel
+              defaultAccount={tradeTabAi ? 'ai' : 'user'}
+              onTabMounted={() => setTradeTabAi(false)}
+            />
+          )}
           {active === 'news'     && <NewsPanel />}
           {active === 'notifs'   && <NotifsPanel onCount={setNotifCount} />}
           {active === 'history'  && <HistoryPanel />}

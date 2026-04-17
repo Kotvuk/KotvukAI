@@ -1,11 +1,10 @@
 import type { Auth } from 'firebase-admin/auth'
 
-// Lazy initialization — only runs at request time, not at build time
 let _adminAuth: Auth | null = null
 
 function getAdminAuth(): Auth {
   if (_adminAuth) return _adminAuth
-  // Dynamic require to avoid build-time side effects
+
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { initializeApp, getApps, cert } = require('firebase-admin/app')
   // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -26,7 +25,6 @@ function getAdminAuth(): Auth {
 
 export const adminAuth = { getUser: (uid: string) => getAdminAuth().getUser(uid) }
 
-/** Верифицирует Firebase ID-токен и возвращает uid */
 export async function verifyToken(token: string): Promise<string | null> {
   try {
     const decoded = await getAdminAuth().verifyIdToken(token)

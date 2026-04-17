@@ -1,7 +1,3 @@
-/**
- * Custom Fibonacci Retracement overlay for klinecharts
- * Supports fully configurable levels, colors, line widths
- */
 import * as klinecharts from 'klinecharts'
 
 export interface FibLevel {
@@ -47,17 +43,14 @@ export function registerFibonacciOverlay() {
       const extData = overlay.extendData as { levels?: FibLevel[] } | null
       const levels: FibLevel[] = extData?.levels ?? DEFAULT_FIB_LEVELS
 
-      const p1 = coordinates[0]  // drag start point
-      const p2 = coordinates[1]  // drag end point
+      const p1 = coordinates[0]
+      const p2 = coordinates[1]
       const xLeft  = 0
       const xRight = bounding.width
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const figures: any[] = []
 
-      // Invisible interactive rectangle covering the entire fibonacci area.
-      // Without this, user must click on a thin line (~1px) to re-select after deselection.
-      // This rect makes the whole fib area clickable — like TradingView.
       const yMin = Math.min(p1.y, p2.y)
       const yMax = Math.max(p1.y, p2.y)
       figures.push({
@@ -66,7 +59,6 @@ export function registerFibonacciOverlay() {
         styles: { style: 'fill', color: 'rgba(0,0,0,0.01)', borderColor: 'transparent', borderSize: 0 },
       })
 
-      // Draw connector line between the two anchor points.
       figures.push({
         type: 'line',
         attrs: { coordinates: [p1, p2] },
@@ -77,17 +69,14 @@ export function registerFibonacciOverlay() {
       for (const level of levels) {
         if (!level.show) continue
 
-        // y = p1 + (p2 - p1) * ratio  =>  ratio=0 at p1, ratio=1 at p2
         const y = p1.y + (p2.y - p1.y) * level.ratio
 
-        // Horizontal level line — interactive so user can click/drag overlay after deselection
         figures.push({
           type: 'line',
           attrs: { coordinates: [{ x: xLeft, y }, { x: xRight, y }] },
           styles: { color: level.color, size: level.width, style: 'solid' },
         })
 
-        // Label badge on the right side
         const pct = (level.ratio * 100).toFixed(1) + '%'
         const labelText = `${level.label}  ${pct}`
         figures.push({

@@ -46,7 +46,6 @@ export default function HistoricalSetupsModal({ currentPair, currentTf, currentV
   const resolved = filtered.filter(s => s.outcome).length
   const wr = resolved > 0 ? Math.round((wins / resolved) * 100) : null
 
-  // Calculate avg confidence of winners vs losers
   const winConf = filtered.filter(s => s.outcome === 'win' && s.final_confidence).map(s => s.final_confidence!)
   const lossConf = filtered.filter(s => s.outcome === 'loss' && s.final_confidence).map(s => s.final_confidence!)
   const avgWinConf = winConf.length ? Math.round(winConf.reduce((a, b) => a + b, 0) / winConf.length) : null
@@ -58,7 +57,7 @@ export default function HistoricalSetupsModal({ currentPair, currentTf, currentV
       onClick={e => { if (e.target === e.currentTarget) onClose() }}
     >
       <div style={{ background: 'var(--bg2)', border: '1px solid var(--line2)', borderRadius: 6, width: 520, maxHeight: '85vh', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 8px 40px rgba(0,0,0,0.6)' }}>
-        {/* Header */}
+        {}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderBottom: '1px solid var(--line2)' }}>
           <span style={{ fontSize: '.68rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.05em' }}>
             Похожие сетапы — {currentPair} {currentTf}
@@ -66,7 +65,7 @@ export default function HistoricalSetupsModal({ currentPair, currentTf, currentV
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '1rem' }}>✕</button>
         </div>
 
-        {/* Filters */}
+        {}
         <div style={{ display: 'flex', gap: 6, padding: '10px 16px', borderBottom: '1px solid var(--line2)' }}>
           {[
             { id: 'same_signal', label: `Тот же сигнал (${currentVerdict})` },
@@ -86,7 +85,7 @@ export default function HistoricalSetupsModal({ currentPair, currentTf, currentV
           ))}
         </div>
 
-        {/* Stats summary */}
+        {}
         {!loading && filtered.length > 0 && (
           <div style={{ display: 'flex', gap: 8, padding: '10px 16px', borderBottom: '1px solid var(--line2)', flexShrink: 0 }}>
             {[
@@ -104,7 +103,7 @@ export default function HistoricalSetupsModal({ currentPair, currentTf, currentV
           </div>
         )}
 
-        {/* Results list */}
+        {}
         <div style={{ overflowY: 'auto', flex: 1 }}>
           {loading && (
             <div style={{ display: 'flex', justifyContent: 'center', padding: 24 }}>
@@ -145,7 +144,7 @@ export default function HistoricalSetupsModal({ currentPair, currentTf, currentV
           })}
         </div>
 
-        {/* Insight footer */}
+        {}
         {!loading && wr !== null && resolved >= 3 && (
           <div style={{ padding: '10px 16px', borderTop: '1px solid var(--line2)', background: wr >= 55 ? 'rgba(0,230,118,0.06)' : 'rgba(255,165,0,0.06)', flexShrink: 0 }}>
             <div style={{ fontSize: '.63rem', color: 'var(--muted)', lineHeight: 1.5 }}>

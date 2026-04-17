@@ -16,8 +16,6 @@ function vc(v: string | null) {
   return u === 'LONG' ? 'long' : u === 'SHORT' ? 'short' : 'wait'
 }
 
-// ── Session Analytics helpers ──────────────────────────────────────────────────
-
 function buildHourlyStats(signals: Signal[]) {
   const hourMap: Record<number, { wins: number; total: number; sumR: number }> = {}
   for (let h = 0; h < 24; h++) hourMap[h] = { wins: 0, total: 0, sumR: 0 }
@@ -48,8 +46,6 @@ function buildPairStats(signals: Signal[]) {
     .sort((a, b) => b.wr - a.wr)
 }
 
-// ── Error Analysis helpers ─────────────────────────────────────────────────────
-
 const ERROR_CATEGORIES = [
   { id: 'fomo',     label: 'FOMO вход', desc: 'Вход без подтверждения, погоня за движением' },
   { id: 'htf_bias', label: 'Против HTF', desc: 'Сделка против старшего таймфрейма' },
@@ -60,7 +56,139 @@ const ERROR_CATEGORIES = [
   { id: 'other',    label: 'Прочее', desc: '' },
 ]
 
-// ── Quiz data ─────────────────────────────────────────────────────────────────
+function QuizDiagram({ idx }: { idx: number }) {
+  const C = { bull: '#00e676', bear: '#ff3d57', cyan: '#00d4ff', zone: 'rgba(0,212,255,0.18)', dim: '#333', txt: '#555' }
+  const diagrams = [
+    <svg key={0} viewBox="0 0 200 72" style={{ width: '100%', height: 72, display: 'block' }}>
+      <rect width={200} height={72} fill="#0a0a0a" />
+      {[[20,55,44,48],[36,58,42,44],[52,60,38,46]].map(([x,o,c,h],i) => (
+        <g key={i}><line x1={x} y1={h} x2={x} y2={62} stroke={C.bull} strokeWidth={1}/><rect x={x-4} y={Math.min(o,c)} width={8} height={Math.abs(o-c)||2} fill={C.bull}/></g>
+      ))}
+      <line x1={10} y1={38} x2={130} y2={38} stroke={C.dim} strokeWidth={1} strokeDasharray="3,2"/>
+      <line x1={68} y1={38} x2={68} y2={22} stroke={C.bear} strokeWidth={1}/>
+      <rect x={64} y={22} width={8} height={16} fill={C.bear}/>
+      <rect x={64} y={22} width={8} height={4} fill="#ff8c00" opacity={0.7}/>
+      {[[86,45,55],[102,50,58],[118,54,62]].map(([x,o,c],i) => (
+        <g key={i}><rect x={x-4} y={Math.min(o,c)} width={8} height={Math.abs(o-c)||2} fill={C.bear}/></g>
+      ))}
+      <text x={140} y={35} fontSize="8" fill={C.cyan} fontFamily="monospace">SWEEP</text>
+      <text x={140} y={46} fontSize="7" fill={C.txt} fontFamily="monospace">SSL</text>
+    </svg>,
+
+    <svg key={1} viewBox="0 0 200 72" style={{ width: '100%', height: 72, display: 'block' }}>
+      <rect width={200} height={72} fill="#0a0a0a" />
+      {[[20,55,44],[36,58,46],[52,56,48]].map(([x,o,c],i) => (
+        <g key={i}><rect x={x-4} y={Math.min(o,c)} width={8} height={Math.abs(o-c)||2} fill={C.bear}/></g>
+      ))}
+      <rect x={58} y={30} width={40} height={28} fill={C.zone} stroke={C.cyan} strokeWidth={1}/>
+      <rect x={64} y={36} width={8} height={16} fill={C.bear} stroke={C.cyan} strokeWidth={1.5}/>
+      <text x={72} y={30} fontSize="7" fill={C.cyan} fontFamily="monospace">OB</text>
+      {[[90,52,32],[106,46,22],[122,38,14]].map(([x,o,c],i) => (
+        <g key={i}><line x1={x} y1={c-4} x2={x} y2={o+4} stroke={C.bull} strokeWidth={1}/><rect x={x-4} y={Math.min(o,c)} width={8} height={Math.abs(o-c)||2} fill={C.bull}/></g>
+      ))}
+      <text x={136} y={24} fontSize="8" fill={C.bull} fontFamily="monospace">↑ IMPULSE</text>
+    </svg>,
+
+    <svg key={2} viewBox="0 0 200 72" style={{ width: '100%', height: 72, display: 'block' }}>
+      <rect width={200} height={72} fill="#0a0a0a" />
+      <rect x={20} y={20} width={60} height={20} fill="rgba(0,230,118,0.12)" stroke={C.bull} strokeWidth={1} strokeDasharray="3,2"/>
+      <text x={22} y={18} fontSize="7" fill={C.bull} fontFamily="monospace">Bull OB</text>
+      {[[30,36,26],[46,40,30]].map(([x,o,c],i) => (
+        <g key={i}><rect x={x-4} y={Math.min(o,c)} width={8} height={Math.abs(o-c)||2} fill={C.bull}/></g>
+      ))}
+      {[[90,28,40],[106,38,50],[122,48,58]].map(([x,o,c],i) => (
+        <g key={i}><rect x={x-4} y={Math.min(o,c)} width={8} height={Math.abs(o-c)||2} fill={C.bear}/></g>
+      ))}
+      <rect x={20} y={20} width={60} height={20} fill="rgba(255,61,87,0.1)" stroke={C.bear} strokeWidth={1}/>
+      <text x={22} y={52} fontSize="7" fill={C.bear} fontFamily="monospace">→ BREAKER</text>
+      <line x1={138} y1={44} x2={138} y2={30} stroke={C.bear} strokeWidth={1} markerEnd="url(#a)"/>
+      <rect x={128} y={20} width={20} height={12} fill="rgba(255,61,87,0.15)" stroke={C.bear} strokeWidth={1}/>
+      <text x={130} y={29} fontSize="6" fill={C.bear} fontFamily="monospace">TEST</text>
+    </svg>,
+
+    <svg key={3} viewBox="0 0 200 72" style={{ width: '100%', height: 72, display: 'block' }}>
+      <rect width={200} height={72} fill="#0a0a0a" />
+      <line x1={30} y1={2} x2={30} y2={62} stroke={C.bear} strokeWidth={1}/>
+      <rect x={26} y={40} width={8} height={16} fill={C.bear}/>
+      <line x1={30} y1={40} x2={30} y2={32} stroke={C.bear} strokeWidth={1}/>
+      <rect x={60} y={4} width={8} height={54} fill={C.bull} opacity={0.9}/>
+      <line x1={64} y1={2} x2={64} y2={62} stroke={C.bull} strokeWidth={1}/>
+      <line x1={82} y1={2} x2={82} y2={62} stroke={C.bull} strokeWidth={1}/>
+      <rect x={78} y={26} width={8} height={30} fill={C.bull}/>
+      <rect x={50} y={28} width={50} height={18} fill={C.zone} stroke={C.cyan} strokeWidth={1}/>
+      <text x={103} y={33} fontSize="8" fill={C.cyan} fontFamily="monospace">FVG</text>
+      <text x={103} y={44} fontSize="6" fill={C.txt} fontFamily="monospace">gap</text>
+      <line x1={50} y1={40} x2={100} y2={40} stroke={C.cyan} strokeWidth={0.5} strokeDasharray="2,2"/>
+      <line x1={50} y1={28} x2={100} y2={28} stroke={C.cyan} strokeWidth={0.5} strokeDasharray="2,2"/>
+    </svg>,
+
+    <svg key={4} viewBox="0 0 200 72" style={{ width: '100%', height: 72, display: 'block' }}>
+      <rect width={200} height={72} fill="#0a0a0a" />
+      <text x={10} y={18} fontSize="8" fill={C.bull} fontFamily="monospace">HTF ↑ BULLISH</text>
+      <line x1={10} y1={22} x2={190} y2={22} stroke={C.bull} strokeWidth={0.5} opacity={0.4}/>
+      <rect x={20} y={38} width={50} height={22} fill={C.zone} stroke={C.cyan} strokeWidth={1}/>
+      <text x={22} y={50} fontSize="8" fill={C.cyan} fontFamily="monospace">Bull OB</text>
+      <text x={22} y={60} fontSize="6" fill={C.txt} fontFamily="monospace">A+ quality</text>
+      {[[90,56,44],[106,46,32],[122,36,20]].map(([x,o,c],i) => (
+        <g key={i}><rect x={x-4} y={Math.min(o,c)} width={8} height={Math.abs(o-c)||2} fill={C.bull}/></g>
+      ))}
+      <text x={138} y={30} fontSize="9" fill={C.bull} fontFamily="monospace">LONG ↑</text>
+    </svg>,
+
+    <svg key={5} viewBox="0 0 200 72" style={{ width: '100%', height: 72, display: 'block' }}>
+      <rect width={200} height={72} fill="#0a0a0a" />
+      {[
+        [20,60,52,64],[34,56,44,58],[48,50,36,52],[62,46,32,48],[76,40,24,42],[90,36,18,38]
+      ].map(([x,o,c,lw],i) => (
+        <g key={i}><line x1={x} y1={lw} x2={x} y2={c-2} stroke={C.bull} strokeWidth={1}/><rect x={x-4} y={Math.min(o,c)} width={8} height={Math.abs(o-c)||2} fill={C.bull}/></g>
+      ))}
+      <line x1={10} y1={24} x2={100} y2={24} stroke={C.cyan} strokeWidth={1} strokeDasharray="3,2"/>
+      <text x={102} y={28} fontSize="8" fill={C.cyan} fontFamily="monospace">BOS</text>
+      <text x={22} y={70} fontSize="6" fill={C.txt} fontFamily="monospace">HH</text>
+      <text x={50} y={70} fontSize="6" fill={C.txt} fontFamily="monospace">HL</text>
+      <text x={78} y={70} fontSize="6" fill={C.txt} fontFamily="monospace">HH→BOS</text>
+    </svg>,
+
+    <svg key={6} viewBox="0 0 200 72" style={{ width: '100%', height: 72, display: 'block' }}>
+      <rect width={200} height={72} fill="#0a0a0a" />
+      {[
+        [20,58,50],[34,52,40],[48,46,32],[62,40,28]
+      ].map(([x,o,c],i) => (
+        <g key={i}><rect x={x-4} y={Math.min(o,c)} width={8} height={Math.abs(o-c)||2} fill={C.bull}/></g>
+      ))}
+      <text x={22} y={68} fontSize="6" fill={C.txt} fontFamily="monospace">HH</text>
+      <text x={50} y={68} fontSize="6" fill={C.txt} fontFamily="monospace">HH</text>
+      <line x1={10} y1={32} x2={100} y2={32} stroke={C.dim} strokeWidth={1} strokeDasharray="2,2"/>
+      {[
+        [80,30,46],[96,42,56],[112,52,62]
+      ].map(([x,o,c],i) => (
+        <g key={i}><rect x={x-4} y={Math.min(o,c)} width={8} height={Math.abs(o-c)||2} fill={C.bear}/></g>
+      ))}
+      <text x={90} y={68} fontSize="6" fill={C.bear} fontFamily="monospace">LL</text>
+      <text x={118} y={40} fontSize="8" fill={C.bear} fontFamily="monospace">CHoCH</text>
+      <line x1={76} y1={32} x2={76} y2={46} stroke={C.bear} strokeWidth={1.5}/>
+    </svg>,
+
+    <svg key={7} viewBox="0 0 200 72" style={{ width: '100%', height: 72, display: 'block' }}>
+      <rect width={200} height={72} fill="#0a0a0a" />
+      {[[20,50,44],[36,54,46]].map(([x,o,c],i) => (
+        <g key={i}><rect x={x-4} y={Math.min(o,c)} width={8} height={Math.abs(o-c)||2} fill={C.bear} opacity={0.5}/></g>
+      ))}
+      <rect x={44} y={22} width={50} height={36} fill="rgba(0,212,255,0.1)" stroke={C.cyan} strokeWidth={1.5}/>
+      <rect x={48} y={26} width={8} height={28} fill={C.bear} stroke={C.cyan} strokeWidth={1.5}/>
+      <line x1={52} y1={22} x2={52} y2={18} stroke={C.bear} strokeWidth={1}/>
+      <line x1={52} y1={54} x2={52} y2={60} stroke={C.bear} strokeWidth={1}/>
+      <text x={60} y={38} fontSize="7" fill={C.cyan} fontFamily="monospace">HIGH</text>
+      <text x={60} y={48} fontSize="7" fill={C.cyan} fontFamily="monospace">VOL OB</text>
+      <text x={60} y={58} fontSize="6" fill={C.bull} fontFamily="monospace">A+</text>
+      {[[108,50,36],[124,40,26],[140,34,18]].map(([x,o,c],i) => (
+        <g key={i}><rect x={x-4} y={Math.min(o,c)} width={8} height={Math.abs(o-c)||2} fill={C.bull}/></g>
+      ))}
+      <text x={150} y={28} fontSize="7" fill={C.bull} fontFamily="monospace">↑ INST.</text>
+    </svg>,
+  ]
+  return diagrams[idx] ?? null
+}
 
 const QUIZ_SCENARIOS = [
   {
@@ -70,40 +198,40 @@ const QUIZ_SCENARIOS = [
     exp: 'Цена "снесла" стопы продавцов (equal highs = SSL), после чего развернулась — типичный sweep sell-side liquidity перед продолжением нисходящего движения.',
   },
   {
-    q: 'Последняя медвежья свеча перед сильным бычьим импульсом +2% называется...',
+    q: 'Последняя медвежья свеча перед сильным бычьим импульсом называется...',
     opts: ['FVG', 'Bullish Order Block', 'Breaker Block', 'BSL'],
     ans: 1,
-    exp: 'Bullish Order Block — последняя медвежья свеча перед импульсным движением вверх. Цена часто возвращается в эту зону для "подбора ликвидности".',
+    exp: 'Bullish Order Block — последняя медвежья свеча перед импульсным движением вверх. Цена часто возвращается в эту зону для подбора ликвидности.',
   },
   {
-    q: 'Order Block был "пробит" (цена закрылась за его пределами). Как он теперь называется?',
+    q: 'Order Block был пробит (цена закрылась за его пределами). Как он теперь называется?',
     opts: ['Mitigation Block', 'FVG', 'Breaker Block', 'COB'],
     ans: 2,
     exp: 'Breaker Block — OB после пробоя меняет роль. Bullish OB, пробитый вниз, становится Bearish Breaker Block (теперь зона сопротивления).',
   },
   {
-    q: 'Три свечи: prev.high=100, curr=95-102, next.low=103. Это...',
+    q: 'Три свечи: prev.high=100, curr=95-102, next.low=103. Что это такое?',
     opts: ['Bearish FVG', 'Bullish FVG', 'Equal Highs', 'Bullish OB'],
     ans: 1,
-    exp: 'Bullish FVG (Fair Value Gap): разрыв между prev.high (100) и next.low (103). Цена "прыгнула" вверх, оставив незаполненную зону. Будет тяготеть к заполнению.',
+    exp: 'Bullish FVG (Fair Value Gap): разрыв между prev.high (100) и next.low (103). Цена прыгнула вверх, оставив незаполненную зону — будет тяготеть к заполнению.',
   },
   {
-    q: 'HTF trend = bullish, LTF trend = bearish, цена у bullish OB. Оптимальный сетап:',
+    q: 'HTF тренд бычий, LTF тренд медвежий, цена у bullish OB. Оптимальный сетап:',
     opts: ['SHORT по LTF тренду', 'LONG — confluence HTF+OB', 'WAIT — противоречие', 'LONG без подтверждения'],
     ans: 1,
-    exp: 'LONG — идеальный Smart Money сетап: HTF структура bullish + цена у bullish OB = конфлюэнс. Это высоковероятный вход в направлении "умных денег".',
+    exp: 'LONG — идеальный SMC сетап: HTF структура bullish + цена у bullish OB = конфлюэнс. Высоковероятный вход в направлении институциональных денег.',
   },
   {
-    q: 'Свечи: 5 Higher Highs + 5 Higher Lows за последние 10 баров. Что показывает?',
+    q: 'Свечи формируют 5 Higher Highs и 5 Higher Lows подряд. Что это означает?',
     opts: ['Ranging рынок', 'Change of Character', 'Bullish BOS (Break of Structure)', 'Bearish trend'],
     ans: 2,
-    exp: 'Break of Structure (BOS) — рынок формирует HH+HL, структура bychья. BOS подтверждает продолжение bullish тренда, пока структура не нарушена.',
+    exp: 'Break of Structure (BOS) — рынок формирует HH+HL, структура бычья. BOS подтверждает продолжение тренда, пока структура не нарушена.',
   },
   {
-    q: 'Что означает "Change of Character" (COB/CHoCH) на рынке?',
+    q: 'Что означает Change of Character (CHoCH) на рынке?',
     opts: ['Усиление текущего тренда', 'Первый признак разворота', 'Уровень ликвидности', 'Заполнение FVG'],
     ans: 1,
-    exp: 'Change of Character (CHoCH) — первое нарушение структуры противоположного направления. Например, первый LL в bullish тренде. Это сигнал возможного разворота.',
+    exp: 'CHoCH — первое нарушение структуры в противоположном направлении. Например, первый LL в бычьем тренде. Сигнал возможного разворота.',
   },
   {
     q: 'Объём на свече-основании OB значительно выше среднего (relVolume > 1.5). Это делает OB:',
@@ -119,16 +247,15 @@ export default function HistoryPanel() {
   const [signals, setSignals] = useState<Signal[]>([])
   const [loading, setLoading] = useState(false)
 
-  // Analytics
   const [analyticsLoaded, setAnalyticsLoaded] = useState(false)
+  const [confBuckets, setConfBuckets] = useState<{ bucket: number; label: string; total: number; wins: number; win_rate: number | null; avg_pnl: number | null }[]>([])
+  const [advStats, setAdvStats] = useState<{ profit_factor: number | null; max_drawdown: number; sharpe_ratio: number | null; expectancy: number; avg_win: number; avg_loss: number; total_resolved: number } | null>(null)
 
-  // Error review
   const [reviewSignal, setReviewSignal] = useState<Signal | null>(null)
   const [reviewCat, setReviewCat] = useState('')
   const [reviewNote, setReviewNote] = useState('')
   const [reviewSaved, setReviewSaved] = useState(false)
 
-  // Quiz
   const [qIdx, setQIdx] = useState(0)
   const [qScore, setQScore] = useState(0)
   const [qAnswered, setQAnswered] = useState<number | null>(null)
@@ -137,14 +264,36 @@ export default function HistoryPanel() {
 
   const load = useCallback(async () => {
     setLoading(true)
-    const r = await fetch('/api/signals?limit=200')
-    const d = await r.json()
-    if (d.ok) setSignals(d.signals || [])
+    const [sigRes, confRes, advRes] = await Promise.all([
+      fetch('/api/signals?limit=200'),
+      fetch('/api/stats/confidence'),
+      fetch('/api/stats/advanced'),
+    ])
+    const sigData = await sigRes.json()
+    if (sigData.ok) setSignals(sigData.signals || [])
+    const confData = await confRes.json()
+    if (confData.ok) setConfBuckets(confData.buckets || [])
+    const advData = await advRes.json()
+    if (advData.ok && advData.stats) setAdvStats(advData.stats)
     setLoading(false)
     setAnalyticsLoaded(true)
   }, [])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    // Auto-check win/loss outcomes from Binance candles
+    fetch('/api/signals/check-outcomes', { method: 'POST' })
+      .then(r => r.json())
+      .then(d => { if (d.ok && d.updated > 0) load() })
+      .catch(() => {})
+    load()
+  }, [load])
+
+  async function clearHistory() {
+    if (!confirm('Очистить всю историю сигналов?')) return
+    await fetch('/api/signals', { method: 'DELETE' })
+    setSignals([])
+    showToast('История очищена')
+  }
 
   async function setOutcome(id: number, outcome: string) {
     await fetch(`/api/signals/${id}/outcome`, {
@@ -154,8 +303,6 @@ export default function HistoryPanel() {
     showToast(outcome === 'win' ? t('win_marked') : t('loss_marked'))
     load()
   }
-
-  // ── Quiz logic ────────────────────────────────────────────────────────────
 
   function answerQuiz(idx: number) {
     if (qAnswered !== null) return
@@ -178,8 +325,6 @@ export default function HistoryPanel() {
     setQIdx(0); setQScore(0); setQAnswered(null); setQFinished(false); setQHistory([])
   }
 
-  // ── Analytics derived data ────────────────────────────────────────────────
-
   const resolved = signals.filter(s => s.outcome)
   const wins = resolved.filter(s => s.outcome === 'win').length
   const wr = resolved.length ? Math.round((wins / resolved.length) * 100) : 0
@@ -190,8 +335,6 @@ export default function HistoryPanel() {
 
   const losses = signals.filter(s => s.outcome === 'loss')
 
-  // ── Render ────────────────────────────────────────────────────────────────
-
   const TABS = [
     { id: 'history',   label: 'История' },
     { id: 'analytics', label: 'Аналитика' },
@@ -201,7 +344,7 @@ export default function HistoryPanel() {
 
   return (
     <div className="panel active" id="panel-history">
-      {/* Tab bar */}
+      {}
       <div style={{ display: 'flex', gap: 4, marginBottom: 12, borderBottom: '1px solid var(--line2)', paddingBottom: 8 }}>
         {TABS.map(tb => (
           <button
@@ -222,9 +365,16 @@ export default function HistoryPanel() {
         >{t('refresh')}</button>
       </div>
 
-      {/* ── HISTORY TAB ── */}
+      {}
       {tab === 'history' && (
         <div className="tbox">
+          {!loading && signals.length > 0 && (
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
+              <button onClick={clearHistory} style={{ fontSize: '.62rem', padding: '4px 10px', background: 'var(--card2)', border: '1px solid var(--line2)', borderRadius: 4, color: 'var(--muted)', cursor: 'pointer' }}>
+                Очистить историю
+              </button>
+            </div>
+          )}
           {loading && <div className="loading"><div className="ld-bar" /><div className="ld-t">{t('fetching')}</div></div>}
           {!loading && (
             <div className="twrap">
@@ -267,10 +417,10 @@ export default function HistoryPanel() {
         </div>
       )}
 
-      {/* ── ANALYTICS TAB ── */}
+      {}
       {tab === 'analytics' && (
         <div>
-          {/* Summary cards */}
+          {}
           <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
             {[
               { l: 'Сигналов', v: signals.length },
@@ -287,7 +437,54 @@ export default function HistoryPanel() {
             ))}
           </div>
 
-          {/* Hourly heatmap */}
+          {}
+          {advStats && (
+            <div className="tbox" style={{ marginBottom: 12 }}>
+              <div className="thead"><span className="thead-t">РАСШИРЕННАЯ СТАТИСТИКА</span></div>
+              <div style={{ padding: '10px 12px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
+                  {[
+                    {
+                      label: 'Profit Factor',
+                      value: advStats.profit_factor !== null ? advStats.profit_factor.toFixed(2) : '—',
+                      color: advStats.profit_factor !== null ? (advStats.profit_factor >= 1.5 ? 'var(--long)' : advStats.profit_factor >= 1 ? '#ffa500' : 'var(--short)') : 'var(--muted)',
+                      tip: '>1.5 отлично, >1 прибыльно, <1 убыточно',
+                    },
+                    {
+                      label: 'Max Drawdown',
+                      value: `-${advStats.max_drawdown.toFixed(1)}%`,
+                      color: advStats.max_drawdown > 30 ? 'var(--short)' : advStats.max_drawdown > 15 ? '#ffa500' : 'var(--long)',
+                      tip: 'Максимальная просадка от пика',
+                    },
+                    {
+                      label: 'Sharpe Ratio',
+                      value: advStats.sharpe_ratio !== null ? advStats.sharpe_ratio.toFixed(2) : '—',
+                      color: advStats.sharpe_ratio !== null ? (advStats.sharpe_ratio >= 1 ? 'var(--long)' : advStats.sharpe_ratio >= 0 ? '#ffa500' : 'var(--short)') : 'var(--muted)',
+                      tip: '>1 хорошо, >2 отлично. Доходность на единицу риска.',
+                    },
+                    {
+                      label: 'Expectancy',
+                      value: `${advStats.expectancy >= 0 ? '+' : ''}${advStats.expectancy.toFixed(2)}%`,
+                      color: advStats.expectancy >= 0 ? 'var(--long)' : 'var(--short)',
+                      tip: 'Средний ожидаемый результат на сделку',
+                    },
+                  ].map(({ label, value, color, tip }) => (
+                    <div key={label} title={tip} style={{ background: 'var(--bg3)', borderRadius: 4, padding: '8px 10px', textAlign: 'center', cursor: 'help' }}>
+                      <div style={{ fontSize: '.52rem', color: 'var(--dim)', marginBottom: 3 }}>{label}</div>
+                      <div style={{ fontSize: '.78rem', fontWeight: 700, color }}>{value}</div>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ display: 'flex', gap: 16, marginTop: 10, fontSize: '.6rem', color: 'var(--muted)' }}>
+                  <span>Ср. профит: <span style={{ color: 'var(--long)' }}>+{advStats.avg_win}%</span></span>
+                  <span>Ср. убыток: <span style={{ color: 'var(--short)' }}>-{advStats.avg_loss}%</span></span>
+                  <span>Разрешено: <span style={{ color: 'var(--text)' }}>{advStats.total_resolved}</span></span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {}
           <div className="tbox" style={{ marginBottom: 12 }}>
             <div className="thead"><span className="thead-t">АКТИВНОСТЬ ПО ЧАСАМ (UTC)</span></div>
             <div style={{ padding: '10px 12px' }}>
@@ -319,7 +516,7 @@ export default function HistoryPanel() {
             </div>
           </div>
 
-          {/* Session breakdown */}
+          {}
           <div className="tbox" style={{ marginBottom: 12 }}>
             <div className="thead"><span className="thead-t">СЕССИИ</span></div>
             <div style={{ padding: '8px 12px' }}>
@@ -348,7 +545,59 @@ export default function HistoryPanel() {
             </div>
           </div>
 
-          {/* Pair breakdown */}
+          {}
+          {confBuckets.length > 0 && (
+            <div className="tbox" style={{ marginBottom: 12 }}>
+              <div className="thead"><span className="thead-t">КАЛИБРОВКА УВЕРЕННОСТИ</span></div>
+              <div style={{ padding: '10px 12px' }}>
+                <p style={{ fontSize: '.58rem', color: 'var(--dim)', marginBottom: 10 }}>
+                  Реальный Win Rate для каждого диапазона уверенности AI. Чем ближе WR к confidence — тем лучше откалиброван.
+                </p>
+                {confBuckets.map(b => {
+                  const wr = b.win_rate ?? 0
+                  const wrColor = wr >= 60 ? 'var(--long)' : wr >= 45 ? '#ffa500' : 'var(--short)'
+                  const confMid = b.bucket + 5
+                  const gap = Math.abs(wr - confMid)
+                  return (
+                    <div key={b.bucket} style={{ marginBottom: 10 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                        <span style={{ fontSize: '.6rem', color: 'var(--muted)', width: 56 }}>{b.label}</span>
+                        <div style={{ flex: 1, height: 6, background: 'var(--bg3)', borderRadius: 3, position: 'relative' }}>
+                          {/* Полоса WR */}
+                          <div style={{ height: 6, borderRadius: 3, width: `${wr}%`, background: wrColor, transition: 'width .4s' }} />
+                          {/* Маркер ожидаемого confidence */}
+                          <div style={{ position: 'absolute', top: -2, left: `${confMid}%`, width: 2, height: 10, background: 'var(--cyan)', borderRadius: 1 }} title={`AI заявляет ~${confMid}%`} />
+                        </div>
+                        <span style={{ fontSize: '.6rem', fontWeight: 700, color: wrColor, width: 38, textAlign: 'right' }}>
+                          {b.win_rate !== null ? `${b.win_rate}%` : '—'}
+                        </span>
+                        <span style={{ fontSize: '.55rem', color: 'var(--dim)', width: 44 }}>
+                          {b.total} сигн.
+                        </span>
+                        <span style={{ fontSize: '.52rem', color: gap <= 10 ? 'var(--long)' : gap <= 20 ? '#ffa500' : 'var(--short)', width: 48 }}
+                          title="Расхождение между заявленной уверенностью и реальным WR">
+                          {gap <= 10 ? '✓ точно' : gap <= 20 ? '~ норм' : '✗ завышен'}
+                        </span>
+                      </div>
+                      {b.avg_pnl !== null && (
+                        <div style={{ fontSize: '.54rem', color: 'var(--dim)', marginLeft: 64 }}>
+                          средний PnL: <span style={{ color: b.avg_pnl >= 0 ? 'var(--long)' : 'var(--short)' }}>
+                            {b.avg_pnl >= 0 ? '+' : ''}{b.avg_pnl}%
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6 }}>
+                  <div style={{ width: 2, height: 10, background: 'var(--cyan)', borderRadius: 1 }} />
+                  <span style={{ fontSize: '.52rem', color: 'var(--dim)' }}>— заявленная уверенность AI</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {}
           {pairStats.length > 0 && (
             <div className="tbox">
               <div className="thead"><span className="thead-t">ПАРЫ</span></div>
@@ -374,14 +623,14 @@ export default function HistoryPanel() {
         </div>
       )}
 
-      {/* ── ERROR REVIEW TAB ── */}
+      {}
       {tab === 'review' && (
         <div>
           <div style={{ fontSize: '.65rem', color: 'var(--muted)', marginBottom: 10 }}>
             Выберите убыточную сделку для разбора, укажите тип ошибки и запишите урок.
           </div>
 
-          {/* Loss list */}
+          {}
           <div className="tbox" style={{ marginBottom: 12 }}>
             <div className="thead"><span className="thead-t">УБЫТОЧНЫЕ СДЕЛКИ ({losses.length})</span></div>
             <div style={{ padding: '6px 0', maxHeight: 180, overflowY: 'auto' }}>
@@ -412,14 +661,14 @@ export default function HistoryPanel() {
             </div>
           </div>
 
-          {/* Review form */}
+          {}
           {reviewSignal && (
             <div className="tbox">
               <div className="thead">
                 <span className="thead-t">РАЗБОР: {reviewSignal.pair} · {reviewSignal.timeframe}</span>
               </div>
               <div style={{ padding: '12px' }}>
-                {/* Signal details */}
+                {}
                 <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
                   {[
                     { l: 'Сигнал', v: reviewSignal.final_verdict || '—' },
@@ -434,7 +683,7 @@ export default function HistoryPanel() {
                   ))}
                 </div>
 
-                {/* Error category */}
+                {}
                 <div style={{ fontSize: '.58rem', color: 'var(--muted)', marginBottom: 6, textTransform: 'uppercase' }}>Категория ошибки</div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 12 }}>
                   {ERROR_CATEGORIES.map(ec => (
@@ -452,7 +701,7 @@ export default function HistoryPanel() {
                   ))}
                 </div>
 
-                {/* Error description */}
+                {}
                 {reviewCat && (
                   <div style={{ background: 'rgba(255,61,87,0.08)', border: '1px solid rgba(255,61,87,0.2)', borderRadius: 3, padding: '7px 10px', marginBottom: 10, fontSize: '.62rem', color: 'var(--muted)' }}>
                     <strong style={{ color: 'var(--short)' }}>{ERROR_CATEGORIES.find(e => e.id === reviewCat)?.label}:</strong>{' '}
@@ -460,7 +709,7 @@ export default function HistoryPanel() {
                   </div>
                 )}
 
-                {/* Lesson note */}
+                {}
                 <div style={{ fontSize: '.58rem', color: 'var(--muted)', marginBottom: 5, textTransform: 'uppercase' }}>Урок (что исправить)</div>
                 <textarea
                   value={reviewNote}
@@ -473,7 +722,7 @@ export default function HistoryPanel() {
                   }}
                 />
 
-                {/* Suggested improvement based on category */}
+                {}
                 {reviewCat && (
                   <div style={{ background: 'rgba(0,200,118,0.07)', border: '1px solid rgba(0,230,118,0.2)', borderRadius: 3, padding: '8px 10px', marginTop: 8 }}>
                     <div style={{ fontSize: '.58rem', color: 'var(--long)', fontWeight: 600, marginBottom: 4 }}>РЕКОМЕНДАЦИЯ</div>
@@ -482,7 +731,7 @@ export default function HistoryPanel() {
                       {reviewCat === 'htf_bias' && 'Перед каждым входом проверять HTF bias на 4H и 1D. Торговать только в направлении HTF.'}
                       {reviewCat === 'no_ob' && 'Входить только у подтверждённых OB A+/A или незаполненных FVG.'}
                       {reviewCat === 'early' && 'Ждать закрытия свечи с подтверждением (BOS или ретест). Не входить при открытой свече.'}
-                      {reviewCat === 'risk' && 'Максимум 1-2% риска на сделку. R:R должен быть минимум 1.5:1 перед входом.'}
+                      {reviewCat === 'risk' && 'Максимум 1-2% риска на сделку. R:R должен быть минимум 1:1.5 перед входом.'}
                       {reviewCat === 'session' && 'Торговать только в активные часы: Лондон (7-16 UTC) и NY (13-21 UTC). Избегать азиатскую сессию для волатильных активов.'}
                       {reviewCat === 'other' && 'Зафиксируйте конкретную ошибку в поле выше и создайте правило для её избежания.'}
                     </div>
@@ -501,7 +750,7 @@ export default function HistoryPanel() {
         </div>
       )}
 
-      {/* ── QUIZ TAB ── */}
+      {}
       {tab === 'quiz' && (
         <div>
           {!qFinished ? (
@@ -513,9 +762,13 @@ export default function HistoryPanel() {
                 </span>
               </div>
               <div style={{ padding: '14px 14px 12px' }}>
-                {/* Progress */}
+                {}
                 <div style={{ height: 3, background: 'var(--bg3)', borderRadius: 2, marginBottom: 12 }}>
                   <div style={{ height: 3, borderRadius: 2, width: `${((qIdx + 1) / QUIZ_SCENARIOS.length) * 100}%`, background: 'var(--cyan)', transition: 'width .3s' }} />
+                </div>
+
+                <div style={{ marginBottom: 12, borderRadius: 4, overflow: 'hidden', border: '1px solid var(--line2)' }}>
+                  <QuizDiagram idx={qIdx} />
                 </div>
 
                 <div style={{ fontSize: '.7rem', color: 'var(--text)', lineHeight: 1.55, marginBottom: 14 }}>
@@ -549,7 +802,7 @@ export default function HistoryPanel() {
                   })}
                 </div>
 
-                {/* Explanation */}
+                {}
                 {qAnswered !== null && (
                   <div style={{ marginTop: 10, background: 'var(--bg3)', borderRadius: 4, padding: '10px 12px' }}>
                     <div style={{ fontSize: '.58rem', fontWeight: 600, marginBottom: 4, color: qAnswered === QUIZ_SCENARIOS[qIdx].ans ? 'var(--long)' : 'var(--short)' }}>
@@ -569,7 +822,7 @@ export default function HistoryPanel() {
               </div>
             </div>
           ) : (
-            /* Quiz result */
+            
             <div className="tbox">
               <div className="thead"><span className="thead-t">РЕЗУЛЬТАТ КВИЗА</span></div>
               <div style={{ padding: '20px 14px', textAlign: 'center' }}>
@@ -579,7 +832,7 @@ export default function HistoryPanel() {
                 <div style={{ fontSize: '.7rem', color: 'var(--muted)', marginBottom: 16 }}>
                   {qScore >= 7 ? 'Отлично! Вы хорошо знаете Smart Money Concepts.' : qScore >= 5 ? 'Хорошо! Повторите слабые места.' : 'Нужна практика. Изучите концепции SMC.'}
                 </div>
-                {/* Review mistakes */}
+                {}
                 {qHistory.filter(h => !h.correct).length > 0 && (
                   <div style={{ textAlign: 'left', marginBottom: 14 }}>
                     <div style={{ fontSize: '.6rem', color: 'var(--muted)', marginBottom: 8 }}>ОШИБКИ:</div>

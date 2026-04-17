@@ -25,10 +25,11 @@ function getAdminAuth(): Auth {
 
 export const adminAuth = { getUser: (uid: string) => getAdminAuth().getUser(uid) }
 
-export async function verifyToken(token: string): Promise<string | null> {
+// Returns { uid, email } from token claims — no extra API call needed
+export async function verifyToken(token: string): Promise<{ uid: string; email: string } | null> {
   try {
     const decoded = await getAdminAuth().verifyIdToken(token)
-    return decoded.uid
+    return { uid: decoded.uid, email: decoded.email || '' }
   } catch {
     return null
   }

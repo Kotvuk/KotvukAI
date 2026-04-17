@@ -9,12 +9,11 @@ export async function POST(req: NextRequest) {
     const { token } = await req.json()
     if (!token) return NextResponse.json({ ok: false, error: 'No token' }, { status: 400 })
 
-    const uid = await verifyToken(token)
-    if (!uid) return NextResponse.json({ ok: false, error: 'Invalid token' }, { status: 401 })
+    const decoded = await verifyToken(token)
+    if (!decoded) return NextResponse.json({ ok: false, error: 'Invalid token' }, { status: 401 })
 
-    const { adminAuth } = await import('@/lib/firebase-admin')
-    const fbUser = await adminAuth.getUser(uid)
-    const user = await upsertUser(uid, fbUser.email || '')
+    // email comes directly from token claims — no extra adminAuth.getUser() call
+    const user = await upsertUser(decoded.uid, decoded.email)
 
     return NextResponse.json({ ok: true, user: { id: user.id, email: user.email, nickname: user.nickname, lang: user.lang } })
   } catch (e: unknown) {

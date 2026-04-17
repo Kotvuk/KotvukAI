@@ -16,7 +16,8 @@ export async function middleware(req: NextRequest) {
     !pathname.startsWith('/api/ticker') &&
     !pathname.startsWith('/api/news') &&
     !pathname.startsWith('/api/analyze/test') &&
-    !pathname.startsWith('/api/analyze/batch')
+    !pathname.startsWith('/api/analyze/batch') &&
+    !pathname.startsWith('/api/billing/webhook')
 
   if ((isProtected || isApiProtected) && !token) {
     if (isApiProtected) {

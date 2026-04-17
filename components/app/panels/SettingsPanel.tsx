@@ -22,7 +22,9 @@ export default function SettingsPanel() {
   const [pass, setPass]         = useState('')
   const [pass2, setPass2]       = useState('')
   const [sub, setSub]           = useState<SubInfo | null>(null)
-  const [exporting, setExporting] = useState(false)
+  const [exporting, setExporting]     = useState(false)
+  const [purchasing, setPurchasing]   = useState<string | null>(null)
+  const [portalLoading, setPortalLoading] = useState(false)
   const [aiBalance, setAiBalance]   = useState(1000)
   const [aiRisk, setAiRisk]         = useState(1.0)
   const [aiLeverage, setAiLeverage] = useState(20)
@@ -66,6 +68,31 @@ export default function SettingsPanel() {
       }
       showToast(t('settings_saved'))
     } catch { showToast(t('error'), 'err') }
+  }
+
+  async function subscribe(tier: string) {
+    setPurchasing(tier)
+    try {
+      const r = await fetch('/api/billing/checkout', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tier }),
+      })
+      const d = await r.json()
+      if (d.ok && d.url) window.location.href = d.url
+      else showToast(d.error || 'Ошибка оплаты', 'err')
+    } catch { showToast('Ошибка соединения', 'err') }
+    setPurchasing(null)
+  }
+
+  async function openPortal() {
+    setPortalLoading(true)
+    try {
+      const r = await fetch('/api/billing/portal', { method: 'POST' })
+      const d = await r.json()
+      if (d.ok && d.url) window.location.href = d.url
+      else showToast(d.error || 'Нет активной подписки', 'err')
+    } catch { showToast('Ошибка соединения', 'err') }
+    setPortalLoading(false)
   }
 
   async function exportCSV(type: 'trades' | 'signals') {
@@ -114,10 +141,12 @@ export default function SettingsPanel() {
       <div style={{ maxWidth: 500, margin: '0 auto' }}>
 
         {/* ── Подписка ── */}
-        {sub && (
-          <div className="sb2">
-            <div className="st">Подписка</div>
-            <div className="sub-bar">
+        <div className="sb2">
+          <div className="st">Подписка</div>
+
+          {/* Текущий план */}
+          {sub && (
+            <div className="sub-bar" style={{ marginBottom: 16 }}>
               <div className="sub-bar-info">
                 <div className="sub-bar-tier" style={{ color: tierInfo.color }}>
                   {tierInfo.name} Plan
@@ -134,11 +163,70 @@ export default function SettingsPanel() {
                 {tierInfo.name.toUpperCase()}
               </span>
             </div>
-            <p style={{ fontSize: '.6rem', color: 'var(--dim)', marginTop: 4 }}>
-              Для изменения тарифа обратитесь к администратору.
-            </p>
+          )}
+
+          {/* Карточки тарифов */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 12 }}>
+            {([
+              { tier: 'starter', price: '$9', analyses: 10,  color: '#0a84ff', features: ['10 анализов/день', 'SMC сигналы', 'История'] },
+              { tier: 'pro',     price: '$29', analyses: 30, color: '#30d158', features: ['30 анализов/день', 'Приоритет', 'Экспорт CSV'] },
+              { tier: 'elite',   price: '$79', analyses: 100, color: '#ffd60a', features: ['100 анализов/день', 'Без ограничений', 'VIP поддержка'] },
+            ] as const).map(({ tier, price, color, features }) => {
+              const isCurrent = sub?.tier === tier
+              const isLoading = purchasing === tier
+              return (
+                <div key={tier} style={{
+                  background: isCurrent ? color + '11' : 'var(--bg2)',
+                  border: `1px solid ${isCurrent ? color : 'var(--border)'}`,
+                  borderRadius: 8, padding: '12px 10px', textAlign: 'center',
+                }}>
+                  <div style={{ fontSize: '.65rem', fontWeight: 700, color, textTransform: 'uppercase', marginBottom: 4 }}>
+                    {tier}
+                  </div>
+                  <div style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text)', marginBottom: 8 }}>
+                    {price}<span style={{ fontSize: '.55rem', color: 'var(--dim)', fontWeight: 400 }}>/мес</span>
+                  </div>
+                  <div style={{ marginBottom: 10 }}>
+                    {features.map(f => (
+                      <div key={f} style={{ fontSize: '.55rem', color: 'var(--dim)', marginBottom: 2 }}>✓ {f}</div>
+                    ))}
+                  </div>
+                  {isCurrent ? (
+                    <div style={{ fontSize: '.58rem', color, fontWeight: 600, padding: '4px 0' }}>✓ Активен</div>
+                  ) : (
+                    <button
+                      onClick={() => subscribe(tier)}
+                      disabled={!!purchasing}
+                      style={{
+                        width: '100%', background: color, color: '#000',
+                        border: 'none', borderRadius: 5, padding: '5px 0',
+                        fontSize: '.6rem', fontWeight: 700, cursor: 'pointer',
+                        opacity: purchasing ? 0.6 : 1,
+                      }}
+                    >
+                      {isLoading ? '...' : 'Оформить'}
+                    </button>
+                  )}
+                </div>
+              )
+            })}
           </div>
-        )}
+
+          {/* Управление подпиской */}
+          {sub && sub.tier !== 'free' && (
+            <button
+              onClick={openPortal}
+              disabled={portalLoading}
+              style={{
+                background: 'transparent', border: '1px solid var(--border)',
+                color: 'var(--dim)', padding: '6px 14px', borderRadius: 6,
+                fontSize: '.6rem', cursor: 'pointer', width: '100%',
+              }}
+            >
+              {portalLoading ? 'Загрузка...' : '⚙ Управление подпиской / Отмена'}
+            </button>
+          )}
+        </div>
 
         {/* ── AI Трейдинг ── */}
         <div className="sb2">

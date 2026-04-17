@@ -31,6 +31,7 @@ export interface User {
   ai_max_leverage: number   // макс плечо для AI-сделок (default 20)
   ai_balance?: number       // депозит для расчёта риска (default 1000)
   ai_risk_per_trade?: number // риск на сделку в % (default 1.0)
+  stripe_customer_id?: string | null
   created_at: string
 }
 
@@ -174,6 +175,15 @@ export async function upsertUser(firebaseUid: string, email: string): Promise<Us
 export async function getUserByFirebaseUid(uid: string): Promise<User | null> {
   const rows = await sql`SELECT * FROM users WHERE firebase_uid = ${uid} LIMIT 1`
   return (rows[0] as User) || null
+}
+
+export async function getUserById(id: number): Promise<User | null> {
+  const rows = await sql`SELECT * FROM users WHERE id = ${id} LIMIT 1`
+  return (rows[0] as User) || null
+}
+
+export async function setStripeCustomerId(userId: number, customerId: string): Promise<void> {
+  await sql`UPDATE users SET stripe_customer_id = ${customerId} WHERE id = ${userId}`
 }
 
 export async function saveSignal(userId: number, data: Partial<Signal>) {
@@ -572,6 +582,7 @@ export async function initDB() {
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS ai_max_leverage INTEGER DEFAULT 20`
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS ai_balance NUMERIC DEFAULT 1000`
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS ai_risk_per_trade NUMERIC DEFAULT 1.0`
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_customer_id TEXT`
   await sql`
     CREATE TABLE IF NOT EXISTS signals (
       id SERIAL PRIMARY KEY,

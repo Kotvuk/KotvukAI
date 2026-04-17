@@ -516,6 +516,16 @@ export async function cancelTrade(id: number, userId: number): Promise<boolean> 
 }
 
 // ─── Admin functions ──────────────────────────────────────────────────────────
+export async function deleteUserById(userId: number) {
+  // Cascade delete in correct order (FK constraints)
+  await sql`DELETE FROM notifications WHERE user_id = ${userId}`
+  await sql`DELETE FROM level_alerts  WHERE user_id = ${userId}`
+  await sql`DELETE FROM trades        WHERE user_id = ${userId}`
+  await sql`DELETE FROM signals       WHERE user_id = ${userId}`
+  await sql`DELETE FROM subscriptions WHERE user_id = ${userId}`
+  await sql`DELETE FROM users         WHERE id      = ${userId}`
+}
+
 export async function getAllUsersWithSubscriptions() {
   const rows = await sql`
     SELECT u.id, u.firebase_uid, u.email, u.nickname, u.lang, u.created_at,

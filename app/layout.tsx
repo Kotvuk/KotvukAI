@@ -2,8 +2,9 @@ import type { Metadata } from 'next'
 import './globals.css'
 import { AuthProvider } from '@/contexts/AuthContext'
 import { LangProvider } from '@/contexts/LangContext'
+import { Analytics } from '@vercel/analytics/next'
 
-const SITE_URL = 'https://kotvukai.vercel.app'
+const SITE_URL = 'https://kotvuk.asia'
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -82,6 +83,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             {children}
           </LangProvider>
         </AuthProvider>
+        <Analytics />
       </body>
     </html>
   )

@@ -19,15 +19,13 @@ export async function GET(req: NextRequest) {
     if (!r.ok) {
       return NextResponse.json({ ok: false, error: 'Binance error' }, { status: 502 })
     }
-    const data = await r.json()
+    const formattedData = data.map((d: any[]) => [
+  d[0],             // timestamp (оставляем как есть)
+  parseFloat(d[1]), // open
+  parseFloat(d[2]), // high
+  parseFloat(d[3]), // low
+  parseFloat(d[4]), // close
+  parseFloat(d[5]), // volume
+]);
 
-    const res = NextResponse.json(data)
-
-    if (isHistorical) {
-      res.headers.set('Cache-Control', 'public, max-age=30, stale-while-revalidate=60')
-    }
-    return res
-  } catch (e: unknown) {
-    return NextResponse.json({ ok: false, error: e instanceof Error ? e.message : 'fetch error' }, { status: 500 })
-  }
-}
+return NextResponse.json(formattedData);

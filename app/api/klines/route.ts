@@ -28,4 +28,8 @@ export async function GET(req: NextRequest) {
   parseFloat(d[5]), // volume
 ]);
 
-return NextResponse.json(formattedData);
+    return NextResponse.json(formattedData);
+  } catch (e: any) {
+    return NextResponse.json({ ok: false, error: e.message || "fetch error" }, { status: 500 });
+  }
+}

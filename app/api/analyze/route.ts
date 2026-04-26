@@ -18,6 +18,46 @@ const HTF_MAP: Record<string, string> = {
 
 const PAIR_RE = /^[A-Z]{2,12}(USDT?|BTC|ETH|BNB)$/
 
+const BINANCE_ENDPOINTS = [
+  'https://fapi.binance.com',
+  'https://api.binance.com', 
+  'https://data.binance.com',
+]
+
+/** Получить свечи: пробуем разные endpoints с retry */
+async function fetchKlines(sym: string, interval: string, limit: number): Promise<number[][]> {
+  const withTimeout = (url: string) => {
+    const ctrl = new AbortController()
+    const t = setTimeout(() => ctrl.abort(), 9000)
+    return fetch(url, { signal: ctrl.signal, cache: 'no-store' })
+      .finally(() => clearTimeout(t))
+  }
+
+  let lastError = ''
+  
+  // Try each endpoint
+  for (const baseUrl of BINANCE_ENDPOINTS) {
+    try {
+      const isFutures = baseUrl.includes('fapi')
+      const path = isFutures 
+        ? '/fapi/v1/klines' 
+        : '/api/v3/klines'
+      const url = `${baseUrl}${path}?symbol=${sym}&interval=${interval}&limit=${limit}`
+      
+      const r = await withTimeout(url)
+      if (r.ok) {
+        const d: number[][] = await r.json()
+        if (Array.isArray(d) && d.length > 0) return d
+      }
+      lastError = `endpoint ${baseUrl} returned ${r.status}`
+    } catch (e) {
+      lastError = String(e)
+    }
+  }
+  
+  throw new Error(`Не удалось получить свечи: ${lastError}`)
+}
+
 export async function POST(req: NextRequest) {
   const user = await getUser(req)
   if (!user) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 })
@@ -45,19 +85,6 @@ export async function POST(req: NextRequest) {
     const interval    = TF_MAP[timeframe] || '1h'
     const htfInterval = HTF_MAP[interval] || '1d'
 
-    const [binanceRes, htfRes, frRes] = await Promise.allSettled([
-      fetch(`https://fapi.binance.com/fapi/v1/klines?symbol=${sym}&interval=${interval}&limit=200`),
-      fetch(`https://fapi.binance.com/fapi/v1/klines?symbol=${sym}&interval=${htfInterval}&limit=100`),
-      fetch(`https://fapi.binance.com/fapi/v1/fundingRate?symbol=${sym}&limit=1`),
-    ])
-
-    if (binanceRes.status !== 'fulfilled' || !binanceRes.value.ok) {
-      throw new Error('Binance error — не удалось получить свечи')
-    }
-
-    const raw: number[][] = await binanceRes.value.json()
-    if (!Array.isArray(raw)) throw new Error('Binance вернул некорректный формат')
-
     const toCandles = (rows: number[][]): Candle[] => rows.map(c => ({
       timestamp: c[0],
       open:   parseFloat(String(c[1])),
@@ -67,14 +94,20 @@ export async function POST(req: NextRequest) {
       volume: parseFloat(String(c[5])),
     }))
 
+    // Основные свечи (обязательно) + HTF и funding (опционально, не блокируем)
+    const raw = await fetchKlines(sym, interval, 200)
     const candles = toCandles(raw)
 
+    const [htfRes, frRes] = await Promise.allSettled([
+      fetchKlines(sym, htfInterval, 100),
+      fetch(`https://fapi.binance.com/fapi/v1/fundingRate?symbol=${sym}&limit=1`, { cache: 'no-store' }),
+    ])
+
     let htfBias: string | undefined
-    if (htfRes.status === 'fulfilled' && htfRes.value.ok) {
+    if (htfRes.status === 'fulfilled') {
       try {
-        const htfRaw: number[][] = await htfRes.value.json()
-        if (Array.isArray(htfRaw) && htfRaw.length > 0) {
-          htfBias = calcEnhancedSMC(toCandles(htfRaw), null).htfBias
+        if (htfRes.value.length > 0) {
+          htfBias = calcEnhancedSMC(toCandles(htfRes.value), null).htfBias
         }
       } catch { /* ignore */ }
     }

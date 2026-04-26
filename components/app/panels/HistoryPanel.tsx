@@ -251,6 +251,10 @@ export default function HistoryPanel() {
   const [confBuckets, setConfBuckets] = useState<{ bucket: number; label: string; total: number; wins: number; win_rate: number | null; avg_pnl: number | null }[]>([])
   const [advStats, setAdvStats] = useState<{ profit_factor: number | null; max_drawdown: number; sharpe_ratio: number | null; expectancy: number; avg_win: number; avg_loss: number; total_resolved: number } | null>(null)
 
+  const [filterPair, setFilterPair] = useState('all')
+  const [filterTf, setFilterTf] = useState('all')
+  const [filterOutcome, setFilterOutcome] = useState('all')
+
   const [reviewSignal, setReviewSignal] = useState<Signal | null>(null)
   const [reviewCat, setReviewCat] = useState('')
   const [reviewNote, setReviewNote] = useState('')
@@ -325,6 +329,17 @@ export default function HistoryPanel() {
     setQIdx(0); setQScore(0); setQAnswered(null); setQFinished(false); setQHistory([])
   }
 
+  const uniquePairs = Array.from(new Set(signals.map(s => s.pair))).sort()
+  const uniqueTfs = Array.from(new Set(signals.map(s => s.timeframe))).sort()
+
+  const filteredSignals = signals.filter(s => {
+    if (filterPair !== 'all' && s.pair !== filterPair) return false
+    if (filterTf !== 'all' && s.timeframe !== filterTf) return false
+    if (filterOutcome === 'pending') return !s.outcome
+    if (filterOutcome !== 'all' && s.outcome !== filterOutcome) return false
+    return true
+  })
+
   const resolved = signals.filter(s => s.outcome)
   const wins = resolved.filter(s => s.outcome === 'win').length
   const wr = resolved.length ? Math.round((wins / resolved.length) * 100) : 0
@@ -369,8 +384,37 @@ export default function HistoryPanel() {
       {tab === 'history' && (
         <div className="tbox">
           {!loading && signals.length > 0 && (
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
-              <button onClick={clearHistory} style={{ fontSize: '.62rem', padding: '4px 10px', background: 'var(--card2)', border: '1px solid var(--line2)', borderRadius: 4, color: 'var(--muted)', cursor: 'pointer' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8, flexWrap: 'wrap' }}>
+              <select
+                value={filterPair}
+                onChange={e => setFilterPair(e.target.value)}
+                style={{ fontSize: '.62rem', padding: '3px 8px', background: 'var(--bg3)', border: '1px solid var(--line2)', borderRadius: 4, color: 'var(--text)', cursor: 'pointer' }}
+              >
+                <option value="all">Все пары</option>
+                {uniquePairs.map(p => <option key={p} value={p}>{p}</option>)}
+              </select>
+              <select
+                value={filterTf}
+                onChange={e => setFilterTf(e.target.value)}
+                style={{ fontSize: '.62rem', padding: '3px 8px', background: 'var(--bg3)', border: '1px solid var(--line2)', borderRadius: 4, color: 'var(--text)', cursor: 'pointer' }}
+              >
+                <option value="all">Все TF</option>
+                {uniqueTfs.map(tf => <option key={tf} value={tf}>{tf}</option>)}
+              </select>
+              <select
+                value={filterOutcome}
+                onChange={e => setFilterOutcome(e.target.value)}
+                style={{ fontSize: '.62rem', padding: '3px 8px', background: 'var(--bg3)', border: '1px solid var(--line2)', borderRadius: 4, color: 'var(--text)', cursor: 'pointer' }}
+              >
+                <option value="all">Все</option>
+                <option value="win">Win</option>
+                <option value="loss">Loss</option>
+                <option value="pending">Ожидают</option>
+              </select>
+              <span style={{ fontSize: '.6rem', color: 'var(--dim)', marginLeft: 2 }}>
+                {filteredSignals.length} / {signals.length}
+              </span>
+              <button onClick={clearHistory} style={{ marginLeft: 'auto', fontSize: '.62rem', padding: '4px 10px', background: 'var(--card2)', border: '1px solid var(--line2)', borderRadius: 4, color: 'var(--muted)', cursor: 'pointer' }}>
                 Очистить историю
               </button>
             </div>
@@ -387,7 +431,7 @@ export default function HistoryPanel() {
                   </tr>
                 </thead>
                 <tbody>
-                  {signals.length ? signals.map(s => (
+                  {filteredSignals.length ? filteredSignals.map(s => (
                     <tr key={s.id}>
                       <td>{new Date(s.created_at).toLocaleDateString('ru')}</td>
                       <td>{s.pair}</td>
@@ -408,7 +452,7 @@ export default function HistoryPanel() {
                       </td>
                     </tr>
                   )) : (
-                    <tr><td colSpan={12} style={{ textAlign: 'center', color: 'var(--dim)', padding: 18, fontSize: '.63rem' }}>{t('no_history')}</td></tr>
+                    <tr><td colSpan={12} style={{ textAlign: 'center', color: 'var(--dim)', padding: 18, fontSize: '.63rem' }}>{filterPair !== 'all' || filterTf !== 'all' || filterOutcome !== 'all' ? 'Нет сигналов по фильтру' : t('no_history')}</td></tr>
                   )}
                 </tbody>
               </table>

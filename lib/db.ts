@@ -27,7 +27,6 @@ export interface User {
   email: string | null
   nickname: string | null
   lang: string
-  ai_trade_amount: number   // сумма AI-сделки в USDT (default 100)
   ai_max_leverage: number   // макс плечо для AI-сделок (default 20)
   ai_balance?: number       // депозит для расчёта риска (default 1000)
   ai_risk_per_trade?: number // риск на сделку в % (default 1.0)
@@ -426,7 +425,7 @@ export async function saveDrawings(userId: number, pair: string, timeframe: stri
 
 export async function updateUserSettings(userId: number, data: {
   nickname?: string; email?: string; lang?: string
-  ai_trade_amount?: number; ai_max_leverage?: number
+  ai_max_leverage?: number
   ai_balance?: number; ai_risk_per_trade?: number
 }) {
   await sql`
@@ -434,7 +433,6 @@ export async function updateUserSettings(userId: number, data: {
       nickname          = COALESCE(${data.nickname ?? null}, nickname),
       email             = COALESCE(${data.email ?? null}, email),
       lang              = COALESCE(${data.lang ?? null}, lang),
-      ai_trade_amount   = COALESCE(${data.ai_trade_amount ?? null}, ai_trade_amount),
       ai_max_leverage   = COALESCE(${data.ai_max_leverage ?? null}, ai_max_leverage),
       ai_balance        = COALESCE(${data.ai_balance ?? null}, ai_balance),
       ai_risk_per_trade = COALESCE(${data.ai_risk_per_trade ?? null}, ai_risk_per_trade)
@@ -578,7 +576,6 @@ export async function initDB() {
       created_at TIMESTAMPTZ DEFAULT NOW()
     )
   `
-  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS ai_trade_amount NUMERIC DEFAULT 100`
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS ai_max_leverage INTEGER DEFAULT 20`
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS ai_balance NUMERIC DEFAULT 1000`
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS ai_risk_per_trade NUMERIC DEFAULT 1.0`

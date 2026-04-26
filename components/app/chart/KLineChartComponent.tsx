@@ -169,6 +169,7 @@ export interface KLineChartHandle {
   updateSidebarMarket: (cb: (data: CandleData) => void) => void
   getUserDrawings: () => unknown[]
   restoreUserDrawings: (drawings: unknown[]) => void
+  highlightOB: (high: number, low: number, type: 'bullish' | 'bearish', label?: string) => void
 }
 
 export interface OBData {
@@ -462,6 +463,34 @@ const KLineChartComponent = forwardRef<KLineChartHandle, Props>(
 
         lastMarkup.current = { ...a, analysisTs: Date.now() }
         drawMarkupInternal(lastMarkup.current)
+      },
+
+      highlightOB(high: number, low: number, type: 'bullish' | 'bearish', label?: string) {
+        if (!chartRef.current || !candlesRef.current.length) return
+        const lastTs = candlesRef.current[candlesRef.current.length - 1].timestamp
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const passThrough = () => false as any
+        chartRef.current.createOverlay({
+          name: 'priceRect',
+          groupId: 'ai_selected_ob',
+          id: 'selected_ob',
+          lock: true,
+          onMouseDown: passThrough,
+          onMouseMove: passThrough,
+          onPressedMoveStart: passThrough,
+          onPressedMoving: passThrough,
+          onPressedMoveEnd: passThrough,
+          points: [{ timestamp: lastTs, value: high }, { timestamp: lastTs - 86400 * 1000, value: low }],
+          styles: {
+            polygon: {
+              style: 'stroke_fill',
+              color: type === 'bullish' ? 'rgba(0,230,118,0.15)' : 'rgba(255,61,87,0.15)',
+              borderColor: type === 'bullish' ? '#00e676' : '#ff3d57',
+              borderSize: 3,
+            },
+          },
+          extendData: label || (type === 'bullish' ? 'Bull OB (Selected)' : 'Bear OB (Selected)'),
+        })
       },
 
       updateMarkup(tp?: number, sl?: number, entry?: number) {

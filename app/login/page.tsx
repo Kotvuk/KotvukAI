@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { signInWithEmailAndPassword } from 'firebase/auth'
+import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth'
 import { auth } from '@/lib/firebase'
 import { useLang } from '@/contexts/LangContext'
 
@@ -28,6 +28,23 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [forgotMode, setForgotMode] = useState(false)
+  const [forgotSent, setForgotSent] = useState(false)
+
+  async function handleForgot(e: React.FormEvent) {
+    e.preventDefault()
+    if (!email) { setError('Введите email'); return }
+    setError('')
+    setLoading(true)
+    try {
+      await sendPasswordResetEmail(auth, email)
+      setForgotSent(true)
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Ошибка'
+      setError(msg.replace('Firebase: ', '').replace(/\(auth.*\)/, ''))
+    }
+    setLoading(false)
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -55,9 +72,9 @@ export default function LoginPage() {
         <div className="auth-title">{t('login')}</div>
         <div className="auth-sub">Войдите в свой аккаунт для доступа к анализу</div>
 
-        {error && <div className="auth-err">{error}</div>}
+        {!forgotMode && error && <div className="auth-err">{error}</div>}
 
-        <form onSubmit={handleSubmit}>
+        {!forgotMode && <form onSubmit={handleSubmit}>
           <div className="auth-ff">
             <label className="fl">{t('email')}</label>
             <input
@@ -90,11 +107,59 @@ export default function LoginPage() {
           >
             {loading ? '...' : t('sign_in')}
           </button>
-        </form>
+        </form>}
 
-        <div className="auth-link">
-          {t('no_account')} <a href="/register">{t('sign_up')}</a>
-        </div>
+        {!forgotMode ? (
+          <>
+            <div style={{ textAlign: 'center', marginTop: 10 }}>
+              <button
+                type="button"
+                onClick={() => { setForgotMode(true); setError(''); setForgotSent(false) }}
+                style={{ background: 'none', border: 'none', color: 'var(--cyan)', fontSize: '.65rem', cursor: 'pointer', padding: 0 }}
+              >
+                Забыли пароль?
+              </button>
+            </div>
+            <div className="auth-link">
+              {t('no_account')} <a href="/register">{t('sign_up')}</a>
+            </div>
+          </>
+        ) : (
+          <div style={{ marginTop: 14 }}>
+            {forgotSent ? (
+              <div style={{ background: 'rgba(0,230,118,0.1)', border: '1px solid rgba(0,230,118,0.3)', borderRadius: 4, padding: '10px 14px', fontSize: '.65rem', color: 'var(--long)', textAlign: 'center' }}>
+                Письмо отправлено на <strong>{email}</strong>.<br />Проверьте почту и следуйте инструкции.
+              </div>
+            ) : (
+              <form onSubmit={handleForgot}>
+                <div style={{ fontSize: '.65rem', color: 'var(--muted)', marginBottom: 10 }}>
+                  Введите email — мы пришлём ссылку для сброса пароля.
+                </div>
+                {error && <div className="auth-err">{error}</div>}
+                <div className="auth-ff">
+                  <label className="fl">{t('email')}</label>
+                  <input
+                    type="email" className="fi" value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    placeholder="user@example.com" required
+                  />
+                </div>
+                <button type="submit" className="ssave" style={{ width: '100%', padding: '9px' }} disabled={loading}>
+                  {loading ? '...' : 'Отправить письмо'}
+                </button>
+              </form>
+            )}
+            <div style={{ textAlign: 'center', marginTop: 10 }}>
+              <button
+                type="button"
+                onClick={() => { setForgotMode(false); setError(''); setForgotSent(false) }}
+                style={{ background: 'none', border: 'none', color: 'var(--muted)', fontSize: '.63rem', cursor: 'pointer', padding: 0 }}
+              >
+                ← Назад ко входу
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

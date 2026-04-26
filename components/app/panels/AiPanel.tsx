@@ -10,6 +10,7 @@ import type { SMCDrawSettings } from '@/components/app/chart/KLineChartComponent
 import type { ProbabilityResult } from '@/lib/smc'
 import DrawingSettingsModal from '@/components/app/chart/DrawingSettingsModal'
 import HistoricalSetupsModal from '@/components/app/panels/HistoricalSetupsModal'
+import GlossaryModal from '@/components/app/panels/GlossaryModal'
 
 const PAIRS = [
   // ─── Топ ───────────────────────────────────────────────────────────────────
@@ -68,6 +69,14 @@ const PAIRS = [
   'JTO/USDT','MANTA/USDT','PIXEL/USDT','XION/USDT','BB/USDT','BANANA/USDT',
   'NOT/USDT','DOGS/USDT','HMSTR/USDT','CATI/USDT','MAJOR/USDT','TON/USDT',
   'UXLINK/USDT','EIGEN/USDT','PUFFER/USDT','NEIRO/USDT','MOODENG/USDT',
+  // ─── DePIN/Real World ─────────────────────────────────────────────────────
+  'LIT/USDT','GPS/USDT','HNT/USDT','MNEE/USDT','RPNC/USDT','DEAI/USDT',
+  'AKT/USDT','BORA/USDT','DEPO/USDT','PLUME/USDT','TURT/USDT','GOAT/USDT',
+  'PNUT/USDT','MOTHER/USDT','GECKO/USDT','BOME/USDT','FLZ/USDT','CATE/USDT',
+  'CHOW/USDT','MAGA/USDT','WIF/USDT','PEIPEI/USDT','FUBT/USDT','SCAT/USDT',
+  'SILLY/USDT','DEGEN/USDT','MUMU/USDT','BABYDOGE/USDT','Yapper/USDT','GRPE/USDT',
+  'ALCH/USDT','AERO/USDT','SPX/USDT','MIRRO/USDT','ZKNDX/USDT','MOOD/USDT',
+  'BLAST/USDT','UXD/USDT','PUFF/USDT','CRT/USDT','SREC/USDT','SOR/USDT',
 ]
 
 const DRAW_TOOLS = [
@@ -149,6 +158,7 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
   const [backtestOpen, setBacktestOpen] = useState(false)
   const [backtestLoading, setBacktestLoading] = useState(false)
   const [backtestData, setBacktestData] = useState<Record<string, unknown> | null>(null)
+  const [showGlossary, setShowGlossary] = useState(false)
 
   const filteredPairs = React.useMemo(
     () => pairSearch
@@ -566,6 +576,18 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
           chartRef.current?.drawMarkup({ ...a, supports: m.supports, resistances: m.resistances })
         }
 
+        // Подсветить выбранный OB
+        if (a.ob_used) {
+          chartRef.current?.removeOverlayById('selected_ob')
+          const ob = a.ob_used as Record<string, unknown>
+          chartRef.current?.highlightOB(
+            Number(ob.high),
+            Number(ob.low),
+            String(ob.quality)?.toLowerCase().includes('bull') ? 'bullish' : 'bearish',
+            `Selected: ${ob.quality} OB`
+          )
+        }
+
         if (m.smc) {
           smcDataRef.current = m.smc as { orderBlocks: OBData[]; breakerBlocks?: BreakerData[]; fvgs: FVGData[]; liquidityLevels: LiqData[] }
           if (showSMC) {
@@ -841,6 +863,14 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
                   disabled={backtestLoading}
                 >
                   {backtestLoading ? '···' : 'BT'}
+                </button>
+                <button
+                  className="vl-btn"
+                  style={{ color: 'var(--muted)', fontSize: '.55rem', padding: '2px 5px' }}
+                  title="Глоссарий SMC терминов"
+                  onClick={() => setShowGlossary(true)}
+                >
+                  📖
                 </button>
               </div>
             </div>
@@ -1313,6 +1343,7 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
         showToast('Объект удалён', 'ok')
       }}
     />
+    {showGlossary && <GlossaryModal onClose={() => setShowGlossary(false)} />}
     {showHistorical && a && (
       <HistoricalSetupsModal
         currentPair={pairRef.current}

@@ -27,25 +27,23 @@ export default function Header() {
 
   useEffect(() => {
     async function fetchTickers() {
-      const next: Record<string, Ticker> = {}
-      await Promise.all(
-        SYMS.map(async ({ k, sym }) => {
-          try {
-            const r = await fetch(`https://fapi.binance.com/fapi/v1/ticker/24hr?symbol=${sym}`)
-            const d = await r.json()
-            if (d.lastPrice) {
-              const pr = parseFloat(d.lastPrice)
-              const ch = parseFloat(d.priceChangePercent)
-              next[k] = {
-                price: '$' + pr.toLocaleString('en', { maximumFractionDigits: 2 }),
-                change: (ch >= 0 ? '+' : '') + ch.toFixed(2) + '%',
-                up: ch >= 0,
-              }
-            }
-          } catch {}
-        })
-      )
-      setTickers(next)
+      try {
+        // Через серверный прокси — не зависит от мобильных блокировок Binance
+        const r = await fetch('/api/ticker')
+        if (!r.ok) return
+        const data: Record<string, { price: number; change: number }> = await r.json()
+        const next: Record<string, Ticker> = {}
+        for (const { k, sym } of SYMS) {
+          const d = data[sym]
+          if (!d) continue
+          next[k] = {
+            price: '$' + d.price.toLocaleString('en', { maximumFractionDigits: 2 }),
+            change: (d.change >= 0 ? '+' : '') + d.change.toFixed(2) + '%',
+            up: d.change >= 0,
+          }
+        }
+        setTickers(next)
+      } catch {}
     }
     fetchTickers()
     const iv = setInterval(fetchTickers, 15000)

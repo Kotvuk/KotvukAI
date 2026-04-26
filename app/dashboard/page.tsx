@@ -14,7 +14,8 @@ const NewsPanel    = dynamic(() => import('@/components/app/panels/NewsPanel'), 
 const NotifsPanel  = dynamic(() => import('@/components/app/panels/NotifsPanel'), { ssr: false })
 const HistoryPanel = dynamic(() => import('@/components/app/panels/HistoryPanel'), { ssr: false })
 const SettingsPanel= dynamic(() => import('@/components/app/panels/SettingsPanel'),{ ssr: false })
-const AiChat       = dynamic(() => import('@/components/app/AiChat'),              { ssr: false })
+const AiChat           = dynamic(() => import('@/components/app/AiChat'),              { ssr: false })
+const OnboardingModal  = dynamic(() => import('@/components/app/OnboardingModal'),    { ssr: false })
 
 // Список емейлов с доступом к /admin
 const ADMIN_EMAILS = ['kotvukai@gmail.com']
@@ -136,6 +137,7 @@ export default function DashboardPage() {
   return (
     <>
       <Toast />
+      <OnboardingModal />
       <div id="app">
         <Header />
 

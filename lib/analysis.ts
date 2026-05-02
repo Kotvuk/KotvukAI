@@ -480,6 +480,7 @@ Reply with a single-line JSON: {"block":true|false,"risk":"high|medium|low","rea
     ob_used: selectedOB ? (() => {
       const scored = scoreOrderBlock(selectedOB)
       return {
+        type: selectedOB.type,
         quality: selectedOB.quality,
         strength: selectedOB.strength,
         high: selectedOB.high,
@@ -683,6 +684,7 @@ export interface FinalResult {
   risk_usd?: number
   pos_usd?: number
   ob_used?: {
+    type: 'bullish' | 'bearish'
     quality: string
     strength: string
     high: number

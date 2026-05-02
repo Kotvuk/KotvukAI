@@ -128,5 +128,7 @@
   "draw_trend": "Trend",
   "draw_fib": "Fibo",
   "draw_rect": "Rectangle",
-  "draw_channel": "Channel"
+  "draw_channel": "Channel",
+  "login_sub": "Sign in to your account to continue",
+  "register_sub": "Create an account to get started"
 }

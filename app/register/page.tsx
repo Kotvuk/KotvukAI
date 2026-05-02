@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth'
 import { auth } from '@/lib/firebase'
 import { useLang } from '@/contexts/LangContext'
+import LangSwitcher from '@/components/ui/LangSwitcher'
 
 function EyeIcon({ open }: { open: boolean }) {
   return open ? (
@@ -54,12 +55,15 @@ export default function RegisterPage() {
   return (
     <div className="auth-wrap">
       <div className="auth-box">
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
+          <LangSwitcher />
+        </div>
         <div className="auth-logo">
           <div className="auth-logo-mark" />
           <span className="auth-logo-text">{t('app_name')}</span>
         </div>
         <div className="auth-title">{t('register')}</div>
-        <div className="auth-sub">Создайте аккаунт для начала работы</div>
+        <div className="auth-sub">{t('register_sub')}</div>
 
         {error && <div className="auth-err">{error}</div>}
 

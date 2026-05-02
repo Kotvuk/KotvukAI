@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth'
 import { auth } from '@/lib/firebase'
 import { useLang } from '@/contexts/LangContext'
+import LangSwitcher from '@/components/ui/LangSwitcher'
 
 function EyeIcon({ open }: { open: boolean }) {
   return open ? (
@@ -65,12 +66,15 @@ export default function LoginPage() {
   return (
     <div className="auth-wrap">
       <div className="auth-box">
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
+          <LangSwitcher />
+        </div>
         <div className="auth-logo">
           <div className="auth-logo-mark" />
           <span className="auth-logo-text">{t('app_name')}</span>
         </div>
         <div className="auth-title">{t('login')}</div>
-        <div className="auth-sub">Войдите в свой аккаунт для доступа к анализу</div>
+        <div className="auth-sub">{t('login_sub')}</div>
 
         {!forgotMode && error && <div className="auth-err">{error}</div>}
 

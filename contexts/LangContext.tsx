@@ -16,17 +16,18 @@ interface LangCtx {
 }
 
 const LangContext = createContext<LangCtx>({
-  lang: 'ru',
+  lang: 'en',
   setLang: () => {},
-  t: (k) => String(ru[k] ?? k),
+  t: (k) => String(en[k] ?? k),
 })
 
 export function LangProvider({ children }: { children: ReactNode }) {
-  const [lang, setLangState] = useState<Lang>('ru')
+  const [lang, setLangState] = useState<Lang>('en')
 
   useEffect(() => {
     const stored = localStorage.getItem('kotvuk_lang') as Lang | null
     if (stored && all[stored]) setLangState(stored)
+    // else stays 'en' (default)
   }, [])
 
   const setLang = (l: Lang) => {

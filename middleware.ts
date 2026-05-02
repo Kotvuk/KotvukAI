@@ -38,12 +38,10 @@ export async function middleware(req: NextRequest) {
       )
     }
     analyzeLastCall.set(token.slice(-16), now)
-    // Чистка старых записей раз в 500 запросов
-    if (analyzeLastCall.size > 500) {
-      const cutoff = now - ANALYZE_COOLDOWN_MS * 2
-      Array.from(analyzeLastCall.entries()).forEach(([k, v]) => {
-        if (v < cutoff) analyzeLastCall.delete(k)
-      })
+    // Чистка записей старше 60 сек при каждом 100-м запросе
+    if (analyzeLastCall.size % 100 === 0) {
+      const cutoff = now - 60_000
+      analyzeLastCall.forEach((v, k) => { if (v < cutoff) analyzeLastCall.delete(k) })
     }
   }
 

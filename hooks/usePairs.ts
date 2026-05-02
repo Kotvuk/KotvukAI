@@ -1,13 +1,18 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { STATIC_PAIRS } from '@/lib/pairs'
 
-// Module-level cache so all components share one fetch
 let _cache: string[] | null = null
 let _promise: Promise<void> | null = null
 
 export function usePairs() {
   const [pairs, setPairs] = useState<string[]>(_cache ?? STATIC_PAIRS)
+  const mounted = useRef(true)
+
+  useEffect(() => {
+    mounted.current = true
+    return () => { mounted.current = false }
+  }, [])
 
   useEffect(() => {
     if (_cache) {
@@ -22,10 +27,12 @@ export function usePairs() {
             _cache = data as string[]
           }
         })
-        .catch(() => { /* use static fallback */ })
+        .catch(() => {
+          _promise = null // allow retry on next mount
+        })
     }
     _promise.then(() => {
-      if (_cache) setPairs(_cache)
+      if (mounted.current && _cache) setPairs(_cache)
     })
   }, [])
 

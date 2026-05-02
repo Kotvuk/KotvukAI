@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import Link from 'next/link'
+import LangSwitcher from '@/components/ui/LangSwitcher'
 
 function useInView(threshold = 0.15) {
   const ref = useRef<HTMLDivElement>(null)
@@ -86,7 +87,7 @@ const FEATURES = [
 ]
 
 const STEPS = [
-  { n: '01', t: 'Выберите пару и таймфрейм', d: '60+ криптопар, 7 таймфреймов (1M–1D)', color: '#00d4ff' },
+  { n: '01', t: 'Выберите пару и таймфрейм', d: '1000+ криптопар (Binance Futures + Spot), 7 таймфреймов (1M–1D)', color: '#00d4ff' },
   { n: '02', t: 'Нажмите АНАЛИЗ', d: 'ИИ проводит 4-шаговый анализ: структура → зона → сигнал → Адвокат дьявола. Entry/TP/SL рисуются на графике автоматически', color: '#00e676' },
   { n: '03', t: 'Получите полный торговый план', d: 'Точка входа, TP, SL, R:R, конфлюэнс, условие инвалидации, размер позиции', color: '#ffb300' },
 ]
@@ -178,7 +179,8 @@ export default function LandingPage() {
               >{s.label}</button>
             ))}
           </div>
-          <div style={{ display:'flex', gap:8, flexShrink:0 }}>
+          <div style={{ display:'flex', gap:8, flexShrink:0, alignItems:'center' }}>
+            <LangSwitcher />
             <Link href="/login" className="nav-link" style={{ padding:'6px 18px', fontSize:'.7rem', letterSpacing:'.06em', border:'1px solid #2c2c2c', color:'#888', textDecoration:'none' }}>ВОЙТИ</Link>
             <Link href="/register" className="cta-btn" style={{ padding:'6px 18px', fontSize:'.7rem', letterSpacing:'.06em', background:'#00d4ff', color:'#080808', fontWeight:700, textDecoration:'none' }}>НАЧАТЬ →</Link>
           </div>
@@ -284,7 +286,7 @@ export default function LandingPage() {
         <div style={{ borderTop:'1px solid #1a1a1a', borderBottom:'1px solid #1a1a1a', background:'#0a0a0a', padding:'40px 32px' }}>
           <div style={{ display:'flex', gap:0, justifyContent:'center', flexWrap:'wrap', maxWidth:800, margin:'0 auto' }}>
             {[
-              { target:60, suffix:'+', label:'криптопар' },
+              { target:1000, suffix:'+', label:'криптопар' },
               { target:7,  suffix:'',  label:'таймфреймов' },
               { target:4,  suffix:'',  label:'SMC-паттерна' },
               { target:12, suffix:'',  label:'инструментов рисования' },

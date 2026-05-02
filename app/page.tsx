@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
+import { useLang } from '@/contexts/LangContext'
 import Link from 'next/link'
 import LangSwitcher from '@/components/ui/LangSwitcher'
 
@@ -77,52 +78,24 @@ function MiniChart({ bullish }: { bullish: boolean }) {
   )
 }
 
-const FEATURES = [
-  { icon: '◈', title: 'SMC AI-анализ', desc: 'Единый pipeline: структура → зона → ликвидность → проверка Адвоката дьявола. Конфлюэнс 3+ факторов, R:R мин. 1:1.5 принудительно. Плечо динамическое 1-125×.', color: '#00d4ff' },
-  { icon: '◉', title: 'Smart Money Concepts', desc: 'Авто-детект Order Blocks, Breaker Blocks, FVG, Liquidity Zones, BOS/COB. OTE-вход 62-79% в зону.', color: '#00e676' },
-  { icon: '▦', title: 'Профессиональные графики', desc: '10 000+ свечей, 12 инструментов рисования, Fibonacci, Funding Rate, авто-трендлайны.', color: '#ffb300' },
-  { icon: '◉', title: 'Мультитаймфреймный анализ', desc: 'Реальный HTF Bias с вышестоящего TF: 15M получает байэс с 4H, 1H — с дневного. Никакого самообмана.', color: '#ff6b6b' },
-  { icon: '◇', title: 'Торговый журнал', desc: 'PnL, направление, тип ордера, Win/Loss разметка. Открыть сделку прямо из AI-анализа одной кнопкой.', color: '#a78bfa' },
-  { icon: '◈', title: 'AI-ассистент в чате', desc: 'Спросите ИИ про зоны, попросите нарисовать OB/FVG на графике, получите ответ на русском за секунды.', color: '#34d399' },
-]
-
-const STEPS = [
-  { n: '01', t: 'Выберите пару и таймфрейм', d: '1000+ криптопар (Binance Futures + Spot), 7 таймфреймов (1M–1D)', color: '#00d4ff' },
-  { n: '02', t: 'Нажмите АНАЛИЗ', d: 'ИИ проводит 4-шаговый анализ: структура → зона → сигнал → Адвокат дьявола. Entry/TP/SL рисуются на графике автоматически', color: '#00e676' },
-  { n: '03', t: 'Получите полный торговый план', d: 'Точка входа, TP, SL, R:R, конфлюэнс, условие инвалидации, размер позиции', color: '#ffb300' },
-]
-
-const SMC_ITEMS = [
-  { tag: 'OB', title: 'Order Blocks', desc: 'Зоны накопления институционального объёма — места откуда крупные игроки двигают рынок', color: '#00d4ff' },
-  { tag: 'FVG', title: 'Fair Value Gap', desc: 'Зоны дисбаланса цены — часто выступают поддержкой/сопротивлением', color: '#00e676' },
-  { tag: 'LIQ', title: 'Liquidity', desc: 'Buy Side и Sell Side ликвидность — цели институционального движения', color: '#ffb300' },
-  { tag: 'BOS', title: 'BOS / COB', desc: 'Break of Structure и Change of Character — определяют смену тренда', color: '#ff6b6b' },
-]
-
-const COMPARE_ROWS = [
-  ['AI-анализ сигналов',        true,  false],
-  ['SMC авто-детект',           true,  false],
-  ['4-шаговый AI pipeline',     true,  false],
-  ['Бесплатный план (3/день)',  true,  true ],
-  ['Funding Rate',              true,  true ],
-  ['Инструменты рисования',     true,  true ],
-  ['50+ брокеров (live trade)', false,  true ],
-  ['Pine Script',               false,  true ],
-  ['Мобильное приложение',      false,  true ],
-]
-
 function scrollTo(id: string) {
   document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
 }
 
-const NAV_SECTIONS = [
-  { id: 'section-about',   label: 'О проекте' },
-  { id: 'section-how',     label: 'Как работает' },
-  { id: 'section-smc',     label: 'SMC-разметка' },
-  { id: 'section-compare', label: 'Преимущества' },
+const COMPARE_FLAGS: [boolean, boolean][] = [
+  [true,  false],
+  [true,  false],
+  [true,  false],
+  [true,  true ],
+  [true,  true ],
+  [true,  true ],
+  [false, true ],
+  [false, true ],
+  [false, true ],
 ]
 
 export default function LandingPage() {
+  const { t } = useLang()
   const { user } = useAuth()
   const router = useRouter()
   const heroRef = useRef<HTMLDivElement>(null)
@@ -150,6 +123,48 @@ export default function LandingPage() {
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
+
+  const NAV_SECTIONS = [
+    { id: 'section-about',   label: t('lp_nav_about') },
+    { id: 'section-how',     label: t('lp_nav_how') },
+    { id: 'section-smc',     label: t('lp_nav_smc') },
+    { id: 'section-compare', label: t('lp_nav_compare') },
+  ]
+
+  const FEATURES = [
+    { icon: '◈', title: t('lp_f1_title'), desc: t('lp_f1_desc'), color: '#00d4ff' },
+    { icon: '◉', title: t('lp_f2_title'), desc: t('lp_f2_desc'), color: '#00e676' },
+    { icon: '▦', title: t('lp_f3_title'), desc: t('lp_f3_desc'), color: '#ffb300' },
+    { icon: '◉', title: t('lp_f4_title'), desc: t('lp_f4_desc'), color: '#ff6b6b' },
+    { icon: '◇', title: t('lp_f5_title'), desc: t('lp_f5_desc'), color: '#a78bfa' },
+    { icon: '◈', title: t('lp_f6_title'), desc: t('lp_f6_desc'), color: '#34d399' },
+  ]
+
+  const STEPS = [
+    { n: '01', title: t('lp_s1_title'), desc: t('lp_s1_desc'), color: '#00d4ff' },
+    { n: '02', title: t('lp_s2_title'), desc: t('lp_s2_desc'), color: '#00e676' },
+    { n: '03', title: t('lp_s3_title'), desc: t('lp_s3_desc'), color: '#ffb300' },
+  ]
+
+  const SMC_ITEMS = [
+    { tag: 'OB',  title: t('lp_ob_title'),  desc: t('lp_ob_desc'),  color: '#00d4ff' },
+    { tag: 'FVG', title: t('lp_fvg_title'), desc: t('lp_fvg_desc'), color: '#00e676' },
+    { tag: 'LIQ', title: t('lp_liq_title'), desc: t('lp_liq_desc'), color: '#ffb300' },
+    { tag: 'BOS', title: t('lp_bos_title'), desc: t('lp_bos_desc'), color: '#ff6b6b' },
+  ]
+
+  const COMPARE_LABELS = [
+    t('lp_cmp1'), t('lp_cmp2'), t('lp_cmp3'),
+    t('lp_cmp4'), t('lp_cmp5'), t('lp_cmp6'),
+    t('lp_cmp7'), t('lp_cmp8'), t('lp_cmp9'),
+  ]
+
+  const STATS = [
+    { target: 1000, suffix: '+', label: t('lp_stat_pairs') },
+    { target: 7,    suffix: '',  label: t('lp_stat_tfs') },
+    { target: 4,    suffix: '',  label: t('lp_stat_smc') },
+    { target: 12,   suffix: '',  label: t('lp_stat_tools') },
+  ]
 
   return (
     <div style={{ background: '#080808', color: '#d0d0d0', fontFamily: "'Geist Mono', monospace", overflowX: 'hidden' }}>
@@ -181,19 +196,19 @@ export default function LandingPage() {
           </div>
           <div style={{ display:'flex', gap:8, flexShrink:0, alignItems:'center' }}>
             <LangSwitcher />
-            <Link href="/login" className="nav-link" style={{ padding:'6px 18px', fontSize:'.7rem', letterSpacing:'.06em', border:'1px solid #2c2c2c', color:'#888', textDecoration:'none' }}>ВОЙТИ</Link>
-            <Link href="/register" className="cta-btn" style={{ padding:'6px 18px', fontSize:'.7rem', letterSpacing:'.06em', background:'#00d4ff', color:'#080808', fontWeight:700, textDecoration:'none' }}>НАЧАТЬ →</Link>
+            <Link href="/login" className="nav-link" style={{ padding:'6px 18px', fontSize:'.7rem', letterSpacing:'.06em', border:'1px solid #2c2c2c', color:'#888', textDecoration:'none' }}>{t('lp_login_btn')}</Link>
+            <Link href="/register" className="cta-btn" style={{ padding:'6px 18px', fontSize:'.7rem', letterSpacing:'.06em', background:'#00d4ff', color:'#080808', fontWeight:700, textDecoration:'none' }}>{t('lp_start_btn')}</Link>
           </div>
         </nav>
 
         {}
         <div style={{ borderBottom:'1px solid #1a1a1a', background:'#0a0a0a', overflow:'hidden', height:30, display:'flex', alignItems:'center' }}>
           <div className="lp-ticker">
-            {[...TICKER_SYMS, ...TICKER_SYMS].map((t, i) => {
-              const live = liveTickers[t.key]
+            {[...TICKER_SYMS, ...TICKER_SYMS].map((tk, i) => {
+              const live = liveTickers[tk.key]
               return (
                 <span key={i} style={{ fontSize:'.6rem', display:'flex', alignItems:'center', gap:6 }}>
-                  <span style={{ color:'#555' }}>{t.sym}/USDT</span>
+                  <span style={{ color:'#555' }}>{tk.sym}/USDT</span>
                   <span style={{ color:'#888' }}>{live ? `$${live.price.toLocaleString(undefined, { maximumFractionDigits: live.price < 1 ? 5 : 2 })}` : '—'}</span>
                   {live && <span style={{ color: live.change >= 0 ? '#00e676' : '#ff3d57' }}>{live.change >= 0 ? '+' : ''}{live.change.toFixed(2)}%</span>}
                 </span>
@@ -204,37 +219,34 @@ export default function LandingPage() {
 
         {}
         <section ref={heroRef} style={{ minHeight:'92vh', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', textAlign:'center', padding:'80px 32px 60px', position:'relative', overflow:'hidden' }}>
-          {}
           <div style={{ position:'absolute', top:'20%', left:'50%', transform:'translateX(-50%)', width:600, height:400, background:'radial-gradient(ellipse,rgba(0,212,255,.06) 0%,transparent 70%)', pointerEvents:'none' }} />
 
           <div className="fade-up" style={{ fontSize:'.65rem', letterSpacing:'.2em', color:'#00d4ff', marginBottom:24, textTransform:'uppercase', display:'flex', alignItems:'center', gap:8 }}>
             <span className="lp-pulse" style={{ width:4, height:4, borderRadius:'50%', background:'#00d4ff', display:'inline-block' }} />
-            AI-платформа для криптотрейдеров
+            {t('lp_badge')}
             <span className="lp-pulse-d" style={{ width:4, height:4, borderRadius:'50%', background:'#00d4ff', display:'inline-block' }} />
           </div>
 
           <h1 className="fade-up-1" style={{ fontFamily:"'Syne',sans-serif", fontWeight:800, fontSize:'clamp(2.4rem,7vw,5rem)', lineHeight:1.02, color:'#fff', letterSpacing:'-0.04em', margin:'0 auto 28px', maxWidth:860 }}>
-            Анализируй крипту<br />
-            <span style={{ color:'#00d4ff', textShadow:'0 0 60px rgba(0,212,255,.3)' }}>с помощью ИИ</span>
+            {t('lp_hero_line1')}<br />
+            <span style={{ color:'#00d4ff', textShadow:'0 0 60px rgba(0,212,255,.3)' }}>{t('lp_hero_line2')}</span>
           </h1>
 
           <p className="fade-up-2" style={{ fontSize:'clamp(.8rem,2vw,.95rem)', color:'#555', maxWidth:520, margin:'0 auto 44px', lineHeight:1.8 }}>
-            Автоматические сигналы LONG&nbsp;/&nbsp;SHORT, SMC-разметка, Fibonacci, торговый журнал.
-            Анализ через Groq API — быстро, данные не передаются брокерам.
+            {t('lp_hero_desc')}
           </p>
 
           <div className="fade-up-3" style={{ display:'flex', gap:12, justifyContent:'center', flexWrap:'wrap', marginBottom:64 }}>
             <Link href="/register" className="cta-btn" style={{ padding:'14px 40px', background:'#00d4ff', color:'#080808', fontWeight:700, fontSize:'.82rem', letterSpacing:'.08em', textDecoration:'none' }}>
-              НАЧАТЬ БЕСПЛАТНО →
+              {t('lp_cta_free')}
             </Link>
             <Link href="/login" style={{ padding:'14px 40px', border:'1px solid #2c2c2c', color:'#666', fontSize:'.82rem', letterSpacing:'.08em', textDecoration:'none', transition:'color .15s,border-color .15s' }}>
-              У МЕНЯ ЕСТЬ АККАУНТ
+              {t('lp_have_account')}
             </Link>
           </div>
 
           {}
           <div className="fade-in lp-float" style={{ width:'100%', maxWidth:780, margin:'0 auto', background:'#0d0d0d', border:'1px solid #1a1a1a', borderRadius:2, overflow:'hidden' }}>
-            {}
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 16px', borderBottom:'1px solid #1a1a1a', background:'#080808' }}>
               <div style={{ display:'flex', alignItems:'center', gap:12 }}>
                 <span style={{ fontSize:'.65rem', color:'#fff', fontWeight:600 }}>BTC/USDT</span>
@@ -251,7 +263,6 @@ export default function LandingPage() {
             </div>
             <div style={{ height:160, padding:'8px 16px', display:'flex', gap:2 }}>
               {Array.from({ length: 42 }, (_, i) => {
-
                 const pct = Math.abs(Math.sin(i * 0.53 + 1.2) * 0.5 + Math.sin(i * 0.17) * 0.3) * 0.6 + 0.2
                 const h = 20 + pct * 100
                 const bull = Math.sin(i * 0.4 + 1) > 0
@@ -262,7 +273,6 @@ export default function LandingPage() {
                 )
               })}
             </div>
-            {}
             <div style={{ padding:'6px 16px 10px', display:'flex', gap:16, borderTop:'1px solid #111' }}>
               {[['Entry','#00d4ff','84,312'],['TP','#00e676','86,419'],['SL','#ff3d57','82,968']].map(([l, c, v]) => (
                 <div key={l} style={{ display:'flex', alignItems:'center', gap:6, fontSize:'.58rem' }}>
@@ -277,7 +287,7 @@ export default function LandingPage() {
 
           {}
           <div style={{ position:'absolute', bottom:28, left:'50%', transform:'translateX(-50%)', display:'flex', flexDirection:'column', alignItems:'center', gap:6, opacity: Math.max(0, 1 - scrollY / 200) }}>
-            <span style={{ fontSize:'.55rem', color:'#333', letterSpacing:'.15em' }}>ЛИСТАЙТЕ ВНИЗ</span>
+            <span style={{ fontSize:'.55rem', color:'#333', letterSpacing:'.15em' }}>{t('lp_scroll')}</span>
             <div className="lp-pulse" style={{ width:1, height:28, background:'linear-gradient(#333,transparent)' }} />
           </div>
         </section>
@@ -285,12 +295,7 @@ export default function LandingPage() {
         {}
         <div style={{ borderTop:'1px solid #1a1a1a', borderBottom:'1px solid #1a1a1a', background:'#0a0a0a', padding:'40px 32px' }}>
           <div style={{ display:'flex', gap:0, justifyContent:'center', flexWrap:'wrap', maxWidth:800, margin:'0 auto' }}>
-            {[
-              { target:1000, suffix:'+', label:'криптопар' },
-              { target:7,  suffix:'',  label:'таймфреймов' },
-              { target:4,  suffix:'',  label:'SMC-паттерна' },
-              { target:12, suffix:'',  label:'инструментов рисования' },
-            ].map(({ target, suffix, label }, i) => (
+            {STATS.map(({ target, suffix, label }, i) => (
               <div key={label} style={{ flex:'1 1 160px', textAlign:'center', padding:'20px 16px', borderRight: i < 3 ? '1px solid #1a1a1a' : 'none' }}>
                 <div style={{ fontFamily:"'Syne',sans-serif", fontSize:'2.4rem', fontWeight:800, color:'#fff', lineHeight:1, marginBottom:6 }}>
                   <Counter target={target} suffix={suffix} />
@@ -302,19 +307,19 @@ export default function LandingPage() {
         </div>
 
         <div id="section-about" style={{ borderTop:'2px solid #1a1a1a', margin:'0 32px', display:'flex', alignItems:'center', gap:16 }}>
-          <span style={{ fontSize:'.55rem', color:'#222', letterSpacing:'.2em', whiteSpace:'nowrap' }}>01 / О ПРОЕКТЕ</span>
+          <span style={{ fontSize:'.55rem', color:'#222', letterSpacing:'.2em', whiteSpace:'nowrap' }}>01 / {t('lp_section_about')}</span>
           <div style={{ flex:1, height:1, background:'linear-gradient(90deg,#1a1a1a,transparent)' }} />
         </div>
         <section style={{ padding:'80px 32px', maxWidth:1100, margin:'0 auto' }}
           className={featuresSection.visible ? 'section-visible' : 'section-hidden'}
           ref={featuresSection.ref}
         >
-          <div style={{ fontSize:'.6rem', color:'#00d4ff', letterSpacing:'.2em', textTransform:'uppercase', marginBottom:12 }}>ВОЗМОЖНОСТИ</div>
+          <div style={{ fontSize:'.6rem', color:'#00d4ff', letterSpacing:'.2em', textTransform:'uppercase', marginBottom:12 }}>{t('lp_features_badge')}</div>
           <h2 style={{ fontFamily:"'Syne',sans-serif", fontWeight:800, fontSize:'clamp(1.6rem,3.5vw,2.4rem)', color:'#fff', marginBottom:52, letterSpacing:'-0.02em' }}>
-            Всё для серьёзного трейдинга
+            {t('lp_features_title')}
           </h2>
           <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(300px,1fr))', gap:1, background:'#1a1a1a' }}>
-            {FEATURES.map((f, i) => (
+            {FEATURES.map((f) => (
               <div key={f.title} className="feature-card"
                 style={{ background:'#0d0d0d', padding:'28px 24px', borderTop:`2px solid transparent`, '--hover-color': f.color } as React.CSSProperties}
                 onMouseEnter={e => (e.currentTarget.style.borderTopColor = f.color)}
@@ -329,7 +334,7 @@ export default function LandingPage() {
         </section>
 
         <div id="section-how" style={{ borderTop:'2px solid #1a1a1a', margin:'0 32px', display:'flex', alignItems:'center', gap:16 }}>
-          <span style={{ fontSize:'.55rem', color:'#222', letterSpacing:'.2em', whiteSpace:'nowrap' }}>02 / КАК РАБОТАЕТ</span>
+          <span style={{ fontSize:'.55rem', color:'#222', letterSpacing:'.2em', whiteSpace:'nowrap' }}>02 / {t('lp_section_how')}</span>
           <div style={{ flex:1, height:1, background:'linear-gradient(90deg,#1a1a1a,transparent)' }} />
         </div>
         <section style={{ padding:'80px 32px', background:'#0a0a0a', borderBottom:'1px solid #1a1a1a' }}
@@ -337,17 +342,17 @@ export default function LandingPage() {
           ref={stepsSection.ref}
         >
           <div style={{ maxWidth:860, margin:'0 auto' }}>
-            <div style={{ fontSize:'.6rem', color:'#00d4ff', letterSpacing:'.2em', textTransform:'uppercase', marginBottom:12 }}>КАК ЭТО РАБОТАЕТ</div>
+            <div style={{ fontSize:'.6rem', color:'#00d4ff', letterSpacing:'.2em', textTransform:'uppercase', marginBottom:12 }}>{t('lp_steps_badge')}</div>
             <h2 style={{ fontFamily:"'Syne',sans-serif", fontWeight:800, fontSize:'clamp(1.6rem,3.5vw,2.4rem)', color:'#fff', marginBottom:52, letterSpacing:'-0.02em' }}>
-              4 шага до торгового плана
+              {t('lp_steps_title')}
             </h2>
             <div style={{ display:'flex', flexDirection:'column', gap:1 }}>
               {STEPS.map((s, i) => (
                 <div key={s.n} style={{ display:'flex', alignItems:'flex-start', gap:28, background:'#0d0d0d', padding:'28px 32px', borderLeft:`3px solid ${s.color}` }}>
                   <div style={{ fontFamily:"'Syne',sans-serif", fontSize:'2rem', fontWeight:800, color:s.color, opacity:.45, flexShrink:0, lineHeight:1, minWidth:42 }}>{s.n}</div>
                   <div style={{ flex:1 }}>
-                    <div style={{ fontSize:'.82rem', color:'#e0e0e0', fontWeight:600, marginBottom:6 }}>{s.t}</div>
-                    <div style={{ fontSize:'.68rem', color:'#555' }}>{s.d}</div>
+                    <div style={{ fontSize:'.82rem', color:'#e0e0e0', fontWeight:600, marginBottom:6 }}>{s.title}</div>
+                    <div style={{ fontSize:'.68rem', color:'#555' }}>{s.desc}</div>
                   </div>
                   <div style={{ width:48, height:48, flexShrink:0, opacity:.6 }}>
                     <MiniChart bullish={i < 2} />
@@ -359,20 +364,19 @@ export default function LandingPage() {
         </section>
 
         <div id="section-smc" style={{ borderTop:'2px solid #1a1a1a', margin:'0 32px', display:'flex', alignItems:'center', gap:16 }}>
-          <span style={{ fontSize:'.55rem', color:'#222', letterSpacing:'.2em', whiteSpace:'nowrap' }}>03 / SMC-РАЗМЕТКА</span>
+          <span style={{ fontSize:'.55rem', color:'#222', letterSpacing:'.2em', whiteSpace:'nowrap' }}>03 / {t('lp_section_smc_label')}</span>
           <div style={{ flex:1, height:1, background:'linear-gradient(90deg,#1a1a1a,transparent)' }} />
         </div>
         <section style={{ padding:'80px 32px', maxWidth:1100, margin:'0 auto' }}
           className={smcSection.visible ? 'section-visible' : 'section-hidden'}
           ref={smcSection.ref}
         >
-          <div style={{ fontSize:'.6rem', color:'#00d4ff', letterSpacing:'.2em', textTransform:'uppercase', marginBottom:12 }}>SMART MONEY CONCEPTS</div>
+          <div style={{ fontSize:'.6rem', color:'#00d4ff', letterSpacing:'.2em', textTransform:'uppercase', marginBottom:12 }}>{t('lp_smc_badge')}</div>
           <h2 style={{ fontFamily:"'Syne',sans-serif", fontWeight:800, fontSize:'clamp(1.6rem,3.5vw,2.4rem)', color:'#fff', marginBottom:16, letterSpacing:'-0.02em' }}>
-            Автоматическая SMC-разметка
+            {t('lp_smc_title')}
           </h2>
           <p style={{ fontSize:'.75rem', color:'#444', lineHeight:1.9, marginBottom:48, maxWidth:560 }}>
-            Нажмите кнопку SMC — и все паттерны появятся на графике за секунды.
-            Без ручной разметки, без Premium-подписки.
+            {t('lp_smc_desc')}
           </p>
           <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(220px,1fr))', gap:1, background:'#1a1a1a' }}>
             {SMC_ITEMS.map(s => (
@@ -387,7 +391,7 @@ export default function LandingPage() {
         </section>
 
         <div id="section-compare" style={{ borderTop:'2px solid #1a1a1a', margin:'0 32px', display:'flex', alignItems:'center', gap:16 }}>
-          <span style={{ fontSize:'.55rem', color:'#222', letterSpacing:'.2em', whiteSpace:'nowrap' }}>04 / ПРЕИМУЩЕСТВА</span>
+          <span style={{ fontSize:'.55rem', color:'#222', letterSpacing:'.2em', whiteSpace:'nowrap' }}>04 / {t('lp_section_compare_label')}</span>
           <div style={{ flex:1, height:1, background:'linear-gradient(90deg,#1a1a1a,transparent)' }} />
         </div>
         <section style={{ padding:'80px 32px', background:'#0a0a0a', borderBottom:'1px solid #1a1a1a' }}
@@ -395,27 +399,29 @@ export default function LandingPage() {
           ref={compareSection.ref}
         >
           <div style={{ maxWidth:700, margin:'0 auto' }}>
-            <div style={{ fontSize:'.6rem', color:'#00d4ff', letterSpacing:'.2em', textTransform:'uppercase', marginBottom:12 }}>СРАВНЕНИЕ</div>
+            <div style={{ fontSize:'.6rem', color:'#00d4ff', letterSpacing:'.2em', textTransform:'uppercase', marginBottom:12 }}>{t('lp_compare_badge')}</div>
             <h2 style={{ fontFamily:"'Syne',sans-serif", fontWeight:800, fontSize:'clamp(1.6rem,3.5vw,2.4rem)', color:'#fff', marginBottom:48, letterSpacing:'-0.02em' }}>
-              KotvukAI vs TradingView
+              {t('lp_compare_title')}
             </h2>
             <div style={{ border:'1px solid #1a1a1a', overflow:'hidden' }}>
-              {}
               <div style={{ display:'grid', gridTemplateColumns:'1fr 140px 140px', background:'#0d0d0d', borderBottom:'1px solid #222' }}>
-                <div style={{ padding:'12px 16px', fontSize:'.6rem', color:'#444', letterSpacing:'.1em' }}>ФУНКЦИЯ</div>
+                <div style={{ padding:'12px 16px', fontSize:'.6rem', color:'#444', letterSpacing:'.1em' }}>{t('lp_compare_func')}</div>
                 <div style={{ padding:'12px 16px', fontSize:'.6rem', color:'#00d4ff', letterSpacing:'.1em', textAlign:'center' }}>KOTVUKAI</div>
                 <div style={{ padding:'12px 16px', fontSize:'.6rem', color:'#555', letterSpacing:'.1em', textAlign:'center' }}>TRADINGVIEW</div>
               </div>
-              {COMPARE_ROWS.map(([label, ours, theirs], i) => (
-                <div key={String(label)} className="compare-row" style={{ display:'grid', gridTemplateColumns:'1fr 140px 140px', borderBottom: i < COMPARE_ROWS.length-1 ? '1px solid #111' : 'none', background: i%2===0 ? '#080808' : '#0a0a0a' }}>
-                  <div style={{ padding:'11px 16px', fontSize:'.68rem', color:'#888' }}>{label}</div>
-                  <div style={{ padding:'11px 16px', textAlign:'center', fontSize:'.8rem', color: ours ? '#00e676' : '#333' }}>{ours ? '✓' : '—'}</div>
-                  <div style={{ padding:'11px 16px', textAlign:'center', fontSize:'.8rem', color: theirs ? '#00e676' : '#333' }}>{theirs ? '✓' : '—'}</div>
-                </div>
-              ))}
+              {COMPARE_LABELS.map((label, i) => {
+                const [ours, theirs] = COMPARE_FLAGS[i]
+                return (
+                  <div key={label} className="compare-row" style={{ display:'grid', gridTemplateColumns:'1fr 140px 140px', borderBottom: i < COMPARE_LABELS.length-1 ? '1px solid #111' : 'none', background: i%2===0 ? '#080808' : '#0a0a0a' }}>
+                    <div style={{ padding:'11px 16px', fontSize:'.68rem', color:'#888' }}>{label}</div>
+                    <div style={{ padding:'11px 16px', textAlign:'center', fontSize:'.8rem', color: ours ? '#00e676' : '#333' }}>{ours ? '✓' : '—'}</div>
+                    <div style={{ padding:'11px 16px', textAlign:'center', fontSize:'.8rem', color: theirs ? '#00e676' : '#333' }}>{theirs ? '✓' : '—'}</div>
+                  </div>
+                )
+              })}
             </div>
             <div style={{ marginTop:16, fontSize:'.6rem', color:'#333', textAlign:'right' }}>
-              * KotvukAI бесплатен. TradingView от $14.95/мес.
+              {t('lp_compare_note')}
             </div>
           </div>
         </section>
@@ -425,16 +431,16 @@ export default function LandingPage() {
           className={ctaSection.visible ? 'section-visible' : 'section-hidden'}
           ref={ctaSection.ref}
         >
-          <div style={{ fontSize:'.6rem', color:'#333', letterSpacing:'.2em', textTransform:'uppercase', marginBottom:16 }}>БЕСПЛАТНЫЙ ПЛАН · 3 АНАЛИЗА В ДЕНЬ · GROQ API</div>
+          <div style={{ fontSize:'.6rem', color:'#333', letterSpacing:'.2em', textTransform:'uppercase', marginBottom:16 }}>{t('lp_cta_badge')}</div>
           <h2 style={{ fontFamily:"'Syne',sans-serif", fontWeight:800, fontSize:'clamp(2rem,5vw,3.5rem)', color:'#fff', letterSpacing:'-0.03em', marginBottom:16 }}>
-            Готов торговать умнее?
+            {t('lp_cta_title')}
           </h2>
-          <p style={{ fontSize:'.75rem', color:'#444', marginBottom:44 }}>SMC-анализ, OTE-входы, реальный HTF Bias. Работает на Groq moonshotai/kimi-k2.</p>
+          <p style={{ fontSize:'.75rem', color:'#444', marginBottom:44 }}>{t('lp_cta_desc')}</p>
           <Link href="/register" className="cta-btn" style={{ padding:'16px 56px', background:'#00d4ff', color:'#080808', fontWeight:700, fontSize:'.88rem', letterSpacing:'.1em', textDecoration:'none', display:'inline-block', boxShadow:'0 0 40px rgba(0,212,255,.2)' }}>
-            СОЗДАТЬ АККАУНТ →
+            {t('lp_cta_btn')}
           </Link>
           <div style={{ marginTop:20 }}>
-            <Link href="/login" style={{ fontSize:'.65rem', color:'#333', textDecoration:'none' }}>Уже есть аккаунт? Войти →</Link>
+            <Link href="/login" style={{ fontSize:'.65rem', color:'#333', textDecoration:'none' }}>{t('lp_cta_login')}</Link>
           </div>
         </section>
 
@@ -445,11 +451,11 @@ export default function LandingPage() {
             <span style={{ fontFamily:"'Syne',sans-serif", fontWeight:800, fontSize:'.82rem', color:'#fff' }}>KotvukAI</span>
           </div>
           <div style={{ display:'flex', gap:24, fontSize:'.62rem' }}>
-            <Link href="/privacy" style={{ color:'#333', textDecoration:'none' }}>Конфиденциальность</Link>
-            <Link href="/login"   style={{ color:'#333', textDecoration:'none' }}>Войти</Link>
-            <Link href="/register" style={{ color:'#333', textDecoration:'none' }}>Регистрация</Link>
+            <Link href="/privacy"  style={{ color:'#333', textDecoration:'none' }}>{t('lp_footer_privacy')}</Link>
+            <Link href="/login"    style={{ color:'#333', textDecoration:'none' }}>{t('lp_footer_login')}</Link>
+            <Link href="/register" style={{ color:'#333', textDecoration:'none' }}>{t('lp_footer_register')}</Link>
           </div>
-          <div style={{ fontSize:'.58rem', color:'#2a2a2a' }}>© 2026 KotvukAI. Все права защищены.</div>
+          <div style={{ fontSize:'.58rem', color:'#2a2a2a' }}>{t('lp_footer_rights')}</div>
         </footer>
       </div>
     </div>

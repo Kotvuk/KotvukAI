@@ -266,9 +266,9 @@ Reply with a single-line JSON:
   const isRangingNeutral = step1Trend === 'ranging' && (htfBias === 'neutral' || htfBias === 'ranging')
   if (isRangingNeutral || s1.ranging_risk === true) {
     const waitStep1: Step1Result = { signal: 'WAIT', strength: 3, trend: step1Trend, summary: step1Summary }
-    const waitStep2: Step2Result = { verdict: 'WAIT', confidence: 45, risk_score: 5, leverage: 1, summary: 'Ranging market + neutral HTF — no clear direction' }
-    const waitFinal = buildWaitResult(45, 'Ranging market without clear HTF bias. Wait for structure resolution.', riskUsd, balance, riskPct)
-    return { step1: waitStep1, step2: waitStep2, final: waitFinal }
+    const waitStep2: Step2Result = { verdict: 'WAIT', confidence: 45, risk_score: 5, leverage: 1, summary: 'Флэт + нейтральный HTF — нет чёткого направления' }
+    const waitFinal = buildWaitResult(45, 'Флэт без ясного HTF-bias. Ожидаем разрешения структуры.', riskUsd, balance, riskPct)
+    return translateToRussian(keys, { step1: waitStep1, step2: waitStep2, final: waitFinal })
   }
 
   // ═══ STEP 2: Entry zone identification ═══════════════════════════════════
@@ -309,7 +309,7 @@ Reply with a single-line JSON:
     const waitStep1: Step1Result = { signal: 'WAIT', strength: 4, trend: step1Trend, summary: step1Summary }
     const waitStep2: Step2Result = { verdict: 'WAIT', confidence: 48, risk_score: 5, leverage: 1, summary: `Only ${confluenceCount} factor(s) out of ${minConfluence} required. ${step2Summary}` }
     const waitFinal = buildWaitResult(48, `Insufficient confluence (${confluenceCount}/${minConfluence}). ${String(s2.wait_reason || 'Wait for a cleaner setup.')}`, riskUsd, balance, riskPct)
-    return { step1: waitStep1, step2: waitStep2, final: waitFinal }
+    return translateToRussian(keys, { step1: waitStep1, step2: waitStep2, final: waitFinal })
   }
 
   // ═══ STEP 3: Final signal ══════════════════════════════════════════════════
@@ -455,7 +455,7 @@ Reply with a single-line JSON: {"block":true|false,"risk":"high|medium|low","rea
     const waitStep1: Step1Result = { signal: 'WAIT', strength: 5, trend: step1Trend, summary: step1Summary }
     const waitStep2: Step2Result = { verdict: 'WAIT', confidence: 55, risk_score: 6, leverage: 1, summary: step2Summary }
     const waitFinal = buildWaitResult(55, `Signal rejected: ${daReason}`, riskUsd, balance, riskPct)
-    return { step1: waitStep1, step2: waitStep2, final: waitFinal }
+    return translateToRussian(keys, { step1: waitStep1, step2: waitStep2, final: waitFinal })
   }
 
   const i1 = String(json.i1 || trend)
@@ -495,12 +495,12 @@ Reply with a single-line JSON: {"block":true|false,"risk":"high|medium|low","rea
       }
     })() : undefined,
     insights: [
-      { icon: '📊', tag: 'STRUCTURE', text: i1 },
-      { icon: '🎯', tag: 'ZONE',      text: i2 },
-      { icon: '💧', tag: 'LIQUIDITY', text: i3 },
+      { icon: '📊', tag: 'СТРУКТУРА', text: i1 },
+      { icon: '🎯', tag: 'ЗОНА',      text: i2 },
+      { icon: '💧', tag: 'ЛИКВИДНОСТЬ', text: i3 },
     ],
   }
-  return { step1, step2, final }
+  return translateToRussian(keys, { step1, step2, final })
 }
 
 // Helper function to build a WAIT result
@@ -519,10 +519,75 @@ function buildWaitResult(confidence: number, reason: string, riskUsd: number, ba
     pos_usd: 0,
     ob_used: undefined,
     insights: [
-      { icon: '⏳', tag: 'WAITING', text: reason },
-      { icon: '📊', tag: 'BALANCE', text: `$${balance} | Risk ${riskPct}% = $${riskUsd}` },
-      { icon: '🎯', tag: 'CONDITION', text: 'Wait for structure confirmation and liquidity sweep' },
+      { icon: '⏳', tag: 'ОЖИДАНИЕ', text: reason },
+      { icon: '📊', tag: 'БАЛАНС', text: `$${balance} | Риск ${riskPct}% = $${riskUsd}` },
+      { icon: '🎯', tag: 'УСЛОВИЕ', text: 'Ждём подтверждения структуры и свипа ликвидности' },
     ],
+  }
+}
+
+// ─── Translation helper — translates all dynamic text fields to Russian ─────
+async function translateToRussian(
+  keys: string[],
+  result: { step1: Step1Result; step2: Step2Result; final: FinalResult }
+): Promise<{ step1: Step1Result; step2: Step2Result; final: FinalResult }> {
+  const ins = result.final.insights
+  const texts: Record<string, string> = {
+    s1: result.step1.summary || '',
+    s2: result.step2.summary || '',
+    fd: result.final.full_description || '',
+    ei: result.final.entry_instruction || '',
+    cn: result.final.confluence || '',
+    iv: result.final.invalidation || '',
+    ws: result.final.why_this_signal || '',
+    wf: result.final.wait_for || '',
+    ex: result.final.exit_instruction || '',
+    ps: result.final.position_size || '',
+    i0: ins[0]?.text || '',
+    i1: ins[1]?.text || '',
+    i2: ins[2]?.text || '',
+  }
+
+  // Only translate non-empty strings that contain English letters
+  const toTranslate = Object.fromEntries(
+    Object.entries(texts).filter(([, v]) => v.trim().length > 5 && /[a-zA-Z]{4,}/.test(v))
+  )
+  if (Object.keys(toTranslate).length === 0) return result
+
+  const prompt = `/no_think
+Translate the following JSON values to Russian. Rules:
+- Keep numbers, $, %, →, ↑, ↓, | unchanged
+- Keep SMC terms unchanged: OB, FVG, BOS, CHoCH, SL, TP, ATR, EMA, RSI, MACD, HTF, LONG, SHORT, WAIT, OTE, BB
+- Keep trading pairs unchanged (BTCUSDT, ETHUSDT etc)
+- Keep price values unchanged (e.g. $81500)
+- Return ONLY valid single-line JSON, no explanations
+
+${JSON.stringify(toTranslate)}`
+
+  try {
+    const raw = await groqGenerate(keys, getGroqFastModel(), prompt, 1500, 0.05, undefined, 'low')
+    const tr = extractJSON(raw)
+    const g = (k: string): string =>
+      tr[k] && typeof tr[k] === 'string' ? String(tr[k]) : texts[k]
+
+    return {
+      step1: { ...result.step1, summary: g('s1') },
+      step2: { ...result.step2, summary: g('s2') },
+      final: {
+        ...result.final,
+        full_description:  g('fd'),
+        entry_instruction: g('ei'),
+        confluence:        g('cn'),
+        invalidation:      g('iv'),
+        why_this_signal:   g('ws'),
+        wait_for:          g('wf'),
+        exit_instruction:  g('ex'),
+        position_size:     g('ps'),
+        insights: ins.map((item, i) => ({ ...item, text: g(`i${i}`) })),
+      },
+    }
+  } catch {
+    return result // fallback: keep original English on error
   }
 }
 

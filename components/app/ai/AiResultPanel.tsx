@@ -64,7 +64,7 @@ export default function AiResultPanel({ aiData, pair, tf, smcProb, onNavigate, o
         {[
           { key: 'step1', label: t('step1_technical'), sig: (p.step1 as Record<string,unknown>)?.signal,  val: `${(p.step1 as Record<string,unknown>)?.strength}/10`, sum: (p.step1 as Record<string,unknown>)?.summary },
           { key: 'step2', label: t('step2_risk'),      sig: (p.step2 as Record<string,unknown>)?.verdict, val: `${(p.step2 as Record<string,unknown>)?.confidence}%`,  sum: (p.step2 as Record<string,unknown>)?.summary },
-          { key: 'step3', label: t('step3_final'),     sig: (p.step3 as Record<string,unknown>)?.verdict, val: `${(p.step3 as Record<string,unknown>)?.confidence}%`,  sum: 'SMC confluence' },
+          { key: 'step3', label: t('step3_final'),     sig: (p.step3 as Record<string,unknown>)?.verdict, val: `${(p.step3 as Record<string,unknown>)?.confidence}%`,  sum: 'SMC конфлюэнс' },
         ].map(st => (
           <div className="pc" key={st.key}>
             <div className="pn">{st.label}</div>

@@ -9,8 +9,8 @@ export async function GET(req: NextRequest) {
   const endTime  = searchParams.get('endTime')  || ''
 
   try {
-    let url = `https://fapi.binance.com/fapi/v1/klines?symbol=<LaTex>${symbol}&interval=$</LaTex>{interval}&limit=<LaTex>${Math.min(Number(limit), 1500)}`
-    if (endTime) url += `&endTime=$</LaTex>{endTime}`
+    let url = `https://fapi.binance.com/fapi/v1/klines?symbol=${symbol}&interval=${interval}&limit=${Math.min(Number(limit), 1500)}`
+    if (endTime) url += `&endTime=${endTime}`
 
     const isHistorical = !!endTime && Number(endTime) < Date.now() - 60_000
     const r = await fetch(url, {

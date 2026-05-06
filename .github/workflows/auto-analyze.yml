@@ -1,0 +1,45 @@
+name: Auto Analysis
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+    inputs:
+      batch:
+        description: 'Batch index (0, 1 or 2). Leave empty to run all.'
+        required: false
+        default: 'all'
+
+jobs:
+  batch-0:
+    name: Analyze pairs 1-5
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'schedule' || github.event.inputs.batch == 'all' || github.event.inputs.batch == '0' }}
+    steps:
+      - name: Run analysis batch 0
+        run: |
+          curl -sf --max-time 70 \
+            "${{ secrets.APP_URL }}/api/analyze/auto?secret=${{ secrets.AUTO_ANALYZE_SECRET }}&batch=0" \
+            | jq '.'
+
+  batch-1:
+    name: Analyze pairs 6-10
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'schedule' || github.event.inputs.batch == 'all' || github.event.inputs.batch == '1' }}
+    steps:
+      - name: Run analysis batch 1
+        run: |
+          curl -sf --max-time 70 \
+            "${{ secrets.APP_URL }}/api/analyze/auto?secret=${{ secrets.AUTO_ANALYZE_SECRET }}&batch=1" \
+            | jq '.'
+
+  batch-2:
+    name: Analyze pairs 11-15
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'schedule' || github.event.inputs.batch == 'all' || github.event.inputs.batch == '2' }}
+    steps:
+      - name: Run analysis batch 2
+        run: |
+          curl -sf --max-time 70 \
+            "${{ secrets.APP_URL }}/api/analyze/auto?secret=${{ secrets.AUTO_ANALYZE_SECRET }}&batch=2" \
+            | jq '.'

@@ -27,10 +27,12 @@ export interface User {
   email: string | null
   nickname: string | null
   lang: string
-  ai_max_leverage: number   // РјР°РєСЃ РїР»РµС‡Рѕ РґР»СЏ AI-СЃРґРµР»РѕРє (default 20)
-  ai_balance?: number       // РґРµРїРѕР·РёС‚ РґР»СЏ СЂР°СЃС‡С‘С‚Р° СЂРёСЃРєР° (default 1000)
-  ai_risk_per_trade?: number // СЂРёСЃРє РЅР° СЃРґРµР»РєСѓ РІ % (default 1.0)
+  ai_max_leverage: number
+  ai_balance?: number
+  ai_risk_per_trade?: number
   stripe_customer_id?: string | null
+  telegram_chat_id?: string | null
+  watchlist?: string[] | null
   created_at: string
 }
 
@@ -518,6 +520,27 @@ export async function deleteUserById(userId: number) {
   await sql`DELETE FROM users         WHERE id      = ${userId}`
 }
 
+export async function getUserByTelegramChatId(chatId: string): Promise<User | null> {
+  const rows = await sql`SELECT * FROM users WHERE telegram_chat_id = ${chatId} LIMIT 1`
+  return (rows[0] as User) || null
+}
+
+export async function updateUserTelegramChatId(userId: number, chatId: string): Promise<void> {
+  await sql`UPDATE users SET telegram_chat_id = ${chatId} WHERE id = ${userId}`
+}
+
+export async function getUserWatchlist(userId: number): Promise<string[] | null> {
+  const rows = await sql`SELECT watchlist FROM users WHERE id = ${userId} LIMIT 1`
+  if (!rows[0]) return null
+  const raw = rows[0].watchlist
+  if (!raw) return null
+  return Array.isArray(raw) ? (raw as string[]) : null
+}
+
+export async function updateUserWatchlist(userId: number, pairs: string[]): Promise<void> {
+  await sql`UPDATE users SET watchlist = ${JSON.stringify(pairs)}::jsonb WHERE id = ${userId}`
+}
+
 export async function getAllUsersWithSubscriptions() {
   const rows = await sql`
     SELECT u.id, u.firebase_uid, u.email, u.nickname, u.lang, u.created_at,
@@ -564,6 +587,8 @@ export async function initDB() {
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS ai_balance NUMERIC DEFAULT 1000`
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS ai_risk_per_trade NUMERIC DEFAULT 1.0`
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_customer_id TEXT`
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS telegram_chat_id TEXT`
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS watchlist JSONB`
   await sql`
     CREATE TABLE IF NOT EXISTS signals (
       id SERIAL PRIMARY KEY,

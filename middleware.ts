@@ -15,6 +15,8 @@ export async function middleware(req: NextRequest) {
     !pathname.startsWith('/api/news') &&
     !pathname.startsWith('/api/analyze/test') &&
     !pathname.startsWith('/api/analyze/batch') &&
+    !pathname.startsWith('/api/analyze/auto') &&
+    !pathname.startsWith('/api/telegram/webhook') &&
     !pathname.startsWith('/api/billing/webhook')
 
   if ((isProtected || isApiProtected) && !token) {
@@ -49,5 +51,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/', '/dashboard/:path*', '/admin/:path*', '/api/:path*', '/login', '/register'],
+  matcher: ['/', '/dashboard/:path*', '/admin/:path*', '/api/:path*', '/login', '/register', '/api/telegram/:path*'],
 }

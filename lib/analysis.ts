@@ -1,4 +1,4 @@
-import { calcEnhancedSMC, scoreOrderBlock, type SMCData, type OrderBlock, type Candle } from './smc'
+﻿import { calcEnhancedSMC, scoreOrderBlock, type SMCData, type OrderBlock, type Candle } from './smc'
 import { loadGroqKeys, getGroqModel, getGroqFastModel, groqGenerate } from './groq'
 export type { SMCData, Candle }
 
@@ -71,62 +71,62 @@ function getContext(market: MarketData): string {
     .join('\n  ')
 
   const funding = market.fundingRate ?? 0
-  const fundingCtx = funding > 0.1 ? 'EXTREME LONGS — probable short squeeze / correction'
-    : funding > 0.05 ? 'Longs overheated — bearish pressure'
-    : funding < -0.05 ? 'EXTREME SHORTS — probable squeeze up'
-    : funding < -0.01 ? 'Shorts heavy — bullish pressure'
+  const fundingCtx = funding > 0.1 ? 'EXTREME LONGS вЂ” probable short squeeze / correction'
+    : funding > 0.05 ? 'Longs overheated вЂ” bearish pressure'
+    : funding < -0.05 ? 'EXTREME SHORTS вЂ” probable squeeze up'
+    : funding < -0.01 ? 'Shorts heavy вЂ” bullish pressure'
     : 'Neutral'
 
   const htfBias = (market.htfBias || smc.htfBias || 'neutral').toUpperCase()
 
-  const rsiInterp = market.rsi > 70 ? '🔴 overbought'
-    : market.rsi > 60 ? '🟡 moderately overbought'
-    : market.rsi < 30 ? '🟢 oversold'
-    : market.rsi < 40 ? '🟡 moderately oversold'
-    : '⚪ neutral'
+  const rsiInterp = market.rsi > 70 ? 'рџ”ґ overbought'
+    : market.rsi > 60 ? 'рџџЎ moderately overbought'
+    : market.rsi < 30 ? 'рџџў oversold'
+    : market.rsi < 40 ? 'рџџЎ moderately oversold'
+    : 'вљЄ neutral'
 
   const last5 = market.recentCandles.slice(-5)
   const candleLines = last5.map((c, i) => {
-    const dir = c.c > c.o ? '▲' : c.c < c.o ? '▼' : '—'
+    const dir = c.c > c.o ? 'в–І' : c.c < c.o ? 'в–ј' : 'вЂ”'
     const bodyPct = Math.abs(c.c - c.o) / c.o * 100
     return `  [${i + 1}] ${dir} O:${c.o} H:${c.h} L:${c.l} C:${c.c} V:${c.v}k body:${bodyPct.toFixed(1)}%`
   }).join('\n')
 
   return `
-━━━ TECHNICAL INDICATORS ━━━
+в”Ѓв”Ѓв”Ѓ TECHNICAL INDICATORS в”Ѓв”Ѓв”Ѓ
 RSI-14: ${market.rsi.toFixed(1)} ${rsiInterp}
 MACD: ${market.macdSignal} | EMA-50: price ${market.priceVsEma50} | EMA-200: price ${market.priceVsEma200}
 Volume: ${market.volSignal} | ATR-14: ${market.atr14pct}%
-Funding: ${funding.toFixed(4)}% → ${fundingCtx}
+Funding: ${funding.toFixed(4)}% в†’ ${fundingCtx}
 
-━━━ LAST 5 CANDLES (OHLCV, V in thousands) ━━━
+в”Ѓв”Ѓв”Ѓ LAST 5 CANDLES (OHLCV, V in thousands) в”Ѓв”Ѓв”Ѓ
 ${candleLines}
 
-━━━ MARKET STRUCTURE ━━━
+в”Ѓв”Ѓв”Ѓ MARKET STRUCTURE в”Ѓв”Ѓв”Ѓ
 HTF bias: ${htfBias} | Trend: ${smc.trend}
-${smc.bosLevel ? `BOS at $${smc.bosLevel} → confirms ${htfBias} structure` : 'No BOS detected'}
+${smc.bosLevel ? `BOS at $${smc.bosLevel} в†’ confirms ${htfBias} structure` : 'No BOS detected'}
 ${smc.cob ? `COB (change of character) at $${smc.cob}` : ''}
 Liquidity sweeps last 10 candles: ${smc.sweepCount}
 
-━━━ DEMAND ZONES (bullish OBs below price) ━━━
+в”Ѓв”Ѓв”Ѓ DEMAND ZONES (bullish OBs below price) в”Ѓв”Ѓв”Ѓ
 ${demandOBs.length ? demandOBs.map(fmtOB).join('\n') : 'None detected'}
 
-━━━ SUPPLY ZONES (bearish OBs above price) ━━━
+в”Ѓв”Ѓв”Ѓ SUPPLY ZONES (bearish OBs above price) в”Ѓв”Ѓв”Ѓ
 ${supplyOBs.length ? supplyOBs.map(fmtOB).join('\n') : 'None detected'}
 
-━━━ BREAKER BLOCKS (highest priority) ━━━
+в”Ѓв”Ѓв”Ѓ BREAKER BLOCKS (highest priority) в”Ѓв”Ѓв”Ѓ
 Bullish (support): ${breakerBull.length ? breakerBull.map(fmtBB).join(' | ') : 'none'}
 Bearish (resistance): ${breakerBear.length ? breakerBear.map(fmtBB).join(' | ') : 'none'}
 
-━━━ FAIR VALUE GAPS ━━━
+в”Ѓв”Ѓв”Ѓ FAIR VALUE GAPS в”Ѓв”Ѓв”Ѓ
 Above price (LONG targets): ${fvgsAbove.length ? fvgsAbove.map(fmtFVG).join('\n  ') : 'none above'}
 Below price (SHORT targets): ${fvgsBelow.length ? fvgsBelow.map(fmtFVG).join('\n  ') : 'none below'}
 
-━━━ LIQUIDITY ━━━
+в”Ѓв”Ѓв”Ѓ LIQUIDITY в”Ѓв”Ѓв”Ѓ
 BSL (above price, SHORT magnets): ${bsl.length ? bsl.map(fmtLiq).join(' | ') : 'none'}
 SSL (below price, LONG magnets): ${ssl.length ? ssl.map(fmtLiq).join(' | ') : 'none'}
 
-━━━ PRE-SIGNAL SMC ENGINE ━━━
+в”Ѓв”Ѓв”Ѓ PRE-SIGNAL SMC ENGINE в”Ѓв”Ѓв”Ѓ
 Scenario: ${smc.probability.scenario} | Probability: ${smc.probability.probability}% | Confidence: ${smc.probability.confidence}%
 R:R model: ${smc.probability.riskReward} | Expected R: ${smc.probability.expectedR}
 Active alerts:
@@ -173,10 +173,10 @@ function getHistory(signals: MemorySignal[]): string {
 
   const lines = signals.map(s => {
     const date = new Date(s.created_at).toLocaleDateString('en-US')
-    const outcome = s.outcome ? (s.outcome === 'win' ? '✅ WIN' : '❌ LOSS') : '⏳ pending'
+    const outcome = s.outcome ? (s.outcome === 'win' ? 'вњ… WIN' : 'вќЊ LOSS') : 'вЏі pending'
     const pnlNum = s.actual_pnl_pct != null ? Number(s.actual_pnl_pct) : null
     const pnl = pnlNum != null && !isNaN(pnlNum) ? ` PnL:${pnlNum > 0 ? '+' : ''}${pnlNum.toFixed(1)}%` : ''
-    return `[${date} ${s.timeframe}] ${s.final_verdict ?? 'WAIT'} conf:${s.final_confidence ?? '?'}% entry:$${s.final_entry ?? '?'} tp:$${s.final_tp ?? '?'} sl:$${s.final_sl ?? '?'} → ${outcome}${pnl}`
+    return `[${date} ${s.timeframe}] ${s.final_verdict ?? 'WAIT'} conf:${s.final_confidence ?? '?'}% entry:$${s.final_entry ?? '?'} tp:$${s.final_tp ?? '?'} sl:$${s.final_sl ?? '?'} в†’ ${outcome}${pnl}`
   })
 
   const losses = signals.filter(s => s.outcome === 'loss')
@@ -193,16 +193,16 @@ function getHistory(signals: MemorySignal[]): string {
         hints.push(`SL ${slDist}% above entry`)
       }
       const pnlVal = s.actual_pnl_pct != null ? Number(s.actual_pnl_pct) : null
-      if (pnlVal != null && pnlVal < -5) hints.push('large loss — OB failed under pressure')
-      if (pnlVal != null && pnlVal < -1 && pnlVal > -5) hints.push('price tapped SL — weak zone')
+      if (pnlVal != null && pnlVal < -5) hints.push('large loss вЂ” OB failed under pressure')
+      if (pnlVal != null && pnlVal < -1 && pnlVal > -5) hints.push('price tapped SL вЂ” weak zone')
       const conf = s.final_confidence ?? 0
-      if (conf < 60) hints.push(`low confidence ${conf}% — signal was weak`)
-      return `  • ${s.final_verdict} [${new Date(s.created_at).toLocaleDateString('en-US')}]: ${hints.join('; ') || 'zone did not hold — likely insufficient confluence'}`
+      if (conf < 60) hints.push(`low confidence ${conf}% вЂ” signal was weak`)
+      return `  вЂў ${s.final_verdict} [${new Date(s.created_at).toLocaleDateString('en-US')}]: ${hints.join('; ') || 'zone did not hold вЂ” likely insufficient confluence'}`
     })
-    lossAnalysis = `\n⚠️ LOSS REVIEW (${losses.length} signals) — AVOID THE SAME MISTAKES:\n${lossLines.join('\n')}\n→ Require more confluence factors. Never enter without a liquidity sweep and a clear POI.\n`
+    lossAnalysis = `\nвљ пёЏ LOSS REVIEW (${losses.length} signals) вЂ” AVOID THE SAME MISTAKES:\n${lossLines.join('\n')}\nв†’ Require more confluence factors. Never enter without a liquidity sweep and a clear POI.\n`
   }
 
-  return `\n━━━ MEMORY: recent signals for this pair ━━━\n${lines.join('\n')}\n${lossAnalysis}Use this history: repeat winning patterns, avoid losing patterns.\n`
+  return `\nв”Ѓв”Ѓв”Ѓ MEMORY: recent signals for this pair в”Ѓв”Ѓв”Ѓ\n${lines.join('\n')}\n${lossAnalysis}Use this history: repeat winning patterns, avoid losing patterns.\n`
 }
 
 export async function fullAnalysis(
@@ -224,7 +224,6 @@ export async function fullAnalysis(
   const riskUsd = parseFloat((balance * riskPct / 100).toFixed(2))
   const atrPct  = market.atr14pct ?? 2.0
 
-  // серия убытков — ужесточаем требования
   const recentOutcomes = memorySignals.slice(0, 3).map(s => s.outcome)
   const consecutiveLosses = recentOutcomes.filter(o => o === 'loss').length
   const strictMode = consecutiveLosses >= 2
@@ -235,14 +234,13 @@ export async function fullAnalysis(
     : utcHour < 22 ? 'New York (13-22 UTC, peak liquidity)'
     : 'After hours (quiet market)'
 
-  // шаг 1 — анализ структуры рынка
   const prompt1 = `/no_think
 You are an institutional SMC analyst. Structural analysis of ${pair} (${tf}).
 PRICE: $${price} | SESSION: ${session} | VOLATILITY: ATR=${atrPct}%
 ${ctx}
 
 Analyze: BOS = trend continuation; CHoCH = first sign of reversal; Liquidity sweep + reversal into OB = strong entry.
-RSI${market.rsi > 70 ? ' OVERBOUGHT — caution with longs' : market.rsi < 30 ? ' OVERSOLD — caution with shorts' : ' neutral'}.
+RSI${market.rsi > 70 ? ' OVERBOUGHT вЂ” caution with longs' : market.rsi < 30 ? ' OVERSOLD вЂ” caution with shorts' : ' neutral'}.
 EMA-50/200: ${market.priceVsEma50}/${market.priceVsEma200}.
 
 Reply with a single-line JSON:
@@ -258,13 +256,12 @@ Reply with a single-line JSON:
 
   if (trendDir === 'ranging' && (htf === 'neutral' || htf === 'ranging') || s1.ranging_risk === true) {
     const waitStep1: Step1Result = { signal: 'WAIT', strength: 3, trend: trendDir, summary: summary1 }
-    const waitStep2: Step2Result = { verdict: 'WAIT', confidence: 45, risk_score: 5, leverage: 1, summary: 'Флэт + нейтральный HTF — нет чёткого направления' }
-    const waitFinal = makeWait(45, 'Флэт без ясного HTF-bias. Ожидаем разрешения структуры.', riskUsd, balance, riskPct)
+    const waitStep2: Step2Result = { verdict: 'WAIT', confidence: 45, risk_score: 5, leverage: 1, summary: 'Р¤Р»СЌС‚ + РЅРµР№С‚СЂР°Р»СЊРЅС‹Р№ HTF вЂ” РЅРµС‚ С‡С‘С‚РєРѕРіРѕ РЅР°РїСЂР°РІР»РµРЅРёСЏ' }
+    const waitFinal = makeWait(45, 'Р¤Р»СЌС‚ Р±РµР· СЏСЃРЅРѕРіРѕ HTF-bias. РћР¶РёРґР°РµРј СЂР°Р·СЂРµС€РµРЅРёСЏ СЃС‚СЂСѓРєС‚СѓСЂС‹.', riskUsd, balance, riskPct)
     return translateResponse(keys, { step1: waitStep1, step2: waitStep2, final: waitFinal })
   }
 
-  // шаг 2 — поиск зоны входа
-  const strictWarning = strictMode ? `\n⚠️ STRICT MODE (${consecutiveLosses} consecutive losses): require at least 4 confluence factors, confluence_count≥4, else WAIT.\n` : ''
+  const strictWarning = strictMode ? `\nвљ пёЏ STRICT MODE (${consecutiveLosses} consecutive losses): require at least 4 confluence factors, confluence_countв‰Ґ4, else WAIT.\n` : ''
 
   const prompt2 = `/no_think
 You are an SMC analyst. Identify the best POI for ${pair} (${tf}).${strictWarning}
@@ -275,11 +272,11 @@ ${ctx}
 POI priority: BB (Breaker Block) > A+ OB with sweep > A OB + FVG > B OB
 For LONG: bullish POI BELOW price + SSL sweep already happened + target (FVG/BSL) ABOVE
 For SHORT: bearish POI ABOVE price + BSL sweep already happened + target (FVG/SSL) BELOW
-Without a liquidity sweep — WAIT only or very high confidence required.
+Without a liquidity sweep вЂ” WAIT only or very high confidence required.
 
-Min R:R (risk:reward): A+/BB → 1:3; A OB → 1:2; B OB → 1:1.5; no POI → WAIT.
+Min R:R (risk:reward): A+/BB в†’ 1:3; A OB в†’ 1:2; B OB в†’ 1:1.5; no POI в†’ WAIT.
 confluence_count = number of confirmed factors (OB, FVG, BOS, CHoCH, sweep, HTF, volume, RSI, session).
-Minimum 3 factors for LONG/SHORT. Strict mode — minimum 4.
+Minimum 3 factors for LONG/SHORT. Strict mode вЂ” minimum 4.
 
 Reply with a single-line JSON:
 {"poi_type":"OB|BB|FVG|none","poi_dir":"bullish|bearish","poi_quality":"A+|A|B|C","poi_high":0,"poi_low":0,"confluence_score":<0-100>,"confluence_count":<1-9>,"sweep_confirmed":true|false,"fvg_target":true|false,"liq_target":true|false,"entry_zone":"<POI description with price range>","wait_reason":"<WAIT reason>","min_rr":<1.5-5.0>}`
@@ -303,46 +300,45 @@ Reply with a single-line JSON:
     return translateResponse(keys, { step1: waitStep1, step2: waitStep2, final: waitFinal })
   }
 
-  // шаг 3 — финальный сигнал
   const systemPrompt3 = `You are an institutional SMC trader with 10 years of experience trading Smart Money Concepts. Your goal is high-quality signals with minimum R:R of 1:1.5. You only trade when there is confluence of at least 3 factors. You do not trade in ranging markets. A liquidity sweep is a mandatory condition for entry. Reply only with valid JSON.`
 
-  const sweepWarn = !sweepOk ? '⚠️ SWEEP NOT CONFIRMED — require WAIT unless there are strong grounds' : '✅ Sweep confirmed'
+  const sweepWarn = !sweepOk ? 'вљ пёЏ SWEEP NOT CONFIRMED вЂ” require WAIT unless there are strong grounds' : 'вњ… Sweep confirmed'
 
   const prompt3 = `Final signal for ${pair} (${tf}). Confluence: ${confluenceCount} factors. ${sweepWarn}.
-${strictMode ? `⚠️ STRICT MODE: ${consecutiveLosses} consecutive losses — require confidence≥70% or WAIT.` : ''}
+${strictMode ? `вљ пёЏ STRICT MODE: ${consecutiveLosses} consecutive losses вЂ” require confidenceв‰Ґ70% or WAIT.` : ''}
 ${histCtx}
 
-━━━ MARKET STRUCTURE ━━━
+в”Ѓв”Ѓв”Ѓ MARKET STRUCTURE в”Ѓв”Ѓв”Ѓ
 Trend: ${s1.trend} | HTF: ${s1.htf} | Phase: ${s1.phase} | Volatility: ${s1.volatility || 'medium'}
 BOS: ${s1.bos_confirmed} | CHoCH: ${s1.choch || false} | Session: ${session}
 Liquidity sweeps: SSL=${s1.sweep_ssl || false} BSL=${s1.sweep_bsl || false}
 RSI: ${market.rsi.toFixed(1)} | MACD: ${market.macdSignal} | EMA-50: ${market.priceVsEma50} | EMA-200: ${market.priceVsEma200}
 
-━━━ BEST POI ━━━
+в”Ѓв”Ѓв”Ѓ BEST POI в”Ѓв”Ѓв”Ѓ
 ${s2.poi_type}/${s2.poi_dir} [quality: ${s2.poi_quality || 'B'}] | confluence=${s2.confluence_score}% (${confluenceCount} factors) | min R:R 1:${s2.min_rr || 2}
 ${s2.entry_zone || s2.wait_reason || 'no POI'}
 FVG target: ${s2.fvg_target || false} | Liquidity target: ${s2.liq_target || false}
 
-━━━ FULL SMC CONTEXT ━━━
+в”Ѓв”Ѓв”Ѓ FULL SMC CONTEXT в”Ѓв”Ѓв”Ѓ
 ${ctx}
 
-━━━ RISK MANAGEMENT ━━━
+в”Ѓв”Ѓв”Ѓ RISK MANAGEMENT в”Ѓв”Ѓв”Ѓ
 Deposit: $${balance} | Risk/trade: ${riskPct}% = $${riskUsd}
 ATR-14: ${atrPct}% | Max leverage: ${maxLeverage}x
 
 LEVERAGE SELECTION:
-• A+/BB + confluence≥4 + ATR<2% → 10-${Math.min(maxLeverage, 20)}x
-• A + confluence 3-4 + ATR 2-3% → 5-10x
-• A + ATR 3-5% → 2-5x
-• B or ATR>5% → 1-3x
+вЂў A+/BB + confluenceв‰Ґ4 + ATR<2% в†’ 10-${Math.min(maxLeverage, 20)}x
+вЂў A + confluence 3-4 + ATR 2-3% в†’ 5-10x
+вЂў A + ATR 3-5% в†’ 2-5x
+вЂў B or ATR>5% в†’ 1-3x
 
 ENTRY RULES:
-LONG: bullish OB/BB below price + HTF bullish + SSL sweep + FVG/BSL above as target → OTE 62-79% into OB
-SHORT: bearish OB/BB above price + HTF bearish + BSL sweep + FVG/SSL below as target → OTE 62-79% into OB
+LONG: bullish OB/BB below price + HTF bullish + SSL sweep + FVG/BSL above as target в†’ OTE 62-79% into OB
+SHORT: bearish OB/BB above price + HTF bearish + BSL sweep + FVG/SSL below as target в†’ OTE 62-79% into OB
 WAIT: no A/A+ POI | R:R < 1:${s2.min_rr || 2} | HTF/LTF conflict | no sweep | price already inside OB
 
 TP = nearest FVG midpoint or liquidity. SL = beyond OB low/high + 0.3% buffer.
-TP/SL must not exceed ±12% from current price $${price}.
+TP/SL must not exceed В±12% from current price $${price}.
 R:R notation: risk:reward = 1:X (where X is the number, e.g. 1:2 means reward is twice the risk).
 
 Reply with ONLY one line of valid JSON (all numeric fields must be numbers, not strings):
@@ -413,7 +409,6 @@ Reply with ONLY one line of valid JSON (all numeric fields must be numbers, not 
   const sl_pct = parseFloat(((entryPrice - slPrice) / entryPrice * 100).toFixed(2))
   const rrStr  = sl_pct !== 0 ? (Math.abs(tp_pct) / Math.abs(sl_pct)).toFixed(1) : '?'
 
-  // шаг 4 — проверка сигнала
   let daBlocked = false
   let daReason  = ''
 
@@ -422,7 +417,7 @@ Reply with ONLY one line of valid JSON (all numeric fields must be numbers, not 
 You are a skeptical analyst. Signal ${verdict} ${pair} with confidence ${confidence}%.
 Entry: $${entryPrice} | TP: $${tpPrice.toFixed(2)} | SL: $${slPrice.toFixed(2)} | R:R 1:${rrStr}
 Trend: ${s1.trend} | HTF: ${s1.htf} | Sweep: ${sweepOk} | Confluence: ${confluenceCount}
-${!sweepOk ? 'Liquidity sweep NOT confirmed — primary risk.' : ''}
+${!sweepOk ? 'Liquidity sweep NOT confirmed вЂ” primary risk.' : ''}
 ${strictMode ? `Ongoing loss streak of ${consecutiveLosses}.` : ''}
 
 Name the TOP-2 reasons this signal could fail. Should it be blocked?
@@ -437,7 +432,7 @@ Reply with a single-line JSON: {"block":true|false,"risk":"high|medium|low","rea
         daBlocked = true
         daReason  = String(da.reason || 'Devil\'s Advocate blocked the signal')
       }
-    } catch { /* продолжаем без блокировки */ }
+    } catch { /* РїСЂРѕРґРѕР»Р¶Р°РµРј Р±РµР· Р±Р»РѕРєРёСЂРѕРІРєРё */ }
   }
 
   if (daBlocked) {
@@ -448,7 +443,7 @@ Reply with a single-line JSON: {"block":true|false,"risk":"high|medium|low","rea
   }
 
   const i1 = String(json.i1 || trend)
-  const i2 = String(json.i2 || `Entry $${entryPrice} → TP $${tpPrice.toFixed(2)} (+${tp_pct}%)`)
+  const i2 = String(json.i2 || `Entry $${entryPrice} в†’ TP $${tpPrice.toFixed(2)} (+${tp_pct}%)`)
   const i3 = String(json.i3 || `SL $${slPrice.toFixed(2)} (-${sl_pct}%) | R:R 1:${rrStr}`)
 
   const step1: Step1Result = { signal: verdict, strength: Math.round(confidence / 10), trend: trendDir, summary: summary1 }
@@ -484,9 +479,9 @@ Reply with a single-line JSON: {"block":true|false,"risk":"high|medium|low","rea
       }
     })() : undefined,
     insights: [
-      { icon: '📊', tag: 'СТРУКТУРА', text: i1 },
-      { icon: '🎯', tag: 'ЗОНА',      text: i2 },
-      { icon: '💧', tag: 'ЛИКВИДНОСТЬ', text: i3 },
+      { icon: 'рџ“Љ', tag: 'РЎРўР РЈРљРўРЈР Рђ', text: i1 },
+      { icon: 'рџЋЇ', tag: 'Р—РћРќРђ',      text: i2 },
+      { icon: 'рџ’§', tag: 'Р›РРљР’РР”РќРћРЎРўР¬', text: i3 },
     ],
   }
   return translateResponse(keys, { step1, step2, final })
@@ -507,9 +502,9 @@ function makeWait(confidence: number, reason: string, riskUsd: number, balance: 
     pos_usd: 0,
     ob_used: undefined,
     insights: [
-      { icon: '⏳', tag: 'ОЖИДАНИЕ', text: reason },
-      { icon: '📊', tag: 'БАЛАНС', text: `$${balance} | Риск ${riskPct}% = $${riskUsd}` },
-      { icon: '🎯', tag: 'УСЛОВИЕ', text: 'Ждём подтверждения структуры и свипа ликвидности' },
+      { icon: 'вЏі', tag: 'РћР–РР”РђРќРР•', text: reason },
+      { icon: 'рџ“Љ', tag: 'Р‘РђР›РђРќРЎ', text: `$${balance} | Р РёСЃРє ${riskPct}% = $${riskUsd}` },
+      { icon: 'рџЋЇ', tag: 'РЈРЎР›РћР’РР•', text: 'Р–РґС‘Рј РїРѕРґС‚РІРµСЂР¶РґРµРЅРёСЏ СЃС‚СЂСѓРєС‚СѓСЂС‹ Рё СЃРІРёРїР° Р»РёРєРІРёРґРЅРѕСЃС‚Рё' },
     ],
   }
 }
@@ -535,7 +530,6 @@ async function translateResponse(
     i2: ins[2]?.text || '',
   }
 
-  // Only translate non-empty strings that contain English letters
   const toTranslate = Object.fromEntries(
     Object.entries(texts).filter(([, v]) => v.trim().length > 5 && /[a-zA-Z]{4,}/.test(v))
   )
@@ -543,7 +537,7 @@ async function translateResponse(
 
   const prompt = `/no_think
 Translate the following JSON values to Russian. Rules:
-- Keep numbers, $, %, →, ↑, ↓, | unchanged
+- Keep numbers, $, %, в†’, в†‘, в†“, | unchanged
 - Keep SMC terms unchanged: OB, FVG, BOS, CHoCH, SL, TP, ATR, EMA, RSI, MACD, HTF, LONG, SHORT, WAIT, OTE, BB
 - Keep trading pairs unchanged (BTCUSDT, ETHUSDT etc)
 - Keep price values unchanged (e.g. $81500)
@@ -620,7 +614,6 @@ export function calcMarketData(candles: Candle[], fundingRate: number | null): M
 
   const smc = calcEnhancedSMC(candles, fundingRate)
 
-  // ATR-14 as percentage of price
   const atr14pct = (() => {
     const slice = candles.slice(-15)
     if (slice.length < 2) return 2.0

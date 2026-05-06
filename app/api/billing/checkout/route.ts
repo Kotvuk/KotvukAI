@@ -1,4 +1,4 @@
-export const dynamic = 'force-dynamic'
+﻿export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { getUser } from '@/lib/auth-helper'
 import { setStripeCustomerId } from '@/lib/db'
@@ -15,7 +15,6 @@ export async function POST(req: NextRequest) {
     const priceId = TIER_PRICE_IDS[tier]
     if (!priceId) return NextResponse.json({ ok: false, error: 'Invalid tier' }, { status: 400 })
 
-    // Reuse existing Stripe customer or create new
     let customerId = dbUser.stripe_customer_id
     if (!customerId) {
       const customer = await stripe.customers.create({

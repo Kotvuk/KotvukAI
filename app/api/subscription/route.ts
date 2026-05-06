@@ -1,37 +1,36 @@
-export const dynamic = 'force-dynamic'
+﻿export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { getUser } from '@/lib/auth-helper'
 import { getSubscription, updateSubscriptionTier, SUBSCRIPTION_LIMITS } from '@/lib/db'
 
-// Перенесено в отдельный объект (не export из route — Next.js не поддерживает произвольные экспорты)
 const SUBSCRIPTION_PLANS = [
   {
     tier: 'free',
     name: 'Free',
     price: 0,
     analyses_per_day: SUBSCRIPTION_LIMITS.free,
-    features: ['3 анализа в день', 'История сигналов', 'Торговый журнал'],
+    features: ['3 Р°РЅР°Р»РёР·Р° РІ РґРµРЅСЊ', 'РСЃС‚РѕСЂРёСЏ СЃРёРіРЅР°Р»РѕРІ', 'РўРѕСЂРіРѕРІС‹Р№ Р¶СѓСЂРЅР°Р»'],
   },
   {
     tier: 'starter',
     name: 'Starter',
     price: 9.99,
     analyses_per_day: SUBSCRIPTION_LIMITS.starter,
-    features: ['10 анализов в день', 'Все фичи Free', 'Лимитные ордера', 'Уведомления'],
+    features: ['10 Р°РЅР°Р»РёР·РѕРІ РІ РґРµРЅСЊ', 'Р’СЃРµ С„РёС‡Рё Free', 'Р›РёРјРёС‚РЅС‹Рµ РѕСЂРґРµСЂР°', 'РЈРІРµРґРѕРјР»РµРЅРёСЏ'],
   },
   {
     tier: 'pro',
     name: 'Pro',
     price: 19.99,
     analyses_per_day: SUBSCRIPTION_LIMITS.pro,
-    features: ['30 анализов в день', 'Все фичи Starter', 'AI Чат', 'Расширенная история'],
+    features: ['30 Р°РЅР°Р»РёР·РѕРІ РІ РґРµРЅСЊ', 'Р’СЃРµ С„РёС‡Рё Starter', 'AI Р§Р°С‚', 'Р Р°СЃС€РёСЂРµРЅРЅР°СЏ РёСЃС‚РѕСЂРёСЏ'],
   },
   {
     tier: 'elite',
     name: 'Elite',
     price: 49.99,
     analyses_per_day: SUBSCRIPTION_LIMITS.elite,
-    features: ['100 анализов в день', 'Все фичи Pro', 'Приоритетная поддержка', 'API доступ'],
+    features: ['100 Р°РЅР°Р»РёР·РѕРІ РІ РґРµРЅСЊ', 'Р’СЃРµ С„РёС‡Рё Pro', 'РџСЂРёРѕСЂРёС‚РµС‚РЅР°СЏ РїРѕРґРґРµСЂР¶РєР°', 'API РґРѕСЃС‚СѓРї'],
   },
 ]
 
@@ -54,7 +53,6 @@ export async function GET(req: NextRequest) {
   })
 }
 
-// Только для admin/dev: вручную установить тариф
 export async function POST(req: NextRequest) {
   const user = await getUser(req)
   if (!user) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 })

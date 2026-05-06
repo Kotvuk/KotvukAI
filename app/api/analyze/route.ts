@@ -20,11 +20,10 @@ const PAIR_RE = /^[A-Z]{2,12}(USDT?|BTC|ETH|BNB)$/
 
 const BINANCE_ENDPOINTS = [
   'https://fapi.binance.com',
-  'https://api.binance.com', 
+  'https://api.binance.com',
   'https://data.binance.com',
 ]
 
-/** Получить свечи: пробуем разные endpoints с retry */
 async function fetchKlines(sym: string, interval: string, limit: number): Promise<number[][]> {
   const withTimeout = (url: string) => {
     const ctrl = new AbortController()
@@ -34,16 +33,13 @@ async function fetchKlines(sym: string, interval: string, limit: number): Promis
   }
 
   let lastError = ''
-  
-  // Try each endpoint
+
   for (const baseUrl of BINANCE_ENDPOINTS) {
     try {
       const isFutures = baseUrl.includes('fapi')
-      const path = isFutures 
-        ? '/fapi/v1/klines' 
-        : '/api/v3/klines'
+      const path = isFutures ? '/fapi/v1/klines' : '/api/v3/klines'
       const url = `${baseUrl}${path}?symbol=${sym}&interval=${interval}&limit=${limit}`
-      
+
       const r = await withTimeout(url)
       if (r.ok) {
         const d: number[][] = await r.json()
@@ -54,7 +50,7 @@ async function fetchKlines(sym: string, interval: string, limit: number): Promis
       lastError = String(e)
     }
   }
-  
+
   throw new Error(`Не удалось получить свечи: ${lastError}`)
 }
 
@@ -65,11 +61,9 @@ export async function POST(req: NextRequest) {
   const { pair, timeframe } = await req.json()
   if (!pair || !timeframe) return NextResponse.json({ ok: false, error: 'pair and timeframe required' }, { status: 400 })
 
-  // Валидация пары
   const sym = pair.replace('/', '')
   if (!PAIR_RE.test(sym)) return NextResponse.json({ ok: false, error: 'Invalid pair format' }, { status: 400 })
 
-  // Проверка лимита подписки
   const quota = await checkAndIncrementAnalysis(user.id)
   if (!quota.allowed) {
     return NextResponse.json({
@@ -94,7 +88,6 @@ export async function POST(req: NextRequest) {
       volume: parseFloat(String(c[5])),
     }))
 
-    // Основные свечи (обязательно) + HTF и funding (опционально, не блокируем)
     const raw = await fetchKlines(sym, interval, 200)
     const candles = toCandles(raw)
 
@@ -124,9 +117,9 @@ export async function POST(req: NextRequest) {
     if (htfBias) market.htfBias = htfBias
 
     const memorySignals = await getSignalsForPair(user.id, pair, 5)
-    const balance      = Number(user.ai_balance ?? 1000)
-    const riskPct      = Number(user.ai_risk_per_trade ?? 1.0)
-    const userMaxLev   = Number(user.ai_max_leverage ?? 20)
+    const balance       = Number(user.ai_balance ?? 1000)
+    const riskPct       = Number(user.ai_risk_per_trade ?? 1.0)
+    const userMaxLev    = Number(user.ai_max_leverage ?? 20)
     const { step1, step2, final: analysis } = await fullAnalysis(pair, timeframe, market, memorySignals, userMaxLev, balance, riskPct)
 
     const elapsed = ((Date.now() - start) / 1000).toFixed(1)
@@ -145,24 +138,20 @@ export async function POST(req: NextRequest) {
 
     await createNotification(user.id, `📊 ${analysis.verdict} ${pair} ${timeframe} — уверенность ${analysis.confidence}%`)
 
-    // Создать AI-сделку: pending если лимитный ордер (entry ниже/выше текущей цены), open если рыночный
     if (analysis.verdict === 'LONG' || analysis.verdict === 'SHORT') {
       try {
-        const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+        const expiresAt     = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
         const maxLeverage   = Number(user.ai_max_leverage ?? 20)
         const tradeLeverage = Math.min(analysis.leverage ?? 2, maxLeverage)
 
-        // Размер позиции от AI или расчётный
         const slDist = (analysis.sl_price && analysis.entry_price)
           ? Math.abs(analysis.entry_price - analysis.sl_price) / analysis.entry_price
           : 0.02
         const riskUsd     = balance * riskPct / 100
         const tradeAmount = Math.round(analysis.pos_usd || (riskUsd / slDist))
 
-        // entry_type корректно определён в analysis.ts по расстоянию OTE от рынка
-        // limit_price = entry_price (OTE вход в OB зону)
         const isLimit   = analysis.entry_type === 'limit'
-        const limitPx   = analysis.entry_price ?? null   // OTE цена в OB зоне
+        const limitPx   = analysis.entry_price ?? null
         const currentPx = market.price
 
         await createTrade(user.id, {
@@ -170,8 +159,8 @@ export async function POST(req: NextRequest) {
           direction:    analysis.verdict.toLowerCase() as 'long' | 'short',
           order_type:   isLimit ? 'limit' : 'market',
           amount:       tradeAmount,
-          entry_price:  isLimit ? null : limitPx,       // для market — фиксируем цену входа
-          limit_price:  isLimit ? limitPx : null,       // для limit — цена ожидания
+          entry_price:  isLimit ? null : limitPx,
+          limit_price:  isLimit ? limitPx : null,
           tp_price:     analysis.tp_price ?? null,
           sl_price:     analysis.sl_price ?? null,
           leverage:     tradeLeverage,
@@ -186,8 +175,7 @@ export async function POST(req: NextRequest) {
           )
         }
 
-        // Лог для отладки
-        console.log(`[trade] ${analysis.verdict} ${pair} | entry_type=${analysis.entry_type} | limitPx=${limitPx?.toFixed(2)} | currentPx=${currentPx.toFixed(2)} | isLimit=${isLimit} | status=${isLimit ? 'pending' : 'open'}`)
+        console.log(`[trade] ${analysis.verdict} ${pair} | type=${analysis.entry_type} | px=${currentPx.toFixed(2)} | limit=${isLimit}`)
       } catch { /* не критично */ }
     }
 

@@ -1,4 +1,4 @@
-export interface Candle {
+﻿export interface Candle {
   timestamp: number
   open: number; high: number; low: number; close: number; volume: number
 }
@@ -157,7 +157,6 @@ function calcATR(candles: Candle[], period = 200): number[] {
 }
 
 function computeParsed(candles: Candle[]) {
-  // Используем реальные high/low без инверсии — инверсия давала ложные OB
   return {
     parsedHighs: candles.map(c => c.high),
     parsedLows:  candles.map(c => c.low),
@@ -182,7 +181,6 @@ function detectPivots(candles: Candle[], N: number) {
 function detectOrderBlocks(candles: Candle[], _price: number, avgVol: number): RawOB[] {
   const obs: RawOB[] = []
 
-  // Адаптивный N: чем выше волатильность, тем больше свечей нужно для подтверждения пивота
   const atrs = calcATR(candles)
   const lastATR = atrs[atrs.length - 1] || 1
   const lastPrice = candles[candles.length - 1].close || 1
@@ -608,24 +606,24 @@ function calcProbability(inp: ProbInput): ProbabilityResult {
 
   let recommendation: string
   if (probability >= 75 && scenario !== 'NEUTRAL') {
-    recommendation = `Сильный сетап ${scenario} — входить при подтверждении на младшем ТФ`
+    recommendation = `РЎРёР»СЊРЅС‹Р№ СЃРµС‚Р°Рї ${scenario} вЂ” РІС…РѕРґРёС‚СЊ РїСЂРё РїРѕРґС‚РІРµСЂР¶РґРµРЅРёРё РЅР° РјР»Р°РґС€РµРј РўР¤`
   } else if (probability >= 60 && scenario !== 'NEUTRAL') {
-    recommendation = `Умеренный ${scenario} сетап — ждать ретеста ключевой зоны`
+    recommendation = `РЈРјРµСЂРµРЅРЅС‹Р№ ${scenario} СЃРµС‚Р°Рї вЂ” Р¶РґР°С‚СЊ СЂРµС‚РµСЃС‚Р° РєР»СЋС‡РµРІРѕР№ Р·РѕРЅС‹`
   } else if (probability >= 45) {
-    recommendation = 'Смешанные сигналы — наблюдать, не торговать'
+    recommendation = 'РЎРјРµС€Р°РЅРЅС‹Рµ СЃРёРіРЅР°Р»С‹ вЂ” РЅР°Р±Р»СЋРґР°С‚СЊ, РЅРµ С‚РѕСЂРіРѕРІР°С‚СЊ'
   } else {
-    recommendation = 'Низкая вероятность — пропустить этот сетап'
+    recommendation = 'РќРёР·РєР°СЏ РІРµСЂРѕСЏС‚РЅРѕСЃС‚СЊ вЂ” РїСЂРѕРїСѓСЃС‚РёС‚СЊ СЌС‚РѕС‚ СЃРµС‚Р°Рї'
   }
 
   const pair_placeholder = (s: string) =>
-    s === 'LONG' ? '🟢 LONG' : s === 'SHORT' ? '🔴 SHORT' : '⚪ NEUTRAL'
+    s === 'LONG' ? 'рџџў LONG' : s === 'SHORT' ? 'рџ”ґ SHORT' : 'вљЄ NEUTRAL'
 
   const alerts: Alert[] = []
 
   if (f1 >= 15 && probability >= 45) {
     alerts.push({
       stage: 1, level: 'watchlist', color: 'yellow',
-      message: `${pair_placeholder(scenario)} формируется — структура HTF подтверждает ${htfBias}`,
+      message: `${pair_placeholder(scenario)} С„РѕСЂРјРёСЂСѓРµС‚СЃСЏ вЂ” СЃС‚СЂСѓРєС‚СѓСЂР° HTF РїРѕРґС‚РІРµСЂР¶РґР°РµС‚ ${htfBias}`,
       price, type: scenario === 'NEUTRAL' ? 'LONG' : scenario, confidence: Math.round(probability * 0.7),
     })
   }
@@ -633,7 +631,7 @@ function calcProbability(inp: ProbInput): ProbabilityResult {
   if (probability >= 60 && riskReward >= 1.5 && confluence >= 2) {
     alerts.push({
       stage: 2, level: 'setup_ready', color: 'orange',
-      message: `Сетап готов: ${scenario} | Конфлюэнс ${confluence} зон | R:R ${riskReward}`,
+      message: `РЎРµС‚Р°Рї РіРѕС‚РѕРІ: ${scenario} | РљРѕРЅС„Р»СЋСЌРЅСЃ ${confluence} Р·РѕРЅ | R:R ${riskReward}`,
       price, type: scenario === 'NEUTRAL' ? 'LONG' : scenario, confidence: Math.round(probability * 0.85),
     })
   }
@@ -641,7 +639,7 @@ function calcProbability(inp: ProbInput): ProbabilityResult {
   if (sweepCount >= 1 && probability >= 70 && (nearBullOBs > 0 || nearBearOBs > 0)) {
     alerts.push({
       stage: 3, level: 'execute', color: scenario === 'LONG' ? 'green' : 'red',
-      message: `ТРИГГЕР: ${scenario} | Свип ликвидности + ретест OB | Уверенность ${confidence}%`,
+      message: `РўР РР“Р“Р•Р : ${scenario} | РЎРІРёРї Р»РёРєРІРёРґРЅРѕСЃС‚Рё + СЂРµС‚РµСЃС‚ OB | РЈРІРµСЂРµРЅРЅРѕСЃС‚СЊ ${confidence}%`,
       price, type: scenario === 'NEUTRAL' ? 'LONG' : scenario, confidence,
     })
   }
@@ -654,8 +652,8 @@ function calcProbability(inp: ProbInput): ProbabilityResult {
 }
 
 /**
- * Оценка надёжности Order Block: 0-100.
- * Чем выше — тем выше вероятность отработки зоны.
+ * РћС†РµРЅРєР° РЅР°РґС‘Р¶РЅРѕСЃС‚Рё Order Block: 0-100.
+ * Р§РµРј РІС‹С€Рµ вЂ” С‚РµРј РІС‹С€Рµ РІРµСЂРѕСЏС‚РЅРѕСЃС‚СЊ РѕС‚СЂР°Р±РѕС‚РєРё Р·РѕРЅС‹.
  */
 export function scoreOrderBlock(ob: OrderBlock): {
   score: number
@@ -664,27 +662,22 @@ export function scoreOrderBlock(ob: OrderBlock): {
 } {
   const f: Record<string, number> = {}
 
-  // Нетронутость (свежесть)
   f.freshness = ob.touchCount === 0 ? 30 : ob.touchCount === 1 ? 15 : ob.touchCount === 2 ? 5 : 0
 
-  // Относительный объём на формировании
   f.volume = ob.relVolume >= 2.5 ? 20 : ob.relVolume >= 2.0 ? 17 : ob.relVolume >= 1.5 ? 13 : ob.relVolume >= 1.0 ? 7 : 2
 
-  // Импульс от зоны (% движения)
   f.impulse = ob.impulseSize >= 3 ? 20 : ob.impulseSize >= 2 ? 15 : ob.impulseSize >= 1 ? 9 : 3
 
-  // Свежесть по возрасту (свечей назад)
   f.recency = ob.ageCandles <= 5 ? 15 : ob.ageCandles <= 15 ? 11 : ob.ageCandles <= 30 ? 7 : ob.ageCandles <= 60 ? 4 : 1
 
-  // Бонус за качество (A+/A/B/C)
   f.quality = ob.quality === 'A+' ? 15 : ob.quality === 'A' ? 10 : ob.quality === 'B' ? 3 : 0
 
   const score = Math.min(100, Math.round(Object.values(f).reduce((a, b) => a + b, 0)))
   const verdict =
-    score >= 80 ? '🟢 Высокая надёжность' :
-    score >= 60 ? '🟡 Умеренная надёжность' :
-    score >= 40 ? '🟠 Слабая надёжность' :
-                  '🔴 Низкая надёжность'
+    score >= 80 ? 'рџџў Р’С‹СЃРѕРєР°СЏ РЅР°РґС‘Р¶РЅРѕСЃС‚СЊ' :
+    score >= 60 ? 'рџџЎ РЈРјРµСЂРµРЅРЅР°СЏ РЅР°РґС‘Р¶РЅРѕСЃС‚СЊ' :
+    score >= 40 ? 'рџџ  РЎР»Р°Р±Р°СЏ РЅР°РґС‘Р¶РЅРѕСЃС‚СЊ' :
+                  'рџ”ґ РќРёР·РєР°СЏ РЅР°РґС‘Р¶РЅРѕСЃС‚СЊ'
 
   return { score, factors: f, verdict }
 }

@@ -1,4 +1,4 @@
-export const dynamic = 'force-dynamic'
+﻿export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyToken } from '@/lib/firebase-admin'
 import { upsertUser, initDB } from '@/lib/db'
@@ -12,7 +12,6 @@ export async function POST(req: NextRequest) {
     const decoded = await verifyToken(token)
     if (!decoded) return NextResponse.json({ ok: false, error: 'Invalid token' }, { status: 401 })
 
-    // email comes directly from token claims — no extra adminAuth.getUser() call
     const user = await upsertUser(decoded.uid, decoded.email)
 
     return NextResponse.json({ ok: true, user: { id: user.id, email: user.email, nickname: user.nickname, lang: user.lang } })

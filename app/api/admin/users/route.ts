@@ -1,4 +1,4 @@
-export const dynamic = 'force-dynamic'
+﻿export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { getUser } from '@/lib/auth-helper'
 import { getAllUsersWithSubscriptions, getAdminStats, updateSubscriptionTier, deleteUserById } from '@/lib/db'
@@ -44,7 +44,6 @@ export async function DELETE(req: NextRequest) {
   const { user_id } = await req.json()
   if (!user_id) return NextResponse.json({ ok: false, error: 'Missing user_id' }, { status: 400 })
 
-  // Safety: cannot delete self
   const targetId = Number(user_id)
   await deleteUserById(targetId)
   return NextResponse.json({ ok: true })

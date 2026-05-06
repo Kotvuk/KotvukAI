@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useLang } from '@/contexts/LangContext'
@@ -28,7 +28,6 @@ export default function Header() {
   useEffect(() => {
     async function fetchTickers() {
       try {
-        // Через серверный прокси — не зависит от мобильных блокировок Binance
         const r = await fetch('/api/ticker')
         if (!r.ok) return
         const data: Record<string, { price: number; change: number }> = await r.json()
@@ -60,7 +59,7 @@ export default function Header() {
         {SYMS.map(({ k, label }) => (
           <div key={k} className="tick">
             <span className="tick-sym">{label}</span>
-            <span className="tick-price">{tickers[k]?.price || '—'}</span>
+            <span className="tick-price">{tickers[k]?.price || 'вЂ”'}</span>
             <span className={tickers[k]?.up ? 'tick-up' : 'tick-dn'}>
               {tickers[k]?.change || ''}
             </span>

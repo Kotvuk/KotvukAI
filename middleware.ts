@@ -1,8 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
+﻿import { NextRequest, NextResponse } from 'next/server'
 
-// rate limiting для /api/analyze
 const analyzeLastCall = new Map<string, number>()
-const ANALYZE_COOLDOWN_MS = 10_000 // 10 секунд между запросами
+const ANALYZE_COOLDOWN_MS = 10_000 // 10 СЃРµРєСѓРЅРґ РјРµР¶РґСѓ Р·Р°РїСЂРѕСЃР°РјРё
 
 export async function middleware(req: NextRequest) {
   const token = req.cookies.get('fb_token')?.value
@@ -25,19 +24,17 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL('/login', req.url))
   }
 
-  // Rate limiting: /api/analyze — не чаще 1 раза в 10 секунд
   if (pathname === '/api/analyze' && token && req.method === 'POST') {
     const now = Date.now()
-    const last = analyzeLastCall.get(token.slice(-16)) // последние 16 символов как ключ
+    const last = analyzeLastCall.get(token.slice(-16)) // РїРѕСЃР»РµРґРЅРёРµ 16 СЃРёРјРІРѕР»РѕРІ РєР°Рє РєР»СЋС‡
     if (last && now - last < ANALYZE_COOLDOWN_MS) {
       const retryAfter = Math.ceil((ANALYZE_COOLDOWN_MS - (now - last)) / 1000)
       return NextResponse.json(
-        { ok: false, error: `Слишком частые запросы. Подождите ${retryAfter} сек.` },
+        { ok: false, error: `РЎР»РёС€РєРѕРј С‡Р°СЃС‚С‹Рµ Р·Р°РїСЂРѕСЃС‹. РџРѕРґРѕР¶РґРёС‚Рµ ${retryAfter} СЃРµРє.` },
         { status: 429, headers: { 'Retry-After': String(retryAfter) } }
       )
     }
     analyzeLastCall.set(token.slice(-16), now)
-    // Чистка записей старше 60 сек при каждом 100-м запросе
     if (analyzeLastCall.size % 100 === 0) {
       const cutoff = now - 60_000
       analyzeLastCall.forEach((v, k) => { if (v < cutoff) analyzeLastCall.delete(k) })

@@ -1,4 +1,4 @@
-export const dynamic = 'force-dynamic'
+﻿export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { stripe, PRICE_ID_TO_TIER } from '@/lib/stripe'
@@ -62,11 +62,9 @@ async function handleSubscriptionChange(
     return
   }
 
-  // Get tier from first item's price ID
   const priceId = sub.items.data[0]?.price?.id
   const tier = PRICE_ID_TO_TIER[priceId] || 'free'
 
-  // current_period_end is a Unix timestamp (number)
   const periodEnd = (sub as unknown as Record<string, unknown>).current_period_end
   const expiresAt = typeof periodEnd === 'number'
     ? new Date(periodEnd * 1000)

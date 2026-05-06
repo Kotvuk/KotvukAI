@@ -1,10 +1,8 @@
-import { NextResponse } from 'next/server'
+﻿import { NextResponse } from 'next/server'
 import { STATIC_PAIRS } from '@/lib/pairs'
 
-// Leverage-token suffixes to exclude from spot pairs
 const EXCLUDED_SUFFIXES = ['UP', 'DOWN', 'BULL', 'BEAR', '3L', '3S', '2L', '2S', '5L', '5S']
 
-// Top coins to always sort first
 const TOP_COINS = [
   'BTC','ETH','BNB','SOL','XRP','ADA','DOGE','AVAX','DOT',
   'MATIC','LTC','BCH','TRX','ETC','XLM','ATOM','LINK','UNI',
@@ -40,7 +38,6 @@ export async function GET() {
 
     const pairSet = new Set<string>()
 
-    // Futures USDT-M perpetuals
     if (futuresRes.status === 'fulfilled' && futuresRes.value.ok) {
       const data = await futuresRes.value.json() as Array<{ symbol: string }>
       for (const { symbol } of data) {
@@ -50,7 +47,6 @@ export async function GET() {
       }
     }
 
-    // Spot USDT pairs
     if (spotRes.status === 'fulfilled' && spotRes.value.ok) {
       const data = await spotRes.value.json() as Array<{ symbol: string }>
       for (const { symbol } of data) {
@@ -60,12 +56,10 @@ export async function GET() {
       }
     }
 
-    // Fall back to static list if we got nothing useful
     if (pairSet.size < 50) {
       return NextResponse.json(STATIC_PAIRS)
     }
 
-    // Sort: top coins first, then alphabetical
     const sorted = Array.from(pairSet).sort((a, b) => {
       const ac = a.split('/')[0]
       const bc = b.split('/')[0]

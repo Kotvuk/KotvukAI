@@ -1,4 +1,4 @@
-import { neon, type NeonQueryFunction } from '@neondatabase/serverless'
+﻿import { neon, type NeonQueryFunction } from '@neondatabase/serverless'
 
 let _sql: NeonQueryFunction<false, false> | null = null
 
@@ -27,9 +27,9 @@ export interface User {
   email: string | null
   nickname: string | null
   lang: string
-  ai_max_leverage: number   // макс плечо для AI-сделок (default 20)
-  ai_balance?: number       // депозит для расчёта риска (default 1000)
-  ai_risk_per_trade?: number // риск на сделку в % (default 1.0)
+  ai_max_leverage: number   // РјР°РєСЃ РїР»РµС‡Рѕ РґР»СЏ AI-СЃРґРµР»РѕРє (default 20)
+  ai_balance?: number       // РґРµРїРѕР·РёС‚ РґР»СЏ СЂР°СЃС‡С‘С‚Р° СЂРёСЃРєР° (default 1000)
+  ai_risk_per_trade?: number // СЂРёСЃРє РЅР° СЃРґРµР»РєСѓ РІ % (default 1.0)
   stripe_customer_id?: string | null
   created_at: string
 }
@@ -64,8 +64,8 @@ export interface Trade {
   sl_price: number | null
   leverage: number
   status: 'open' | 'closed' | 'pending' | 'cancelled'
-  limit_price: number | null   // цена триггера для pending ордеров
-  expires_at: string | null    // авто-отмена через 7 дней
+  limit_price: number | null   // С†РµРЅР° С‚СЂРёРіРіРµСЂР° РґР»СЏ pending РѕСЂРґРµСЂРѕРІ
+  expires_at: string | null    // Р°РІС‚Рѕ-РѕС‚РјРµРЅР° С‡РµСЂРµР· 7 РґРЅРµР№
   account_type: 'user' | 'ai'
   pnl: number | null
   pnl_pct: number | null
@@ -143,7 +143,7 @@ export async function triggerLevelAlert(id: number, userId: number, pair: string
     UPDATE level_alerts SET is_triggered = TRUE, triggered_at = NOW()
     WHERE id = ${id} AND user_id = ${userId}
   `
-  const msg = `🔔 Цена вошла в зону: ${label || pair}`
+  const msg = `рџ”” Р¦РµРЅР° РІРѕС€Р»Р° РІ Р·РѕРЅСѓ: ${label || pair}`
   await sql`INSERT INTO notifications (user_id, message) VALUES (${userId}, ${msg})`
 }
 
@@ -252,7 +252,6 @@ export async function getStats(userId: number) {
 }
 
 export async function getAdvancedStats(userId: number) {
-  // Все разрешённые сигналы с PnL для расчёта метрик
   const rows = await sql`
     SELECT actual_pnl_pct, outcome
     FROM signals
@@ -265,12 +264,10 @@ export async function getAdvancedStats(userId: number) {
   const wins  = pnls.filter(p => p > 0)
   const losses = pnls.filter(p => p <= 0)
 
-  // Profit Factor = сумма прибылей / |сумма убытков|
   const grossWin  = wins.reduce((s, p) => s + p, 0)
   const grossLoss = Math.abs(losses.reduce((s, p) => s + p, 0))
   const profitFactor = grossLoss > 0 ? parseFloat((grossWin / grossLoss).toFixed(2)) : null
 
-  // Max Drawdown — максимальная просадка от пика
   let peak = 0, equity = 0, maxDD = 0
   for (const p of pnls) {
     equity += p
@@ -279,13 +276,11 @@ export async function getAdvancedStats(userId: number) {
     if (dd > maxDD) maxDD = dd
   }
 
-  // Sharpe Ratio (упрощённый, без risk-free rate)
   const avg = pnls.reduce((s, p) => s + p, 0) / pnls.length
   const variance = pnls.reduce((s, p) => s + Math.pow(p - avg, 2), 0) / pnls.length
   const stdDev = Math.sqrt(variance)
   const sharpe = stdDev > 0 ? parseFloat((avg / stdDev).toFixed(2)) : null
 
-  // Expectancy = (WR * avgWin) - (LR * avgLoss)
   const wr = wins.length / pnls.length
   const avgWin  = wins.length  ? grossWin  / wins.length  : 0
   const avgLoss = losses.length ? grossLoss / losses.length : 0
@@ -442,7 +437,6 @@ export async function getSubscription(userId: number): Promise<Subscription> {
     SELECT * FROM subscriptions WHERE user_id = ${userId} LIMIT 1
   `
   if (rows[0]) return rows[0] as Subscription
-  // Создать free подписку если нет
   const created = await sql`
     INSERT INTO subscriptions (user_id, tier, analyses_today, last_reset_date)
     VALUES (${userId}, 'free', 0, CURRENT_DATE)
@@ -457,7 +451,6 @@ export async function checkAndIncrementAnalysis(userId: number): Promise<{ allow
   const today = new Date().toISOString().slice(0, 10)
   const limit = SUBSCRIPTION_LIMITS[sub.tier] ?? 3
 
-  // Сбросить счётчик если новый день
   if (sub.last_reset_date !== today) {
     await sql`
       UPDATE subscriptions
@@ -499,8 +492,6 @@ export async function getPendingTrades(userId: number): Promise<Trade[]> {
 }
 
 export async function activateTrade(id: number, userId: number, entryPrice: number): Promise<boolean> {
-  // Атомарная активация: WHERE status='pending' гарантирует что два параллельных
-  // запроса не активируют один ордер дважды (без SELECT FOR UPDATE)
   const rows = await sql`
     UPDATE trades SET status = 'open', entry_price = ${entryPrice}
     WHERE id = ${id} AND user_id = ${userId} AND status = 'pending'
@@ -519,7 +510,6 @@ export async function cancelTrade(id: number, userId: number): Promise<boolean> 
 }
 
 export async function deleteUserById(userId: number) {
-  // Cascade delete in correct order (FK constraints)
   await sql`DELETE FROM notifications WHERE user_id = ${userId}`
   await sql`DELETE FROM level_alerts  WHERE user_id = ${userId}`
   await sql`DELETE FROM trades        WHERE user_id = ${userId}`

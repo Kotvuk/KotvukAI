@@ -1,4 +1,4 @@
-import type { Auth } from 'firebase-admin/auth'
+﻿import type { Auth } from 'firebase-admin/auth'
 
 let _adminAuth: Auth | null = null
 
@@ -25,7 +25,6 @@ function getAdminAuth(): Auth {
 
 export const adminAuth = { getUser: (uid: string) => getAdminAuth().getUser(uid) }
 
-// Returns { uid, email } from token claims — no extra API call needed
 export async function verifyToken(token: string): Promise<{ uid: string; email: string } | null> {
   try {
     const decoded = await getAdminAuth().verifyIdToken(token)

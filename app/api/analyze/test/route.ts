@@ -1,4 +1,4 @@
-export const dynamic = 'force-dynamic'
+﻿export const dynamic = 'force-dynamic'
 export const maxDuration = 60
 import { NextRequest, NextResponse } from 'next/server'
 import { fullAnalysis, calcMarketData, type Candle } from '@/lib/analysis'
@@ -9,7 +9,6 @@ const HTF_MAP: Record<string, string> = {
   '1h': '1d', '4h': '1d', '1d': '1d',
 }
 
-// TEMP: тест без авторизации, только для разработки
 export async function GET(req: NextRequest) {
   if (process.env.NODE_ENV !== 'development') {
     return NextResponse.json({ error: 'Only in dev' }, { status: 403 })
@@ -19,7 +18,7 @@ export async function GET(req: NextRequest) {
   const sym  = (url.searchParams.get('pair') || 'BTCUSDT').toUpperCase()
   const interval = url.searchParams.get('tf') || '1h'
   const htfInterval = HTF_MAP[interval] || '1d'
-  const tfLabel = interval.replace('m', 'м').replace('h', 'ч').replace('d', 'д')
+  const tfLabel = interval.replace('m', 'Рј').replace('h', 'С‡').replace('d', 'Рґ')
 
   try {
     const [binanceRes, htfRes, frRes] = await Promise.allSettled([
@@ -43,7 +42,6 @@ export async function GET(req: NextRequest) {
     }))
     const candles = toCandles(raw)
 
-    // HTF bias
     let htfBias: string | undefined
     if (htfRes.status === 'fulfilled' && htfRes.value && htfRes.value.ok) {
       try {
@@ -54,7 +52,6 @@ export async function GET(req: NextRequest) {
       } catch { htfBias = undefined }
     }
 
-    // Funding rate
     let fundingRate: number | null = null
     if (frRes.status === 'fulfilled' && frRes.value && frRes.value.ok) {
       try {
@@ -68,7 +65,6 @@ export async function GET(req: NextRequest) {
     const market = calcMarketData(candles, fundingRate)
     if (htfBias) market.htfBias = htfBias
 
-    // Debug: проверяем сырой SMC данные
     const debug = url.searchParams.get('debug') === '1'
 
     const start = Date.now()

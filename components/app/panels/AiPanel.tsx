@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 import React, { useRef, useState, useCallback, useEffect, useMemo } from 'react'
 import { useLang } from '@/contexts/LangContext'
 import { useAuth } from '@/contexts/AuthContext'
@@ -16,22 +16,22 @@ import AiBacktestModal from '@/components/app/ai/AiBacktestModal'
 import { usePairs } from '@/hooks/usePairs'
 
 const DRAW_TOOLS = [
-  { key: 'segment',                label: 'Линия тренда' },
-  { key: 'rayLine',                label: 'Луч' },
-  { key: 'horizontalStraightLine', label: 'Горизонт. линия' },
-  { key: 'verticalStraightLine',   label: 'Вертик. линия' },
-  { key: 'priceLine',              label: 'Ценовой уровень' },
-  { key: 'parallelStraightLine',   label: 'Парал. канал' },
-  { key: 'priceChannelLine',       label: 'Ценовой канал' },
-  { key: 'priceRect',              label: 'Прямоугольник' },
-  { key: 'circle',                 label: 'Окружность' },
-  { key: 'polygon',                label: 'Многоугольник' },
-  { key: 'polyline',               label: 'Траектория' },
-  { key: 'fibRetracement',         label: 'Фибоначчи' },
+  { key: 'segment',                label: 'Р›РёРЅРёСЏ С‚СЂРµРЅРґР°' },
+  { key: 'rayLine',                label: 'Р›СѓС‡' },
+  { key: 'horizontalStraightLine', label: 'Р“РѕСЂРёР·РѕРЅС‚. Р»РёРЅРёСЏ' },
+  { key: 'verticalStraightLine',   label: 'Р’РµСЂС‚РёРє. Р»РёРЅРёСЏ' },
+  { key: 'priceLine',              label: 'Р¦РµРЅРѕРІРѕР№ СѓСЂРѕРІРµРЅСЊ' },
+  { key: 'parallelStraightLine',   label: 'РџР°СЂР°Р». РєР°РЅР°Р»' },
+  { key: 'priceChannelLine',       label: 'Р¦РµРЅРѕРІРѕР№ РєР°РЅР°Р»' },
+  { key: 'priceRect',              label: 'РџСЂСЏРјРѕСѓРіРѕР»СЊРЅРёРє' },
+  { key: 'circle',                 label: 'РћРєСЂСѓР¶РЅРѕСЃС‚СЊ' },
+  { key: 'polygon',                label: 'РњРЅРѕРіРѕСѓРіРѕР»СЊРЅРёРє' },
+  { key: 'polyline',               label: 'РўСЂР°РµРєС‚РѕСЂРёСЏ' },
+  { key: 'fibRetracement',         label: 'Р¤РёР±РѕРЅР°С‡С‡Рё' },
 ]
 const TFS = [
-  { label: '1M', val: '1м' }, { label: '5M', val: '5м' }, { label: '15M', val: '15м' },
-  { label: '30M', val: '30м' }, { label: '1H', val: '1ч' }, { label: '4H', val: '4ч' }, { label: '1D', val: '1д' },
+  { label: '1M', val: '1Рј' }, { label: '5M', val: '5Рј' }, { label: '15M', val: '15Рј' },
+  { label: '30M', val: '30Рј' }, { label: '1H', val: '1С‡' }, { label: '4H', val: '4С‡' }, { label: '1D', val: '1Рґ' },
 ]
 
 function vc(v: string | null) {
@@ -52,12 +52,12 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
   const { pairs: allPairs } = usePairs()
   const chartRef = useRef<KLineChartHandle>(null)
   const [pair, setPair] = useState('BTC/USDT')
-  const [tf, setTf] = useState('1ч')
+  const [tf, setTf] = useState('1С‡')
   const pairRef = useRef('BTC/USDT')
-  const tfRef = useRef('1ч')
+  const tfRef = useRef('1С‡')
   const [pairSearch, setPairSearch] = useState('')
   const [pairOpen, setPairOpen] = useState(false)
-  const [chartTitle, setChartTitle] = useState('BTC/USDT · 1H')
+  const [chartTitle, setChartTitle] = useState('BTC/USDT В· 1H')
   const [marketData, setMarketData] = useState<CandleData | null>(null)
   const [sidebarInds, setSidebarInds] = useState<{ name: string; value: string; color: string; label: string }[]>([])
   const [sidebarSR, setSidebarSR] = useState<{ type: 'R' | 'S'; value: number }[]>([])
@@ -147,7 +147,7 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
     function onOverlayRightClick(e: Event) {
       const d = (e as CustomEvent).detail
       if (d?.id) {
-        if (window.confirm('Удалить этот объект с графика?')) {
+        if (window.confirm('РЈРґР°Р»РёС‚СЊ СЌС‚РѕС‚ РѕР±СЉРµРєС‚ СЃ РіСЂР°С„РёРєР°?')) {
           chartRef.current?.removeOverlayById(d.id)
         }
       }
@@ -169,7 +169,7 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
     function onUpdateMarkup(e: Event) {
       const d = (e as CustomEvent).detail
       chartRef.current?.updateMarkup(d.tp, d.sl, d.entry)
-      showToast('Уровни обновлены', 'ok')
+      showToast('РЈСЂРѕРІРЅРё РѕР±РЅРѕРІР»РµРЅС‹', 'ok')
     }
     function onDrawZone(e: Event) {
       const d = (e as CustomEvent).detail
@@ -195,8 +195,8 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
             drawn++
           })
         }
-        if (!drawn) { showToast('Нет активных зон. Сначала нажмите SMC.', 'err'); return }
-        showToast(`Нарисовано ${drawn} ${isOB ? 'OB' : 'FVG'} зон`, 'ok')
+        if (!drawn) { showToast('РќРµС‚ Р°РєС‚РёРІРЅС‹С… Р·РѕРЅ. РЎРЅР°С‡Р°Р»Р° РЅР°Р¶РјРёС‚Рµ SMC.', 'err'); return }
+        showToast(`РќР°СЂРёСЃРѕРІР°РЅРѕ ${drawn} ${isOB ? 'OB' : 'FVG'} Р·РѕРЅ`, 'ok')
         return
       }
 
@@ -205,36 +205,36 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
         const items = isOB
           ? smc.orderBlocks.filter(o => (isBull ? o.type === 'bullish' : o.type === 'bearish') && !o.isMitigated)
           : smc.fvgs.filter(f => (isBull ? f.type === 'bullish' : f.type === 'bearish'))
-        if (!items.length) { showToast('Нет активных зон. Сначала нажмите SMC.', 'err'); return }
+        if (!items.length) { showToast('РќРµС‚ Р°РєС‚РёРІРЅС‹С… Р·РѕРЅ. РЎРЅР°С‡Р°Р»Р° РЅР°Р¶РјРёС‚Рµ SMC.', 'err'); return }
         const color = isBull ? '#00e676' : (isFVG ? '#00c8ff' : '#ff3d57')
         items.forEach((z, i) => {
           chartRef.current?.drawZone(z.high, z.low, color, `${isBull ? 'Bull' : 'Bear'} ${isOB ? 'OB' : 'FVG'} ${i + 1}`, 'chat_ob')
         })
-        showToast(`Нарисовано ${items.length} ${isOB ? 'OB' : 'FVG'} зон`, 'ok')
+        showToast(`РќР°СЂРёСЃРѕРІР°РЅРѕ ${items.length} ${isOB ? 'OB' : 'FVG'} Р·РѕРЅ`, 'ok')
         return
       }
 
-      if (!d.priceFrom || !d.priceTo) { showToast('Сначала нажмите SMC для получения данных', 'err'); return }
+      if (!d.priceFrom || !d.priceTo) { showToast('РЎРЅР°С‡Р°Р»Р° РЅР°Р¶РјРёС‚Рµ SMC РґР»СЏ РїРѕР»СѓС‡РµРЅРёСЏ РґР°РЅРЅС‹С…', 'err'); return }
       const color = d.color || (isBull ? '#00e676' : isFVG ? '#00c8ff' : '#f0a500')
       chartRef.current?.drawZone(d.priceFrom, d.priceTo, color, d.label || zoneType || 'Zone', zoneType || 'chat_zone')
-      showToast(`Зона нарисована: ${d.label || zoneType}`, 'ok')
+      showToast(`Р—РѕРЅР° РЅР°СЂРёСЃРѕРІР°РЅР°: ${d.label || zoneType}`, 'ok')
     }
     function onDrawLiquidity(e: Event) {
       const d = (e as CustomEvent).detail
       chartRef.current?.drawZone(d.level * 1.001, d.level * 0.999, d.side === 'sell' ? '#ff3d57' : '#00e676', d.side === 'sell' ? 'SSL' : 'BSL', 'chat_liq')
-      showToast('Ликвидность нарисована', 'ok')
+      showToast('Р›РёРєРІРёРґРЅРѕСЃС‚СЊ РЅР°СЂРёСЃРѕРІР°РЅР°', 'ok')
     }
     function onClearZones(e: Event) {
       const d = (e as CustomEvent).detail
       if (d.target === 'all' || d.target === 'markup') chartRef.current?.clearDrawings()
       if (d.target === 'all' || d.target === 'ob' || d.target === 'fvg' || d.target === 'liquidity') chartRef.current?.clearSMC()
-      showToast('Очищено', 'ok')
+      showToast('РћС‡РёС‰РµРЅРѕ', 'ok')
     }
     function onSetOpacity(e: Event) {
       const d = (e as CustomEvent).detail
       const group = d.group === 'ob' ? 'smc_ob' : d.group === 'fvg' ? 'smc_fvg' : d.group === 'liquidity' ? 'smc_liq' : 'ai'
       chartRef.current?.setZoneOpacity(group, d.opacityValue || 0.2)
-      showToast('Прозрачность изменена', 'ok')
+      showToast('РџСЂРѕР·СЂР°С‡РЅРѕСЃС‚СЊ РёР·РјРµРЅРµРЅР°', 'ok')
     }
     window.addEventListener('kotvuk:update_markup', onUpdateMarkup)
     window.addEventListener('kotvuk:draw_zone', onDrawZone)
@@ -250,17 +250,14 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
     }
   }, [])
 
-  // Загрузить квоту при монтировании
   useEffect(() => {
     fetch('/api/subscription').then(r => r.json()).then(d => {
       if (d.ok) setQuota({ remaining: d.remaining, limit: d.limit, tier: d.subscription?.tier || 'free' })
     }).catch(() => {})
   }, [])
 
-  // При возврате на панель — триггер resize чтобы klinecharts пересчитал размеры canvas
   useEffect(() => {
     if (active) {
-      // Небольшая задержка: дать браузеру применить display изменение
       const t = setTimeout(() => window.dispatchEvent(new Event('resize')), 50)
       return () => clearTimeout(t)
     }
@@ -307,7 +304,7 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
         const mid = (ob.high + ob.low) / 2
         const dist = Math.abs(price - mid) / price
         if (dist < THRESHOLD) {
-          showToast(`Цена у ${ob.type === 'bullish' ? 'бычьего' : 'медвежьего'} OB $${ob.low.toFixed(0)}-$${ob.high.toFixed(0)}`, 'ok')
+          showToast(`Р¦РµРЅР° Сѓ ${ob.type === 'bullish' ? 'Р±С‹С‡СЊРµРіРѕ' : 'РјРµРґРІРµР¶СЊРµРіРѕ'} OB $${ob.low.toFixed(0)}-$${ob.high.toFixed(0)}`, 'ok')
           return
         }
       }
@@ -316,7 +313,7 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
         if (liq.isSwept) continue
         const dist = Math.abs(price - liq.price) / price
         if (dist < THRESHOLD) {
-          showToast(`Цена у ${liq.type === 'buy' ? 'BSL' : 'SSL'} $${liq.price.toFixed(0)}`, 'ok')
+          showToast(`Р¦РµРЅР° Сѓ ${liq.type === 'buy' ? 'BSL' : 'SSL'} $${liq.price.toFixed(0)}`, 'ok')
           return
         }
       }
@@ -330,7 +327,6 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
     chartRef.current?.loadChart(pairRef.current, tfRef.current)
   }, [])
 
-  // сохранение рисунков
   const saveDrawings = useCallback(async (p: string, t: string) => {
     const token = await getValidToken().catch(() => null)
     if (!token) return
@@ -374,7 +370,7 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
     saveDrawings(pairRef.current, tfRef.current)
     setPair(p); pairRef.current = p
     setPairOpen(false); setPairSearch('')
-    setChartTitle(p + ' · ' + tfRef.current.toUpperCase())
+    setChartTitle(p + ' В· ' + tfRef.current.toUpperCase())
     smcDataRef.current = null
     if (showSMC) { chartRef.current?.clearSMC(); setShowSMC(false) }
     if (showTL) { chartRef.current?.clearTrendlines(); setShowTL(false) }
@@ -386,7 +382,7 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
   const selectTf = useCallback((v: string) => {
     saveDrawings(pairRef.current, tfRef.current)
     setTf(v); tfRef.current = v
-    setChartTitle(pairRef.current + ' · ' + v.toUpperCase())
+    setChartTitle(pairRef.current + ' В· ' + v.toUpperCase())
     smcDataRef.current = null
     if (showSMC) { chartRef.current?.clearSMC(); setShowSMC(false) }
     if (showTL) { chartRef.current?.clearTrendlines(); setShowTL(false) }
@@ -417,11 +413,11 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
             chartRef.current?.drawSMC(d.smc as Parameters<KLineChartHandle['drawSMC']>[0], smcSettings)
             setShowSMC(true)
           } else {
-            showToast(d.error || 'Ошибка SMC', 'err')
+            showToast(d.error || 'РћС€РёР±РєР° SMC', 'err')
           }
         } catch (e) {
           console.error('SMC error:', e)
-          showToast('Ошибка загрузки SMC', 'err')
+          showToast('РћС€РёР±РєР° Р·Р°РіСЂСѓР·РєРё SMC', 'err')
         }
         setSmcLoading(false)
       }
@@ -444,9 +440,9 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
       const d = await r.json()
       if (d.ok) {
         setAlerts(prev => [...prev, d.alert])
-        showToast(`🔔 Алерт создан: ${label}`, 'ok')
+        showToast(`рџ”” РђР»РµСЂС‚ СЃРѕР·РґР°РЅ: ${label}`, 'ok')
       }
-    } catch { showToast('Ошибка создания алерта', 'err') }
+    } catch { showToast('РћС€РёР±РєР° СЃРѕР·РґР°РЅРёСЏ Р°Р»РµСЂС‚Р°', 'err') }
   }
 
   async function deleteAlert(id: number) {
@@ -455,7 +451,7 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
     try {
       await fetch(`/api/alerts/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } })
       setAlerts(prev => prev.filter(a => a.id !== id))
-      showToast('Алерт удалён', 'ok')
+      showToast('РђР»РµСЂС‚ СѓРґР°Р»С‘РЅ', 'ok')
     } catch { /* ignore */ }
   }
 
@@ -473,17 +469,16 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
       })
       const d = await r.json()
       if (d.ok) setBacktestData(d)
-      else showToast(d.error || 'Ошибка бэктеста', 'err')
-    } catch { showToast('Ошибка бэктеста', 'err') }
+      else showToast(d.error || 'РћС€РёР±РєР° Р±СЌРєС‚РµСЃС‚Р°', 'err')
+    } catch { showToast('РћС€РёР±РєР° Р±СЌРєС‚РµСЃС‚Р°', 'err') }
     setBacktestLoading(false)
   }
 
   async function runAI() {
-    // Обновляем токен — если упадёт, показываем ошибку вместо тихого краша
     try {
       await getValidToken()
     } catch {
-      showToast('Ошибка авторизации. Попробуйте перезайти.', 'err')
+      showToast('РћС€РёР±РєР° Р°РІС‚РѕСЂРёР·Р°С†РёРё. РџРѕРїСЂРѕР±СѓР№С‚Рµ РїРµСЂРµР·Р°Р№С‚Рё.', 'err')
       return
     }
 
@@ -513,7 +508,6 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
           chartRef.current?.drawMarkup({ ...a, supports: m.supports, resistances: m.resistances })
         }
 
-        // Подсветить выбранный OB
         if (a.ob_used) {
           chartRef.current?.removeOverlayById('selected_ob')
           const ob = a.ob_used as Record<string, unknown>
@@ -521,7 +515,7 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
             Number(ob.high),
             Number(ob.low),
             (ob.type as string) === 'bullish' ? 'bullish' : 'bearish',
-            `${(ob.type as string) === 'bullish' ? '↑' : '↓'} ${ob.quality} OB · ${ob.verdict}`
+            `${(ob.type as string) === 'bullish' ? 'в†‘' : 'в†“'} ${ob.quality} OB В· ${ob.verdict}`
           )
         }
 
@@ -537,7 +531,6 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
         setSidebarInds(buildSidebarInds(m))
         setSidebarSR(buildSidebarSR(m))
       } else {
-        // Показываем конкретную ошибку (лимит, таймаут, etc.)
         const errMsg = data.error || t('error')
         showToast(errMsg, 'err')
         if (data.quota) setQuota(data.quota as { remaining: number; limit: number; tier: string })
@@ -555,9 +548,9 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
   function buildSidebarInds(m: Record<string, unknown>) {
     const rsi = Number(m.rsi)
     return [
-      { name: 'Объём',   value: String(m.volSignal || ''),                    color: 'neut', label: '' },
+      { name: 'РћР±СЉС‘Рј',   value: String(m.volSignal || ''),                    color: 'neut', label: '' },
       { name: 'Funding', value: `${Number(m.fundingRate ?? 0).toFixed(4)}%`, color: Number(m.fundingRate ?? 0) > 0.05 ? 'bear' : Number(m.fundingRate ?? 0) < -0.01 ? 'bull' : 'neut', label: Number(m.fundingRate ?? 0) > 0.05 ? 'HOT' : '' },
-      { name: 'HTF Bias',value: String((m as Record<string,unknown>).htfBias || m.smc && (m.smc as Record<string,unknown>).htfBias || '—'), color: String((m as Record<string,unknown>).htfBias || (m.smc as Record<string,unknown>)?.htfBias) === 'bullish' ? 'bull' : 'bear', label: '' },
+      { name: 'HTF Bias',value: String((m as Record<string,unknown>).htfBias || m.smc && (m.smc as Record<string,unknown>).htfBias || 'вЂ”'), color: String((m as Record<string,unknown>).htfBias || (m.smc as Record<string,unknown>)?.htfBias) === 'bullish' ? 'bull' : 'bear', label: '' },
       { name: 'RSI(14)', value: String(rsi),                                   color: rsi > 70 ? 'bear' : rsi < 30 ? 'bull' : 'neut', label: rsi > 70 ? 'OB' : rsi < 30 ? 'OS' : '' },
     ]
   }
@@ -578,8 +571,6 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
   const V = a ? vc(String(a.verdict)) : 'wait'
   const rc = a ? (Number(a.risk_score) >= 7 ? 'var(--short)' : Number(a.risk_score) >= 4 ? 'var(--wait)' : 'var(--long)') : 'var(--text)'
 
-  // НЕ возвращаем null — компонент персистентен, скрывается через CSS в dashboard
-  // if (!active) return null  ← убрано намеренно
 
   return (
     <>
@@ -594,7 +585,7 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
           </div>
           {pairOpen && (
             <div className="dm">
-              <input className="ds" placeholder="Поиск..." value={pairSearch} onChange={e => setPairSearch(e.target.value)} autoFocus />
+              <input className="ds" placeholder="РџРѕРёСЃРє..." value={pairSearch} onChange={e => setPairSearch(e.target.value)} autoFocus />
               <div className="dl">
                 {filteredPairs.map(pp => (
                   <div key={pp} className={`di ${pp === pair ? 'sel' : ''}`} onClick={() => selectPair(pp)}>{pp}</div>
@@ -615,8 +606,8 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
         {quota !== null && (
           <div style={{ fontSize: '.58rem', color: quota.remaining <= 0 ? 'var(--short)' : quota.remaining <= 2 ? '#ffa500' : 'var(--dim)', marginTop: 4, textAlign: 'center' }}>
             {quota.remaining <= 0
-              ? `⛔ Лимит исчерпан — обновите тариф`
-              : `осталось ${quota.remaining} / ${quota.limit} анализов`}
+              ? `в›” Р›РёРјРёС‚ РёСЃС‡РµСЂРїР°РЅ вЂ” РѕР±РЅРѕРІРёС‚Рµ С‚Р°СЂРёС„`
+              : `РѕСЃС‚Р°Р»РѕСЃСЊ ${quota.remaining} / ${quota.limit} Р°РЅР°Р»РёР·РѕРІ`}
           </div>
         )}
       </div>
@@ -640,7 +631,7 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
                   <button
                     className={`vl-btn draw-tool-btn ${isDrawing ? 'active' : ''}`}
                     onClick={() => setDrawMenuOpen(v => !v)}
-                    title="Выбрать инструмент"
+                    title="Р’С‹Р±СЂР°С‚СЊ РёРЅСЃС‚СЂСѓРјРµРЅС‚"
                     style={{ padding: '3px 7px', fontSize: '.6rem', display: 'flex', alignItems: 'center', gap: 4, minWidth: 80 }}
                   >
                     <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M13 2L14 5 5 14H2v-3L11 2z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/></svg>
@@ -687,7 +678,7 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
                     chartRef.current?.setDrawing(drawTool)
                     setIsDrawing(true)
                   }}
-                  title={`Нарисовать: ${DRAW_TOOLS.find(t => t.key === drawTool)?.label}`}
+                  title={`РќР°СЂРёСЃРѕРІР°С‚СЊ: ${DRAW_TOOLS.find(t => t.key === drawTool)?.label}`}
                   style={{ padding: '4px 7px', color: isDrawing ? 'var(--cyan)' : undefined }}
                 >
                   <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
@@ -696,7 +687,7 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
                   </svg>
                 </button>
                 {}
-                <button className="vl-btn" onClick={() => { chartRef.current?.clearDrawings(); setIsDrawing(false) }} title="Очистить рисунки" style={{ padding: '4px 7px', color: 'var(--short)' }}>
+                <button className="vl-btn" onClick={() => { chartRef.current?.clearDrawings(); setIsDrawing(false) }} title="РћС‡РёСЃС‚РёС‚СЊ СЂРёСЃСѓРЅРєРё" style={{ padding: '4px 7px', color: 'var(--short)' }}>
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                     <line x1="2" y1="4.5" x2="14" y2="4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
                     <path d="M5.5 4.5V3.5C5.5 3.22 5.72 3 6 3h4c.28 0 .5.22.5.5V4.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
@@ -714,12 +705,12 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
                     onClick={runSMC}
                     disabled={smcLoading}
                   >
-                    {smcLoading ? '···' : 'SMC'}
+                    {smcLoading ? 'В·В·В·' : 'SMC'}
                   </button>
                   <button
                     className="vl-btn"
                     style={{ padding: '2px 4px', color: smcSettingsOpen ? 'var(--cyan)' : 'var(--muted)' }}
-                    title="Настройки SMC"
+                    title="РќР°СЃС‚СЂРѕР№РєРё SMC"
                     onClick={() => setSmcSettingsOpen(v => !v)}
                   >
                     <svg width="11" height="11" viewBox="0 0 20 20" fill="currentColor">
@@ -733,7 +724,7 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
                       boxShadow: '0 6px 20px rgba(0,0,0,0.5)', width: 188, padding: '6px 0',
                     }}>
                       <div style={{ fontSize: '.52rem', color: 'var(--muted)', padding: '2px 11px 5px', textTransform: 'uppercase', letterSpacing: '.08em' }}>
-                        SMC Настройки
+                        SMC РќР°СЃС‚СЂРѕР№РєРё
                       </div>
                       {([
                         { key: 'ob',       label: 'Order Blocks' },
@@ -765,7 +756,7 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
                 <button
                   className={`vl-btn ${showTL ? 'active' : ''}`}
                   style={{ color: showTL ? 'var(--cyan)' : 'var(--muted)', fontSize: '.55rem', padding: '2px 6px' }}
-                  title="Линии тренда (авто)"
+                  title="Р›РёРЅРёРё С‚СЂРµРЅРґР° (Р°РІС‚Рѕ)"
                   onClick={() => {
                     if (showTL) {
                       chartRef.current?.clearTrendlines()
@@ -782,10 +773,10 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
                 <button
                   className={`vl-btn ${showAlerts ? 'active' : ''}`}
                   style={{ color: showAlerts ? '#ffa500' : 'var(--muted)', fontSize: '.55rem', padding: '2px 6px', position: 'relative' }}
-                  title="Алерты по зонам OB"
+                  title="РђР»РµСЂС‚С‹ РїРѕ Р·РѕРЅР°Рј OB"
                   onClick={() => setShowAlerts(v => !v)}
                 >
-                  🔔
+                  рџ””
                   {alerts.filter(a => a.pair === pair).length > 0 && (
                     <span style={{ position: 'absolute', top: -3, right: -3, background: '#ffa500', color: '#000', borderRadius: '50%', width: 10, height: 10, fontSize: '.4rem', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 }}>
                       {alerts.filter(a => a.pair === pair).length}
@@ -795,19 +786,19 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
                 <button
                   className="vl-btn"
                   style={{ color: 'var(--muted)', fontSize: '.5rem', padding: '2px 5px' }}
-                  title="Бэктест OB-стратегии на истории"
+                  title="Р‘СЌРєС‚РµСЃС‚ OB-СЃС‚СЂР°С‚РµРіРёРё РЅР° РёСЃС‚РѕСЂРёРё"
                   onClick={runBacktest}
                   disabled={backtestLoading}
                 >
-                  {backtestLoading ? '···' : 'BT'}
+                  {backtestLoading ? 'В·В·В·' : 'BT'}
                 </button>
                 <button
                   className="vl-btn"
                   style={{ color: 'var(--muted)', fontSize: '.55rem', padding: '2px 5px' }}
-                  title="Глоссарий SMC терминов"
+                  title="Р“Р»РѕСЃСЃР°СЂРёР№ SMC С‚РµСЂРјРёРЅРѕРІ"
                   onClick={() => setShowGlossary(true)}
                 >
-                  📖
+                  рџ“–
                 </button>
               </div>
             </div>
@@ -821,7 +812,7 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
                   background: 'var(--bg2)', flexDirection: 'column', gap: 8,
                 }}>
                   <div className="ld-bar" style={{ width: 120 }} />
-                  <div style={{ fontSize: '.6rem', color: 'var(--muted)' }}>Загрузка графика...</div>
+                  <div style={{ fontSize: '.6rem', color: 'var(--muted)' }}>Р—Р°РіСЂСѓР·РєР° РіСЂР°С„РёРєР°...</div>
                 </div>
               )}
               <KLineChart
@@ -850,12 +841,12 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
           {showAlerts && (
             <div style={{ marginTop: 8, background: 'var(--bg2)', border: '1px solid rgba(255,165,0,0.25)', borderRadius: 6, padding: '10px 12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                <span style={{ fontSize: '.6rem', color: '#ffa500', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.06em' }}>🔔 Алерты по зонам</span>
-                <span style={{ fontSize: '.55rem', color: 'var(--dim)' }}>Уведомление при входе цены в зону</span>
+                <span style={{ fontSize: '.6rem', color: '#ffa500', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.06em' }}>рџ”” РђР»РµСЂС‚С‹ РїРѕ Р·РѕРЅР°Рј</span>
+                <span style={{ fontSize: '.55rem', color: 'var(--dim)' }}>РЈРІРµРґРѕРјР»РµРЅРёРµ РїСЂРё РІС…РѕРґРµ С†РµРЅС‹ РІ Р·РѕРЅСѓ</span>
               </div>
               {smcDataRef.current ? (
                 <>
-                  <div style={{ fontSize: '.58rem', color: 'var(--muted)', marginBottom: 6 }}>Нажмите 🔔 чтобы поставить алерт на OB зону:</div>
+                  <div style={{ fontSize: '.58rem', color: 'var(--muted)', marginBottom: 6 }}>РќР°Р¶РјРёС‚Рµ рџ”” С‡С‚РѕР±С‹ РїРѕСЃС‚Р°РІРёС‚СЊ Р°Р»РµСЂС‚ РЅР° OB Р·РѕРЅСѓ:</div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 8 }}>
                     {smcDataRef.current.orderBlocks.slice(0, 5).map((ob, i) => {
                       const existing = alerts.find(a => a.pair === pair && Math.abs(a.price_high - ob.high) < 0.01 && Math.abs(a.price_low - ob.low) < 0.01)
@@ -863,32 +854,32 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
                       return (
                         <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 8px', background: 'var(--bg3)', borderRadius: 4, borderLeft: `2px solid ${ob.type === 'bullish' ? 'var(--long)' : 'var(--short)'}` }}>
                           <span style={{ fontSize: '.58rem', color: ob.type === 'bullish' ? 'var(--long)' : 'var(--short)', fontWeight: 600, width: 28 }}>{ob.quality}</span>
-                          <span style={{ fontSize: '.6rem', color: 'var(--text)', flex: 1 }}>${ob.low.toFixed(0)} – ${ob.high.toFixed(0)}</span>
-                          <span style={{ fontSize: '.55rem', color: 'var(--dim)' }}>{ob.type === 'bullish' ? '↑' : '↓'} {ob.strength}</span>
+                          <span style={{ fontSize: '.6rem', color: 'var(--text)', flex: 1 }}>${ob.low.toFixed(0)} вЂ“ ${ob.high.toFixed(0)}</span>
+                          <span style={{ fontSize: '.55rem', color: 'var(--dim)' }}>{ob.type === 'bullish' ? 'в†‘' : 'в†“'} {ob.strength}</span>
                           {existing ? (
-                            <button onClick={() => deleteAlert(existing.id)} style={{ background: 'rgba(255,165,0,0.15)', border: 'none', color: '#ffa500', cursor: 'pointer', fontSize: '.6rem', padding: '2px 6px', borderRadius: 3 }}>🔔 ✕</button>
+                            <button onClick={() => deleteAlert(existing.id)} style={{ background: 'rgba(255,165,0,0.15)', border: 'none', color: '#ffa500', cursor: 'pointer', fontSize: '.6rem', padding: '2px 6px', borderRadius: 3 }}>рџ”” вњ•</button>
                           ) : (
-                            <button onClick={() => createAlert(ob.type === 'bullish' ? 'ob_bullish' : 'ob_bearish', ob.high, ob.low, label)} style={{ background: 'rgba(100,100,100,0.2)', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '.6rem', padding: '2px 6px', borderRadius: 3 }}>🔔</button>
+                            <button onClick={() => createAlert(ob.type === 'bullish' ? 'ob_bullish' : 'ob_bearish', ob.high, ob.low, label)} style={{ background: 'rgba(100,100,100,0.2)', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '.6rem', padding: '2px 6px', borderRadius: 3 }}>рџ””</button>
                           )}
                         </div>
                       )
                     })}
                     {smcDataRef.current.orderBlocks.length === 0 && (
-                      <div style={{ fontSize: '.6rem', color: 'var(--dim)', textAlign: 'center', padding: '8px 0' }}>Нет активных OB зон. Нажмите SMC.</div>
+                      <div style={{ fontSize: '.6rem', color: 'var(--dim)', textAlign: 'center', padding: '8px 0' }}>РќРµС‚ Р°РєС‚РёРІРЅС‹С… OB Р·РѕРЅ. РќР°Р¶РјРёС‚Рµ SMC.</div>
                     )}
                   </div>
                 </>
               ) : (
-                <div style={{ fontSize: '.6rem', color: 'var(--dim)', textAlign: 'center', padding: '8px 0' }}>Сначала нажмите SMC для загрузки зон</div>
+                <div style={{ fontSize: '.6rem', color: 'var(--dim)', textAlign: 'center', padding: '8px 0' }}>РЎРЅР°С‡Р°Р»Р° РЅР°Р¶РјРёС‚Рµ SMC РґР»СЏ Р·Р°РіСЂСѓР·РєРё Р·РѕРЅ</div>
               )}
               {alerts.filter(a => a.pair === pair).length > 0 && (
                 <>
-                  <div style={{ fontSize: '.58rem', color: 'var(--muted)', marginBottom: 5, marginTop: 8, borderTop: '1px solid var(--line2)', paddingTop: 8 }}>Активные алерты для {pair}:</div>
+                  <div style={{ fontSize: '.58rem', color: 'var(--muted)', marginBottom: 5, marginTop: 8, borderTop: '1px solid var(--line2)', paddingTop: 8 }}>РђРєС‚РёРІРЅС‹Рµ Р°Р»РµСЂС‚С‹ РґР»СЏ {pair}:</div>
                   {alerts.filter(a => a.pair === pair).map(alert => (
                     <div key={alert.id} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '3px 6px', background: 'rgba(255,165,0,0.06)', borderRadius: 3, marginBottom: 3 }}>
-                      <span style={{ fontSize: '.6rem', color: '#ffa500' }}>🔔</span>
+                      <span style={{ fontSize: '.6rem', color: '#ffa500' }}>рџ””</span>
                       <span style={{ fontSize: '.58rem', color: 'var(--text)', flex: 1 }}>{alert.label || `$${Number(alert.price_low).toFixed(0)}-$${Number(alert.price_high).toFixed(0)}`}</span>
-                      <button onClick={() => deleteAlert(alert.id)} style={{ background: 'none', border: 'none', color: 'var(--short)', cursor: 'pointer', fontSize: '.7rem', padding: '0 3px' }}>✕</button>
+                      <button onClick={() => deleteAlert(alert.id)} style={{ background: 'none', border: 'none', color: 'var(--short)', cursor: 'pointer', fontSize: '.7rem', padding: '0 3px' }}>вњ•</button>
                     </div>
                   ))}
                 </>
@@ -903,7 +894,7 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round"><path d="M12 2L2 7l10 5 10-5-10-5z" /><path d="M2 17l10 5 10-5" /><path d="M2 12l10 5 10-5" /></svg>
               </div>
               <div className="empty-t">{t('press_analyze')}</div>
-              <div className="empty-s">4-шаговый SMC анализ · Groq AI</div>
+              <div className="empty-s">4-С€Р°РіРѕРІС‹Р№ SMC Р°РЅР°Р»РёР· В· Groq AI</div>
             </div>
           )}
 
@@ -944,7 +935,7 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
             )}
           </div>
           <div className="sidebar-card">
-            <div className="sidebar-card-title">SMC ДАННЫЕ</div>
+            <div className="sidebar-card-title">SMC Р”РђРќРќР«Р•</div>
             {sidebarInds.length > 0
               ? sidebarInds.map(row => (
                   <div className="ir" key={row.name}>
@@ -980,11 +971,11 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
       onClose={() => setDrawingSettings(null)}
       onSave={(id, updates) => {
         chartRef.current?.updateOverlay(id, updates)
-        showToast('Настройки сохранены', 'ok')
+        showToast('РќР°СЃС‚СЂРѕР№РєРё СЃРѕС…СЂР°РЅРµРЅС‹', 'ok')
       }}
       onDelete={(id) => {
         chartRef.current?.removeOverlayById(id)
-        showToast('Объект удалён', 'ok')
+        showToast('РћР±СЉРµРєС‚ СѓРґР°Р»С‘РЅ', 'ok')
       }}
     />
     {showGlossary && <GlossaryModal onClose={() => setShowGlossary(false)} />}

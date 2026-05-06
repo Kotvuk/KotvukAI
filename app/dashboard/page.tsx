@@ -17,7 +17,6 @@ const SettingsPanel= dynamic(() => import('@/components/app/panels/SettingsPanel
 const AiChat           = dynamic(() => import('@/components/app/AiChat'),              { ssr: false })
 const OnboardingModal  = dynamic(() => import('@/components/app/OnboardingModal'),    { ssr: false })
 
-// Список емейлов с доступом к /admin
 const ADMIN_EMAILS = ['kotvukai@gmail.com']
 
 type Panel = 'dash' | 'ai' | 'trades' | 'news' | 'notifs' | 'history' | 'settings'
@@ -28,12 +27,10 @@ export default function DashboardPage() {
   const router = useRouter()
   const [active, setActive] = useState<Panel>('dash')
   const [notifCount, setNotifCount] = useState(0)
-  // Флаг: нужно ли открыть вкладку AI в TradesPanel
   const [tradeTabAi, setTradeTabAi] = useState(false)
   const chatContextFnRef = useRef<(() => Record<string, unknown>) | null>(null)
   const getChatContext = useCallback(() => chatContextFnRef.current?.() || {}, [])
 
-  // AiPanel монтируется один раз и остаётся в DOM (скрывается через CSS)
   const [aiMounted, setAiMounted] = useState(false)
   useEffect(() => {
     if (active === 'ai' && !aiMounted) setAiMounted(true)
@@ -43,7 +40,6 @@ export default function DashboardPage() {
     if (!loading && !user) router.push('/login')
   }, [user, loading, router])
 
-  // Авто-проверка win/loss и pending ордеров каждые 60 секунд
   useEffect(() => {
     if (loading || !user) return
     const runChecks = async () => {
@@ -56,7 +52,6 @@ export default function DashboardPage() {
             ? fetch('/api/alerts/check', { method: 'POST', headers: { Authorization: `Bearer ${token}` } })
             : Promise.resolve(),
         ])
-        // Обновить счётчик уведомлений
         const res = await fetch('/api/notifications')
         if (res.ok) {
           const data = await res.json()
@@ -128,7 +123,6 @@ export default function DashboardPage() {
     )
   }
 
-  // Навигация из AiPanel в trades → сразу открыть вкладку AI
   const handleNavigate = (panel: Panel) => {
     if (panel === 'trades') setTradeTabAi(true)
     setActive(panel)

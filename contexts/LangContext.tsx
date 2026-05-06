@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import ru from '@/messages/ru.json'
 import en from '@/messages/en.json'
@@ -27,7 +27,6 @@ export function LangProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const stored = localStorage.getItem('kotvuk_lang') as Lang | null
     if (stored && all[stored]) setLangState(stored)
-    // else stays 'en' (default)
   }, [])
 
   const setLang = (l: Lang) => {

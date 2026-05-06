@@ -11,7 +11,6 @@ export async function POST(req: NextRequest) {
   const pending = await getPendingTrades(user.id)
   if (!pending.length) return NextResponse.json({ ok: true, activated: 0, cancelled: 0 })
 
-  // Собрать уникальные пары и получить текущие цены одним запросом
   const pairs = Array.from(new Set(pending.map(t => t.pair.replace('/', ''))))
   const priceMap: Record<string, number> = {}
 
@@ -33,7 +32,6 @@ export async function POST(req: NextRequest) {
   for (const trade of pending) {
     const sym = trade.pair.replace('/', '')
 
-    // Авто-отмена истёкших ордеров
     if (trade.expires_at && new Date(trade.expires_at).getTime() < now) {
       const wasCancelled = await cancelTrade(trade.id, user.id)
       if (wasCancelled) {
@@ -48,7 +46,6 @@ export async function POST(req: NextRequest) {
     const currentPrice = priceMap[sym]
     if (!currentPrice) continue
 
-    // Проверка достижения лимитной цены
     const limitHit = trade.direction === 'long'
       ? currentPrice <= trade.limit_price   // Long: цена упала до нашего лимита
       : currentPrice >= trade.limit_price   // Short: цена выросла до нашего лимита
@@ -56,7 +53,6 @@ export async function POST(req: NextRequest) {
     if (limitHit) {
       const wasActivated = await activateTrade(trade.id, user.id, trade.limit_price)
       if (wasActivated) {
-        // Уведомления только если именно этот вызов активировал ордер
         const activateMsg = `✅ <b>Лимитный ордер исполнен!</b>\n${trade.direction.toUpperCase()} ${trade.pair} по $${trade.limit_price}`
         await createNotification(user.id, `✅ Лимитный ордер исполнен! ${trade.direction.toUpperCase()} ${trade.pair} по $${trade.limit_price}`)
         await sendTelegram(activateMsg)

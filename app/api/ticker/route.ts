@@ -1,4 +1,4 @@
-export const dynamic = 'force-dynamic'
+﻿export const dynamic = 'force-dynamic'
 import { NextResponse } from 'next/server'
 
 const SYMBOLS = ['BTCUSDT','ETHUSDT','SOLUSDT','BNBUSDT','XRPUSDT','AVAXUSDT','DOGEUSDT','LINKUSDT']
@@ -30,6 +30,5 @@ export async function GET() {
       })
     } catch { continue }
   }
-  // All failed
   return NextResponse.json({}, { status: 502 })
 }

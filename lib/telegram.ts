@@ -1,4 +1,4 @@
-const TELEGRAM_API = 'https://api.telegram.org'
+﻿const TELEGRAM_API = 'https://api.telegram.org'
 
 function getBotToken(): string | null {
   return process.env.TELEGRAM_BOT_TOKEN || null
@@ -30,7 +30,6 @@ export async function sendTelegram(message: string): Promise<boolean> {
   }
 }
 
-// Отправить уведомление конкретному пользователю (если у него свой chat_id)
 export async function sendTelegramToUser(userChatId: string, message: string): Promise<boolean> {
   const token = getBotToken()
   if (!token || !userChatId) return false

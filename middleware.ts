@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-// ─── In-memory rate limiter для /api/analyze ─────────────────────────────────
-// uid → timestamp последнего запроса
+// rate limiting для /api/analyze
 const analyzeLastCall = new Map<string, number>()
 const ANALYZE_COOLDOWN_MS = 10_000 // 10 секунд между запросами
 

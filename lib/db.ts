@@ -370,7 +370,6 @@ export async function clearNotifications(userId: number) {
   await sql`DELETE FROM notifications WHERE user_id = ${userId}`
 }
 
-// ─── AI Memory: last signals for pair ────────────────────────────────────────
 export async function getSignalsForPair(userId: number, pair: string, limit = 5): Promise<Signal[]> {
   const rows = await sql`
     SELECT id, pair, timeframe, final_verdict, final_confidence,
@@ -382,7 +381,6 @@ export async function getSignalsForPair(userId: number, pair: string, limit = 5)
   return rows as Signal[]
 }
 
-// ─── Auto win/loss: pending signals with TP/SL ───────────────────────────────
 export async function getPendingSignals(userId: number): Promise<Signal[]> {
   const rows = await sql`
     SELECT * FROM signals
@@ -404,7 +402,6 @@ export async function setSignalOutcome(id: number, outcome: 'win' | 'loss', pnlP
   `
 }
 
-// ─── Chart drawings ──────────────────────────────────────────────────────────
 export async function getDrawings(userId: number, pair: string, timeframe: string): Promise<unknown[]> {
   const rows = await sql`
     SELECT drawings FROM chart_drawings
@@ -440,7 +437,6 @@ export async function updateUserSettings(userId: number, data: {
   `
 }
 
-// ─── Subscriptions ───────────────────────────────────────────────────────────
 export async function getSubscription(userId: number): Promise<Subscription> {
   const rows = await sql`
     SELECT * FROM subscriptions WHERE user_id = ${userId} LIMIT 1
@@ -493,7 +489,6 @@ export async function updateSubscriptionTier(userId: number, tier: string, expir
   `
 }
 
-// ─── Pending limit orders ─────────────────────────────────────────────────────
 export async function getPendingTrades(userId: number): Promise<Trade[]> {
   const rows = await sql`
     SELECT * FROM trades
@@ -523,7 +518,6 @@ export async function cancelTrade(id: number, userId: number): Promise<boolean> 
   return rows.length > 0
 }
 
-// ─── Admin functions ──────────────────────────────────────────────────────────
 export async function deleteUserById(userId: number) {
   // Cascade delete in correct order (FK constraints)
   await sql`DELETE FROM notifications WHERE user_id = ${userId}`

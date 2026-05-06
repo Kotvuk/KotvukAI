@@ -9,8 +9,7 @@ function extractJSON(text: string): Record<string, unknown> {
   return JSON.parse(match[1])
 }
 
-// Retry wrapper — attempts to parse JSON up to 3 times, re-querying the model
-async function extractJSONWithRetry(
+async function parseJSON(
   raw: string,
   keys: string[],
   model: string,
@@ -28,14 +27,13 @@ Task was: ${originalPrompt.slice(0, 200)}...`
   const retryRaw = await groqGenerate(keys, model, retryPrompt, maxTokens, temperature, systemPrompt, reasoningEffort)
   try { return extractJSON(retryRaw) } catch { /* second retry */ }
 
-  // Third attempt — simplified request
   const simplePrompt = `/no_think
 Return ONLY one line of valid JSON (no markdown, no explanation): {"v":"WAIT","c":50,"r":5}`
   const simpleRaw = await groqGenerate(keys, model, simplePrompt, 100, 0.0)
   return extractJSON(simpleRaw)
 }
 
-function buildSMCContext(market: MarketData): string {
+function getContext(market: MarketData): string {
   const price = market.price
   const smc = market.smc
 
@@ -81,14 +79,12 @@ function buildSMCContext(market: MarketData): string {
 
   const htfBias = (market.htfBias || smc.htfBias || 'neutral').toUpperCase()
 
-  // RSI interpretation
   const rsiInterp = market.rsi > 70 ? '🔴 overbought'
     : market.rsi > 60 ? '🟡 moderately overbought'
     : market.rsi < 30 ? '🟢 oversold'
     : market.rsi < 40 ? '🟡 moderately oversold'
     : '⚪ neutral'
 
-  // Last 5 candles
   const last5 = market.recentCandles.slice(-5)
   const candleLines = last5.map((c, i) => {
     const dir = c.c > c.o ? '▲' : c.c < c.o ? '▼' : '—'
@@ -137,7 +133,7 @@ Active alerts:
   ${alerts || 'none'}`.trim()
 }
 
-function calcOTEEntry(verdict: string, price: number, aiEntry: number, smc: SMCData): { entry: number; ob: OrderBlock | null } {
+function findEntry(verdict: string, price: number, aiEntry: number, smc: SMCData): { entry: number; ob: OrderBlock | null } {
   const qRank = (q: string) => ({ 'A+': 4, 'A': 3, 'B': 2, 'C': 1 }[q] ?? 0)
 
   if (verdict === 'LONG') {
@@ -172,7 +168,7 @@ interface MemorySignal {
   created_at: string
 }
 
-function buildMemoryContext(signals: MemorySignal[]): string {
+function getHistory(signals: MemorySignal[]): string {
   if (!signals.length) return ''
 
   const lines = signals.map(s => {
@@ -183,7 +179,6 @@ function buildMemoryContext(signals: MemorySignal[]): string {
     return `[${date} ${s.timeframe}] ${s.final_verdict ?? 'WAIT'} conf:${s.final_confidence ?? '?'}% entry:$${s.final_entry ?? '?'} tp:$${s.final_tp ?? '?'} sl:$${s.final_sl ?? '?'} → ${outcome}${pnl}`
   })
 
-  // Loss analysis: why losing signals failed
   const losses = signals.filter(s => s.outcome === 'loss')
   let lossAnalysis = ''
   if (losses.length > 0) {
@@ -219,33 +214,32 @@ export async function fullAnalysis(
   balance = 1000,
   riskPct = 1.0
 ): Promise<{ step1: Step1Result; step2: Step2Result; final: FinalResult }> {
-  const keys      = loadGroqKeys()
-  const qualModel = getGroqModel()       // steps 3+4: highest quality
-  const fastModel = getGroqFastModel()   // steps 1+2: speed
-  const price     = market.price
-  const smcCtx    = buildSMCContext(market)
-  const memoryCtx = buildMemoryContext(memorySignals)
+  const keys       = loadGroqKeys()
+  const mainModel  = getGroqModel()
+  const quickModel = getGroqFastModel()
+  const price      = market.price
+  const ctx        = getContext(market)
+  const histCtx    = getHistory(memorySignals)
 
   const riskUsd = parseFloat((balance * riskPct / 100).toFixed(2))
   const atrPct  = market.atr14pct ?? 2.0
 
-  // Loss streak — tighten requirements
+  // серия убытков — ужесточаем требования
   const recentOutcomes = memorySignals.slice(0, 3).map(s => s.outcome)
   const consecutiveLosses = recentOutcomes.filter(o => o === 'loss').length
   const strictMode = consecutiveLosses >= 2
 
-  // Trading session by UTC
   const utcHour = new Date().getUTCHours()
   const session = utcHour < 8 ? 'Asia (00-08 UTC, low liquidity)'
     : utcHour < 13 ? 'London (08-13 UTC, high liquidity)'
     : utcHour < 22 ? 'New York (13-22 UTC, peak liquidity)'
     : 'After hours (quiet market)'
 
-  // ═══ STEP 1: Market structure analysis ═══════════════════════════════════
+  // шаг 1 — анализ структуры рынка
   const prompt1 = `/no_think
 You are an institutional SMC analyst. Structural analysis of ${pair} (${tf}).
 PRICE: $${price} | SESSION: ${session} | VOLATILITY: ATR=${atrPct}%
-${smcCtx}
+${ctx}
 
 Analyze: BOS = trend continuation; CHoCH = first sign of reversal; Liquidity sweep + reversal into OB = strong entry.
 RSI${market.rsi > 70 ? ' OVERBOUGHT — caution with longs' : market.rsi < 30 ? ' OVERSOLD — caution with shorts' : ' neutral'}.
@@ -254,31 +248,29 @@ EMA-50/200: ${market.priceVsEma50}/${market.priceVsEma200}.
 Reply with a single-line JSON:
 {"trend":"bullish|bearish|ranging","htf":"bullish|bearish|neutral","phase":"accumulation|distribution|markup|markdown|ranging","choch":true|false,"sweep_ssl":true|false,"sweep_bsl":true|false,"volatility":"low|medium|high","key_level":${price},"bos_confirmed":true|false,"sweep_recent":true|false,"ranging_risk":true|false,"summary":"<2 sentences: structure + what to expect in ${session.split(' ')[0]} session>"}`
 
-  const raw1 = await groqGenerate(keys, fastModel, prompt1, 350, 0.1, undefined, 'low')
+  const raw1 = await groqGenerate(keys, quickModel, prompt1, 350, 0.1, undefined, 'low')
   let s1: Record<string, unknown> = {}
   try { s1 = extractJSON(raw1) } catch { s1 = { trend: 'ranging', htf: 'neutral', summary: 'No data', ranging_risk: true } }
 
-  const step1Trend   = String(s1.trend  || 'ranging')
-  const step1Summary = String(s1.summary || '')
-  const htfBias      = String(s1.htf || 'neutral')
+  const trendDir = String(s1.trend  || 'ranging')
+  const summary1 = String(s1.summary || '')
+  const htf      = String(s1.htf || 'neutral')
 
-  // ─── Early WAIT: ranging + neutral HTF ───────────────────────────────────
-  const isRangingNeutral = step1Trend === 'ranging' && (htfBias === 'neutral' || htfBias === 'ranging')
-  if (isRangingNeutral || s1.ranging_risk === true) {
-    const waitStep1: Step1Result = { signal: 'WAIT', strength: 3, trend: step1Trend, summary: step1Summary }
+  if (trendDir === 'ranging' && (htf === 'neutral' || htf === 'ranging') || s1.ranging_risk === true) {
+    const waitStep1: Step1Result = { signal: 'WAIT', strength: 3, trend: trendDir, summary: summary1 }
     const waitStep2: Step2Result = { verdict: 'WAIT', confidence: 45, risk_score: 5, leverage: 1, summary: 'Флэт + нейтральный HTF — нет чёткого направления' }
-    const waitFinal = buildWaitResult(45, 'Флэт без ясного HTF-bias. Ожидаем разрешения структуры.', riskUsd, balance, riskPct)
-    return translateToRussian(keys, { step1: waitStep1, step2: waitStep2, final: waitFinal })
+    const waitFinal = makeWait(45, 'Флэт без ясного HTF-bias. Ожидаем разрешения структуры.', riskUsd, balance, riskPct)
+    return translateResponse(keys, { step1: waitStep1, step2: waitStep2, final: waitFinal })
   }
 
-  // ═══ STEP 2: Entry zone identification ═══════════════════════════════════
+  // шаг 2 — поиск зоны входа
   const strictWarning = strictMode ? `\n⚠️ STRICT MODE (${consecutiveLosses} consecutive losses): require at least 4 confluence factors, confluence_count≥4, else WAIT.\n` : ''
 
   const prompt2 = `/no_think
 You are an SMC analyst. Identify the best POI for ${pair} (${tf}).${strictWarning}
 PRICE: $${price} | Trend: ${s1.trend} | HTF: ${s1.htf} | Phase: ${s1.phase}
 BOS: ${s1.bos_confirmed} | CHoCH: ${s1.choch || false} | Sweeps: SSL=${s1.sweep_ssl || false} BSL=${s1.sweep_bsl || false}
-${smcCtx}
+${ctx}
 
 POI priority: BB (Breaker Block) > A+ OB with sweep > A OB + FVG > B OB
 For LONG: bullish POI BELOW price + SSL sweep already happened + target (FVG/BSL) ABOVE
@@ -292,34 +284,33 @@ Minimum 3 factors for LONG/SHORT. Strict mode — minimum 4.
 Reply with a single-line JSON:
 {"poi_type":"OB|BB|FVG|none","poi_dir":"bullish|bearish","poi_quality":"A+|A|B|C","poi_high":0,"poi_low":0,"confluence_score":<0-100>,"confluence_count":<1-9>,"sweep_confirmed":true|false,"fvg_target":true|false,"liq_target":true|false,"entry_zone":"<POI description with price range>","wait_reason":"<WAIT reason>","min_rr":<1.5-5.0>}`
 
-  const raw2 = await groqGenerate(keys, fastModel, prompt2, 450, 0.15, undefined, 'low')
+  const raw2 = await groqGenerate(keys, quickModel, prompt2, 450, 0.15, undefined, 'low')
   let s2: Record<string, unknown> = {}
   try { s2 = extractJSON(raw2) } catch { s2 = { poi_type: 'none', confluence_score: 0, confluence_count: 0, sweep_confirmed: false } }
 
-  const step2Summary = String(s2.entry_zone || s2.wait_reason || '')
+  const step2Summary    = String(s2.entry_zone || s2.wait_reason || '')
   const confluenceCount = Number(s2.confluence_count || 0)
   const sweepConfirmed  = Boolean(s2.sweep_confirmed)
 
-  // ─── Confluence requirement check ─────────────────────────────────────────
   const minConfluence = strictMode ? 4 : 3
   const confluenceOk = confluenceCount >= minConfluence
   const sweepOk = sweepConfirmed || Boolean(s1.sweep_ssl) || Boolean(s1.sweep_bsl)
 
   if (!confluenceOk) {
-    const waitStep1: Step1Result = { signal: 'WAIT', strength: 4, trend: step1Trend, summary: step1Summary }
+    const waitStep1: Step1Result = { signal: 'WAIT', strength: 4, trend: trendDir, summary: summary1 }
     const waitStep2: Step2Result = { verdict: 'WAIT', confidence: 48, risk_score: 5, leverage: 1, summary: `Only ${confluenceCount} factor(s) out of ${minConfluence} required. ${step2Summary}` }
-    const waitFinal = buildWaitResult(48, `Insufficient confluence (${confluenceCount}/${minConfluence}). ${String(s2.wait_reason || 'Wait for a cleaner setup.')}`, riskUsd, balance, riskPct)
-    return translateToRussian(keys, { step1: waitStep1, step2: waitStep2, final: waitFinal })
+    const waitFinal = makeWait(48, `Insufficient confluence (${confluenceCount}/${minConfluence}). ${String(s2.wait_reason || 'Wait for a cleaner setup.')}`, riskUsd, balance, riskPct)
+    return translateResponse(keys, { step1: waitStep1, step2: waitStep2, final: waitFinal })
   }
 
-  // ═══ STEP 3: Final signal ══════════════════════════════════════════════════
+  // шаг 3 — финальный сигнал
   const systemPrompt3 = `You are an institutional SMC trader with 10 years of experience trading Smart Money Concepts. Your goal is high-quality signals with minimum R:R of 1:1.5. You only trade when there is confluence of at least 3 factors. You do not trade in ranging markets. A liquidity sweep is a mandatory condition for entry. Reply only with valid JSON.`
 
   const sweepWarn = !sweepOk ? '⚠️ SWEEP NOT CONFIRMED — require WAIT unless there are strong grounds' : '✅ Sweep confirmed'
 
   const prompt3 = `Final signal for ${pair} (${tf}). Confluence: ${confluenceCount} factors. ${sweepWarn}.
 ${strictMode ? `⚠️ STRICT MODE: ${consecutiveLosses} consecutive losses — require confidence≥70% or WAIT.` : ''}
-${memoryCtx}
+${histCtx}
 
 ━━━ MARKET STRUCTURE ━━━
 Trend: ${s1.trend} | HTF: ${s1.htf} | Phase: ${s1.phase} | Volatility: ${s1.volatility || 'medium'}
@@ -333,7 +324,7 @@ ${s2.entry_zone || s2.wait_reason || 'no POI'}
 FVG target: ${s2.fvg_target || false} | Liquidity target: ${s2.liq_target || false}
 
 ━━━ FULL SMC CONTEXT ━━━
-${smcCtx}
+${ctx}
 
 ━━━ RISK MANAGEMENT ━━━
 Deposit: $${balance} | Risk/trade: ${riskPct}% = $${riskUsd}
@@ -357,8 +348,8 @@ R:R notation: risk:reward = 1:X (where X is the number, e.g. 1:2 means reward is
 Reply with ONLY one line of valid JSON (all numeric fields must be numbers, not strings):
 {"v":"LONG|SHORT|WAIT","c":<55-95>,"r":<1-9>,"l":<leverage 1-${maxLeverage}>,"e":<OTE price>,"tp":<TP price>,"sl":<SL price>,"rr":<R:R number, e.g. 1.5>,"min_rr":<${s2.min_rr || 2.0}>,"risk_usd":${riskUsd},"pos_usd":<${riskUsd} / SL_distance% * 100>,"trend":"uptrend|downtrend|sideways","desc":"<5 sentences: structure, POI, entry logic, target, invalidation>","entry_logic":"<specific OTE entry: 62-79% into OB $X-$Y = $Z>","confluence":"<${confluenceCount} specific factors with prices>","invalidation":"<candle close below/above $X>","position_size":"<$${riskUsd} / SL_dist% = $X position with Nx leverage>","exit_why":"<FVG $X-$Y or liquidity $X>","wait_for":"<ONLY for WAIT: wait for $X under condition Y>","i1":"<HTF structure + BOS/CHoCH>","i2":"<POI $X-$Y [quality] + entry $Z>","i3":"<target: FVG/liquidity $X>"}`
 
-  let raw3 = await groqGenerate(keys, qualModel, prompt3, 1200, 0.3, systemPrompt3, 'high')
-  const json = await extractJSONWithRetry(raw3, keys, qualModel, prompt3, 1200, 0.3, systemPrompt3, 'high')
+  let raw3 = await groqGenerate(keys, mainModel, prompt3, 1200, 0.3, systemPrompt3, 'high')
+  const json = await parseJSON(raw3, keys, mainModel, prompt3, 1200, 0.3, systemPrompt3, 'high')
 
   const aiRr         = Number(json.rr || 0)
   const minRr        = Number(json.min_rr || s2.min_rr || 2.0)
@@ -383,9 +374,8 @@ Reply with ONLY one line of valid JSON (all numeric fields must be numbers, not 
   let tpPrice = Number(json.tp || json.tp_price || 0)
   let slPrice = Number(json.sl || json.sl_price || 0)
 
-  const { entry: entryPrice, ob: selectedOB } = calcOTEEntry(verdict, price, aiEntry, market.smc)
+  const { entry: entryPrice, ob: selectedOB } = findEntry(verdict, price, aiEntry, market.smc)
 
-  // Entry type by real OTE distance from market (>0.2% → limit)
   const LIMIT_THRESHOLD = 0.002
   const autoEntryType: 'market' | 'limit' = (
     (verdict === 'LONG'  && entryPrice < price * (1 - LIMIT_THRESHOLD)) ||
@@ -423,7 +413,7 @@ Reply with ONLY one line of valid JSON (all numeric fields must be numbers, not 
   const sl_pct = parseFloat(((entryPrice - slPrice) / entryPrice * 100).toFixed(2))
   const rrStr  = sl_pct !== 0 ? (Math.abs(tp_pct) / Math.abs(sl_pct)).toFixed(1) : '?'
 
-  // ═══ STEP 4: Devil's Advocate ═════════════════════════════════════════════
+  // шаг 4 — проверка сигнала
   let daBlocked = false
   let daReason  = ''
 
@@ -441,28 +431,27 @@ BLOCK only on HIGH risk (no sweep + HTF against + ranging).
 Reply with a single-line JSON: {"block":true|false,"risk":"high|medium|low","reason":"<main blocking reason or 'signal is justified'>","da1":"<risk 1>","da2":"<risk 2>"}`
 
     try {
-      const raw4 = await groqGenerate(keys, fastModel, prompt4, 250, 0.2, undefined, 'low')
+      const raw4 = await groqGenerate(keys, quickModel, prompt4, 250, 0.2, undefined, 'low')
       const da = extractJSON(raw4)
       if (da.block === true && String(da.risk) === 'high') {
         daBlocked = true
         daReason  = String(da.reason || 'Devil\'s Advocate blocked the signal')
       }
-    } catch { /* non-critical — continue without blocking */ }
+    } catch { /* продолжаем без блокировки */ }
   }
 
-  // If DA blocked — return WAIT
   if (daBlocked) {
-    const waitStep1: Step1Result = { signal: 'WAIT', strength: 5, trend: step1Trend, summary: step1Summary }
+    const waitStep1: Step1Result = { signal: 'WAIT', strength: 5, trend: trendDir, summary: summary1 }
     const waitStep2: Step2Result = { verdict: 'WAIT', confidence: 55, risk_score: 6, leverage: 1, summary: step2Summary }
-    const waitFinal = buildWaitResult(55, `Signal rejected: ${daReason}`, riskUsd, balance, riskPct)
-    return translateToRussian(keys, { step1: waitStep1, step2: waitStep2, final: waitFinal })
+    const waitFinal = makeWait(55, `Signal rejected: ${daReason}`, riskUsd, balance, riskPct)
+    return translateResponse(keys, { step1: waitStep1, step2: waitStep2, final: waitFinal })
   }
 
   const i1 = String(json.i1 || trend)
   const i2 = String(json.i2 || `Entry $${entryPrice} → TP $${tpPrice.toFixed(2)} (+${tp_pct}%)`)
   const i3 = String(json.i3 || `SL $${slPrice.toFixed(2)} (-${sl_pct}%) | R:R 1:${rrStr}`)
 
-  const step1: Step1Result = { signal: verdict, strength: Math.round(confidence / 10), trend: step1Trend, summary: step1Summary }
+  const step1: Step1Result = { signal: verdict, strength: Math.round(confidence / 10), trend: trendDir, summary: summary1 }
   const step2: Step2Result = { verdict, confidence, risk_score: riskScore, leverage, summary: step2Summary }
   const final: FinalResult = {
     verdict, confidence, risk_score: riskScore, leverage,
@@ -500,11 +489,10 @@ Reply with a single-line JSON: {"block":true|false,"risk":"high|medium|low","rea
       { icon: '💧', tag: 'ЛИКВИДНОСТЬ', text: i3 },
     ],
   }
-  return translateToRussian(keys, { step1, step2, final })
+  return translateResponse(keys, { step1, step2, final })
 }
 
-// Helper function to build a WAIT result
-function buildWaitResult(confidence: number, reason: string, riskUsd: number, balance: number, riskPct: number): FinalResult {
+function makeWait(confidence: number, reason: string, riskUsd: number, balance: number, riskPct: number): FinalResult {
   return {
     verdict: 'WAIT', confidence, risk_score: 4, leverage: 1,
     entry_price: 0, entry_limit: null, entry_type: 'limit',
@@ -526,8 +514,7 @@ function buildWaitResult(confidence: number, reason: string, riskUsd: number, ba
   }
 }
 
-// ─── Translation helper — translates all dynamic text fields to Russian ─────
-async function translateToRussian(
+async function translateResponse(
   keys: string[],
   result: { step1: Step1Result; step2: Step2Result; final: FinalResult }
 ): Promise<{ step1: Step1Result; step2: Step2Result; final: FinalResult }> {

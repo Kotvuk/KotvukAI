@@ -330,7 +330,7 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
     chartRef.current?.loadChart(pairRef.current, tfRef.current)
   }, [])
 
-  // ─── Save/Load drawings ────────────────────────────────────────────────────
+  // сохранение рисунков
   const saveDrawings = useCallback(async (p: string, t: string) => {
     const token = await getValidToken().catch(() => null)
     if (!token) return

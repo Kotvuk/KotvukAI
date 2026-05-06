@@ -21,10 +21,8 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ ok: false, error: 'Binance error' }, { status: 502 })
     }
 
-    // ОБЯЗАТЕЛЬНАЯ СТРОКА: получаем данные из ответа Binance
     const data = await r.json()
 
-    // Преобразование строковых значений в числа
     const formattedData = data.map((d: any[]) => [
       d[0],             // timestamp
       parseFloat(d[1]), // open

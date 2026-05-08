@@ -1,7 +1,7 @@
-﻿import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 
 const analyzeLastCall = new Map<string, number>()
-const ANALYZE_COOLDOWN_MS = 10_000 // 10 СЃРµРєСѓРЅРґ РјРµР¶РґСѓ Р·Р°РїСЂРѕСЃР°РјРё
+const ANALYZE_COOLDOWN_MS = 10_000 // 10 секунд между запросами
 
 export async function middleware(req: NextRequest) {
   const token = req.cookies.get('fb_token')?.value
@@ -28,11 +28,11 @@ export async function middleware(req: NextRequest) {
 
   if (pathname === '/api/analyze' && token && req.method === 'POST') {
     const now = Date.now()
-    const last = analyzeLastCall.get(token.slice(-16)) // РїРѕСЃР»РµРґРЅРёРµ 16 СЃРёРјРІРѕР»РѕРІ РєР°Рє РєР»СЋС‡
+    const last = analyzeLastCall.get(token.slice(-16)) // последние 16 символов как ключ
     if (last && now - last < ANALYZE_COOLDOWN_MS) {
       const retryAfter = Math.ceil((ANALYZE_COOLDOWN_MS - (now - last)) / 1000)
       return NextResponse.json(
-        { ok: false, error: `РЎР»РёС€РєРѕРј С‡Р°СЃС‚С‹Рµ Р·Р°РїСЂРѕСЃС‹. РџРѕРґРѕР¶РґРёС‚Рµ ${retryAfter} СЃРµРє.` },
+        { ok: false, error: `Слишком частые запросы. Подождите ${retryAfter} сек.` },
         { status: 429, headers: { 'Retry-After': String(retryAfter) } }
       )
     }

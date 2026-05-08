@@ -1,4 +1,4 @@
-﻿export interface Candle {
+export interface Candle {
   timestamp: number
   open: number; high: number; low: number; close: number; volume: number
 }
@@ -606,24 +606,24 @@ function calcProbability(inp: ProbInput): ProbabilityResult {
 
   let recommendation: string
   if (probability >= 75 && scenario !== 'NEUTRAL') {
-    recommendation = `РЎРёР»СЊРЅС‹Р№ СЃРµС‚Р°Рї ${scenario} вЂ” РІС…РѕРґРёС‚СЊ РїСЂРё РїРѕРґС‚РІРµСЂР¶РґРµРЅРёРё РЅР° РјР»Р°РґС€РµРј РўР¤`
+    recommendation = `Сильный сетап ${scenario} — входить при подтверждении на младшем ТФ`
   } else if (probability >= 60 && scenario !== 'NEUTRAL') {
-    recommendation = `РЈРјРµСЂРµРЅРЅС‹Р№ ${scenario} СЃРµС‚Р°Рї вЂ” Р¶РґР°С‚СЊ СЂРµС‚РµСЃС‚Р° РєР»СЋС‡РµРІРѕР№ Р·РѕРЅС‹`
+    recommendation = `Умеренный ${scenario} сетап — ждать ретеста ключевой зоны`
   } else if (probability >= 45) {
-    recommendation = 'РЎРјРµС€Р°РЅРЅС‹Рµ СЃРёРіРЅР°Р»С‹ вЂ” РЅР°Р±Р»СЋРґР°С‚СЊ, РЅРµ С‚РѕСЂРіРѕРІР°С‚СЊ'
+    recommendation = 'Смешанные сигналы — наблюдать, не торговать'
   } else {
-    recommendation = 'РќРёР·РєР°СЏ РІРµСЂРѕСЏС‚РЅРѕСЃС‚СЊ вЂ” РїСЂРѕРїСѓСЃС‚РёС‚СЊ СЌС‚РѕС‚ СЃРµС‚Р°Рї'
+    recommendation = 'Низкая вероятность — пропустить этот сетап'
   }
 
   const pair_placeholder = (s: string) =>
-    s === 'LONG' ? 'рџџў LONG' : s === 'SHORT' ? 'рџ”ґ SHORT' : 'вљЄ NEUTRAL'
+    s === 'LONG' ? '🟢 LONG' : s === 'SHORT' ? '🔴 SHORT' : '⚪ NEUTRAL'
 
   const alerts: Alert[] = []
 
   if (f1 >= 15 && probability >= 45) {
     alerts.push({
       stage: 1, level: 'watchlist', color: 'yellow',
-      message: `${pair_placeholder(scenario)} С„РѕСЂРјРёСЂСѓРµС‚СЃСЏ вЂ” СЃС‚СЂСѓРєС‚СѓСЂР° HTF РїРѕРґС‚РІРµСЂР¶РґР°РµС‚ ${htfBias}`,
+      message: `${pair_placeholder(scenario)} формируется — структура HTF подтверждает ${htfBias}`,
       price, type: scenario === 'NEUTRAL' ? 'LONG' : scenario, confidence: Math.round(probability * 0.7),
     })
   }
@@ -631,7 +631,7 @@ function calcProbability(inp: ProbInput): ProbabilityResult {
   if (probability >= 60 && riskReward >= 1.5 && confluence >= 2) {
     alerts.push({
       stage: 2, level: 'setup_ready', color: 'orange',
-      message: `РЎРµС‚Р°Рї РіРѕС‚РѕРІ: ${scenario} | РљРѕРЅС„Р»СЋСЌРЅСЃ ${confluence} Р·РѕРЅ | R:R ${riskReward}`,
+      message: `Сетап готов: ${scenario} | Конфлюэнс ${confluence} зон | R:R ${riskReward}`,
       price, type: scenario === 'NEUTRAL' ? 'LONG' : scenario, confidence: Math.round(probability * 0.85),
     })
   }
@@ -639,7 +639,7 @@ function calcProbability(inp: ProbInput): ProbabilityResult {
   if (sweepCount >= 1 && probability >= 70 && (nearBullOBs > 0 || nearBearOBs > 0)) {
     alerts.push({
       stage: 3, level: 'execute', color: scenario === 'LONG' ? 'green' : 'red',
-      message: `РўР РР“Р“Р•Р : ${scenario} | РЎРІРёРї Р»РёРєРІРёРґРЅРѕСЃС‚Рё + СЂРµС‚РµСЃС‚ OB | РЈРІРµСЂРµРЅРЅРѕСЃС‚СЊ ${confidence}%`,
+      message: `ТРИГГЕР: ${scenario} | Свип ликвидности + ретест OB | Уверенность ${confidence}%`,
       price, type: scenario === 'NEUTRAL' ? 'LONG' : scenario, confidence,
     })
   }
@@ -652,8 +652,8 @@ function calcProbability(inp: ProbInput): ProbabilityResult {
 }
 
 /**
- * РћС†РµРЅРєР° РЅР°РґС‘Р¶РЅРѕСЃС‚Рё Order Block: 0-100.
- * Р§РµРј РІС‹С€Рµ вЂ” С‚РµРј РІС‹С€Рµ РІРµСЂРѕСЏС‚РЅРѕСЃС‚СЊ РѕС‚СЂР°Р±РѕС‚РєРё Р·РѕРЅС‹.
+ * Оценка надёжности Order Block: 0-100.
+ * Чем выше — тем выше вероятность отработки зоны.
  */
 export function scoreOrderBlock(ob: OrderBlock): {
   score: number
@@ -674,10 +674,10 @@ export function scoreOrderBlock(ob: OrderBlock): {
 
   const score = Math.min(100, Math.round(Object.values(f).reduce((a, b) => a + b, 0)))
   const verdict =
-    score >= 80 ? 'рџџў Р’С‹СЃРѕРєР°СЏ РЅР°РґС‘Р¶РЅРѕСЃС‚СЊ' :
-    score >= 60 ? 'рџџЎ РЈРјРµСЂРµРЅРЅР°СЏ РЅР°РґС‘Р¶РЅРѕСЃС‚СЊ' :
-    score >= 40 ? 'рџџ  РЎР»Р°Р±Р°СЏ РЅР°РґС‘Р¶РЅРѕСЃС‚СЊ' :
-                  'рџ”ґ РќРёР·РєР°СЏ РЅР°РґС‘Р¶РЅРѕСЃС‚СЊ'
+    score >= 80 ? '🟢 Высокая надёжность' :
+    score >= 60 ? '🟡 Умеренная надёжность' :
+    score >= 40 ? '🟠 Слабая надёжность' :
+                  '🔴 Низкая надёжность'
 
   return { score, factors: f, verdict }
 }

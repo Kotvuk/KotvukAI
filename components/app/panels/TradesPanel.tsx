@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 import { useEffect, useState, useRef } from 'react'
 import { useLang } from '@/contexts/LangContext'
 import { showToast } from '@/components/ui/Toast'
@@ -63,7 +63,7 @@ export default function TradesPanel({ defaultAccount = 'user', onTabMounted }: T
       if (d.leverage)    setLev(Math.min(d.leverage, 3))
       if (d.order_type)  setOrderType(d.order_type as 'market' | 'limit')
       localStorage.removeItem('kotvuk:trade_prefill')
-      showToast('Р”Р°РЅРЅС‹Рµ РёР· AI Р°РЅР°Р»РёР·Р° Р·Р°РіСЂСѓР¶РµРЅС‹', 'ok')
+      showToast('Данные из AI анализа загружены', 'ok')
     } catch {}
   }, [])
 
@@ -129,7 +129,7 @@ export default function TradesPanel({ defaultAccount = 'user', onTabMounted }: T
       })
       const d = await r.json()
       if (!d.ok) throw new Error(d.error)
-      showToast('РћСЂРґРµСЂ РѕС‚РјРµРЅС‘РЅ')
+      showToast('Ордер отменён')
       loadTrades()
     } catch (e: unknown) { showToast(e instanceof Error ? e.message : t('error'), 'err') }
   }
@@ -158,11 +158,11 @@ export default function TradesPanel({ defaultAccount = 'user', onTabMounted }: T
       })
       const d = await r.json()
       if (!d.ok) throw new Error(d.error)
-      showToast('TP/SL РѕР±РЅРѕРІР»РµРЅС‹', 'ok')
+      showToast('TP/SL обновлены', 'ok')
       setEditStates(prev => { const n = { ...prev }; delete n[id]; return n })
       loadTrades()
     } catch (e: unknown) {
-      showToast(e instanceof Error ? e.message : 'РћС€РёР±РєР°', 'err')
+      showToast(e instanceof Error ? e.message : 'Ошибка', 'err')
       setEditStates(prev => ({ ...prev, [id]: { ...prev[id], saving: false } }))
     }
   }
@@ -186,36 +186,36 @@ export default function TradesPanel({ defaultAccount = 'user', onTabMounted }: T
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
           <div className="tg" style={{ flex: 1 }}>
             <button className={`tb ${account === 'user' ? 'a-d' : ''}`} onClick={() => setAccount('user')}
-              title="Р’Р°С€Рё СЂСѓС‡РЅС‹Рµ РїРѕР·РёС†РёРё, РѕС‚РєСЂС‹С‚С‹Рµ РІСЂСѓС‡РЅСѓСЋ">
-              РњРѕР№ СЃС‡С‘С‚
+              title="Ваши ручные позиции, открытые вручную">
+              Мой счёт
             </button>
             <button className={`tb ${account === 'ai' ? 'a-d' : ''}`} onClick={() => setAccount('ai')}
-              title="РђРІС‚РѕРјР°С‚РёС‡РµСЃРєРёРµ СЃРґРµР»РєРё, РѕС‚РєСЂС‹С‚С‹Рµ AI РїРѕСЃР»Рµ Р°РЅР°Р»РёР·Р°">
-              РЎС‡С‘С‚ РР
+              title="Автоматические сделки, открытые AI после анализа">
+              Счёт ИИ
             </button>
           </div>
           <span style={{ fontSize: '.55rem', color: '#ffa500', background: 'rgba(255,165,0,0.12)', border: '1px solid rgba(255,165,0,0.3)', borderRadius: 4, padding: '2px 8px', whiteSpace: 'nowrap' }}>
-            рџ“„ PAPER TRADING
+            📄 PAPER TRADING
           </span>
         </div>
         <div style={{ fontSize: '.58rem', color: 'var(--dim)', marginBottom: 10 }}>
-          {account === 'ai' ? 'РЎС‡С‘С‚ РР вЂ” Р°РІС‚РѕРјР°С‚РёС‡РµСЃРєРёРµ СЃРґРµР»РєРё РїРѕ СЃРёРіРЅР°Р»Р°Рј AI. РњРѕР№ СЃС‡С‘С‚ вЂ” РІР°С€Рё СЂСѓС‡РЅС‹Рµ РїРѕР·РёС†РёРё.' : 'Р’РёСЂС‚СѓР°Р»СЊРЅС‹Р№ СЃС‡С‘С‚. Р РµР°Р»СЊРЅС‹Рµ СЃСЂРµРґСЃС‚РІР° РЅРµ РёСЃРїРѕР»СЊР·СѓСЋС‚СЃСЏ.'}
+          {account === 'ai' ? 'Счёт ИИ — автоматические сделки по сигналам AI. Мой счёт — ваши ручные позиции.' : 'Виртуальный счёт. Реальные средства не используются.'}
         </div>
         <div className="kpi-grid" style={{ marginBottom: 12 }}>
-          <div className="kpi" title="Р’РёСЂС‚СѓР°Р»СЊРЅС‹Р№ Р±Р°Р»Р°РЅСЃ вЂ” РЅРµ СЂРµР°Р»СЊРЅС‹Рµ СЃСЂРµРґСЃС‚РІР°"><div className="kpi-v" style={{ color: '#ffa500' }}>$10,000</div><div className="kpi-l">{t('balance')} <span style={{ fontSize: '.5rem', opacity: .6 }}>(virtual)</span></div></div>
+          <div className="kpi" title="Виртуальный баланс — не реальные средства"><div className="kpi-v" style={{ color: '#ffa500' }}>$10,000</div><div className="kpi-l">{t('balance')} <span style={{ fontSize: '.5rem', opacity: .6 }}>(virtual)</span></div></div>
           <div className="kpi"><div className="kpi-v">{open.length}</div><div className="kpi-l">{t('positions')}</div></div>
           <div className="kpi"><div className="kpi-v pnl-p">$0</div><div className="kpi-l">{t('pnl_today')}</div></div>
-          <div className="kpi"><div className="kpi-v">вЂ”</div><div className="kpi-l">{t('win_rate')}</div></div>
+          <div className="kpi"><div className="kpi-v">—</div><div className="kpi-l">{t('win_rate')}</div></div>
         </div>
 
         {account === 'ai' && (
           <div style={{ padding: '10px 14px', marginBottom: 12, background: 'var(--card2)', borderRadius: 8, fontSize: '.65rem', color: 'var(--muted)' }}>
-            РЎС‡С‘С‚ РР вЂ” СЃРґРµР»РєРё РѕС‚РєСЂС‹РІР°СЋС‚СЃСЏ Р°РІС‚РѕРјР°С‚РёС‡РµСЃРєРё РїРѕСЃР»Рµ Р°РЅР°Р»РёР·Р°. Р’С‹ С‚Р°РєР¶Рµ РјРѕР¶РµС‚Рµ РѕС‚РєСЂС‹С‚СЊ СЃРґРµР»РєСѓ РІСЂСѓС‡РЅСѓСЋ.
+            Счёт ИИ — сделки открываются автоматически после анализа. Вы также можете открыть сделку вручную.
           </div>
         )}
         {pending.length > 0 && (<>
           <div className="sec" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            Р›РёРјРёС‚РЅС‹Рµ РѕСЂРґРµСЂР°
+            Лимитные ордера
             <span style={{ background: '#ffd60a22', color: '#ffd60a', border: '1px solid #ffd60a44', borderRadius: 20, padding: '1px 8px', fontSize: '.58rem', fontWeight: 700 }}>
               {pending.length}
             </span>
@@ -229,17 +229,17 @@ export default function TradesPanel({ defaultAccount = 'user', onTabMounted }: T
                   <span style={{ fontWeight: 700, fontSize: '.75rem' }}>{tr.pair}</span>
                   <span className={`tag tag-${tr.direction}`}>{tr.direction.toUpperCase()}</span>
                   <span className="tag tag-pending">LIMIT</span>
-                  <span style={{ fontSize: '.62rem', color: 'var(--muted)' }}>{tr.leverage}Г— В· ${parseFloat(String(tr.amount)).toFixed(2)}</span>
+                  <span style={{ fontSize: '.62rem', color: 'var(--muted)' }}>{tr.leverage}× · ${parseFloat(String(tr.amount)).toFixed(2)}</span>
                   <span style={{ fontSize: '.62rem', color: 'var(--muted)' }}>
-                    С‚СЂРёРіРіРµСЂ: <span style={{ color: '#ffd60a' }}>${parseFloat(String(tr.limit_price || 0)).toLocaleString()}</span>
+                    триггер: <span style={{ color: '#ffd60a' }}>${parseFloat(String(tr.limit_price || 0)).toLocaleString()}</span>
                   </span>
                   {tr.tp_price && <span style={{ fontSize: '.62rem', color: 'var(--muted)' }}>TP: <span style={{ color: 'var(--long)' }}>${parseFloat(String(tr.tp_price)).toLocaleString()}</span></span>}
                   {tr.sl_price && <span style={{ fontSize: '.62rem', color: 'var(--muted)' }}>SL: <span style={{ color: 'var(--short)' }}>${parseFloat(String(tr.sl_price)).toLocaleString()}</span></span>}
                   <span style={{ marginLeft: 'auto', fontSize: '.6rem', color: hoursLeft !== null && hoursLeft < 24 ? '#ff9f0a' : 'var(--dim)' }}>
-                    {hoursLeft !== null ? `РёСЃС‚РµРєР°РµС‚ С‡РµСЂРµР· ${hoursLeft}С‡` : ''}
+                    {hoursLeft !== null ? `истекает через ${hoursLeft}ч` : ''}
                   </span>
                   <button className="obtn" style={{ fontSize: '.6rem', color: '#ff453a', borderColor: '#ff453a44' }} onClick={() => cancelTrade(tr.id)}>
-                    РћС‚РјРµРЅРёС‚СЊ
+                    Отменить
                   </button>
                 </div>
               )
@@ -259,7 +259,7 @@ export default function TradesPanel({ defaultAccount = 'user', onTabMounted }: T
                 </div>
                 {pairOpen && (
                   <div className="dm" style={{ width: '100%' }}>
-                    <input className="ds" placeholder="РџРѕРёСЃРє..." value={pairSearch} onChange={e => setPairSearch(e.target.value)} autoFocus />
+                    <input className="ds" placeholder="Поиск..." value={pairSearch} onChange={e => setPairSearch(e.target.value)} autoFocus />
                     <div className="dl">
                       {filtered.map(pp => (
                         <div key={pp} className={`di ${pp === pair ? 'sel' : ''}`} onClick={() => { setPair(pp); setPairOpen(false); setPairSearch('') }}>{pp}</div>
@@ -294,16 +294,16 @@ export default function TradesPanel({ defaultAccount = 'user', onTabMounted }: T
             {(tpProfit || slLoss) && amtN > 0 && (
               <div className="ff full">
                 <div className="pnl-g">
-                  <div className="pnl-c"><div className="pnl-l">{t('tp_profit')}</div><div className={`pnl-v ${tpProfit && parseFloat(tpProfit) > 0 ? 'pnl-p' : ''}`}>{tpProfit && parseFloat(tpProfit) > 0 ? '+$' + tpProfit : 'вЂ”'}</div></div>
-                  <div className="pnl-c"><div className="pnl-l">{t('sl_loss')}</div><div className={`pnl-v ${slLoss && parseFloat(slLoss) < 0 ? 'pnl-n' : ''}`}>{slLoss && parseFloat(slLoss) < 0 ? '-$' + Math.abs(parseFloat(slLoss)).toFixed(2) : 'вЂ”'}</div></div>
+                  <div className="pnl-c"><div className="pnl-l">{t('tp_profit')}</div><div className={`pnl-v ${tpProfit && parseFloat(tpProfit) > 0 ? 'pnl-p' : ''}`}>{tpProfit && parseFloat(tpProfit) > 0 ? '+$' + tpProfit : '—'}</div></div>
+                  <div className="pnl-c"><div className="pnl-l">{t('sl_loss')}</div><div className={`pnl-v ${slLoss && parseFloat(slLoss) < 0 ? 'pnl-n' : ''}`}>{slLoss && parseFloat(slLoss) < 0 ? '-$' + Math.abs(parseFloat(slLoss)).toFixed(2) : '—'}</div></div>
                 </div>
               </div>
             )}
             <div className="ff full">
               <div className="rw">
-                <div className="rt"><label className="fl">{t('leverage_x')}</label><span className="rv">{lev}Г—</span></div>
+                <div className="rt"><label className="fl">{t('leverage_x')}</label><span className="rv">{lev}×</span></div>
                 <input type="range" min={1} max={10} value={lev} onChange={e => setLev(parseInt(e.target.value))} />
-                <div className="rm"><span>1Г—</span><span>10Г—</span></div>
+                <div className="rm"><span>1×</span><span>10×</span></div>
               </div>
             </div>
             <div className="ff full">
@@ -329,9 +329,9 @@ export default function TradesPanel({ defaultAccount = 'user', onTabMounted }: T
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
                   <span style={{ fontWeight: 700, fontSize: '.75rem' }}>{tr.pair}</span>
                   <span className={`tag tag-${tr.direction}`}>{tr.direction.toUpperCase()}</span>
-                  <span style={{ fontSize: '.62rem', color: 'var(--muted)' }}>{tr.leverage}Г— В· ${parseFloat(String(tr.amount)).toFixed(2)}</span>
+                  <span style={{ fontSize: '.62rem', color: 'var(--muted)' }}>{tr.leverage}× · ${parseFloat(String(tr.amount)).toFixed(2)}</span>
                   <span style={{ marginLeft: 'auto', fontSize: '.62rem', color: 'var(--muted)' }}>
-                    РІС…РѕРґ: {ep ? '$' + ep.toLocaleString() : 'вЂ”'}
+                    вход: {ep ? '$' + ep.toLocaleString() : '—'}
                   </span>
                   {pct != null && (
                     <span style={{ fontWeight: 700, fontSize: '.72rem', color: pct >= 0 ? 'var(--long)' : 'var(--short)' }}>
@@ -353,16 +353,16 @@ export default function TradesPanel({ defaultAccount = 'user', onTabMounted }: T
                       value={es.sl} onChange={e => setEditStates(prev => ({ ...prev, [tr.id]: { ...prev[tr.id], sl: e.target.value } }))}
                     />
                     <button className="obtn l" onClick={() => saveEdit(tr.id)} disabled={es.saving}>
-                      {es.saving ? '...' : 'РЎРѕС…СЂР°РЅРёС‚СЊ'}
+                      {es.saving ? '...' : 'Сохранить'}
                     </button>
                     <button className="obtn" onClick={() => setEditStates(prev => { const n = { ...prev }; delete n[tr.id]; return n })}>
-                      вњ•
+                      ✕
                     </button>
                   </div>
                 ) : (
                   <div style={{ display: 'flex', gap: 12, alignItems: 'center', fontSize: '.63rem', marginBottom: 6 }}>
-                    <span style={{ color: 'var(--muted)' }}>TP: <span style={{ color: 'var(--long)' }}>{tr.tp_price ? '$' + parseFloat(String(tr.tp_price)).toLocaleString() : 'вЂ”'}</span></span>
-                    <span style={{ color: 'var(--muted)' }}>SL: <span style={{ color: 'var(--short)' }}>{tr.sl_price ? '$' + parseFloat(String(tr.sl_price)).toLocaleString() : 'вЂ”'}</span></span>
+                    <span style={{ color: 'var(--muted)' }}>TP: <span style={{ color: 'var(--long)' }}>{tr.tp_price ? '$' + parseFloat(String(tr.tp_price)).toLocaleString() : '—'}</span></span>
+                    <span style={{ color: 'var(--muted)' }}>SL: <span style={{ color: 'var(--short)' }}>{tr.sl_price ? '$' + parseFloat(String(tr.sl_price)).toLocaleString() : '—'}</span></span>
                     <button
                       className="obtn" style={{ marginLeft: 'auto', fontSize: '.6rem' }}
                       onClick={() => setEditStates(prev => ({
@@ -370,7 +370,7 @@ export default function TradesPanel({ defaultAccount = 'user', onTabMounted }: T
                         [tr.id]: { tp: tr.tp_price ? String(tr.tp_price) : '', sl: tr.sl_price ? String(tr.sl_price) : '', saving: false }
                       }))}
                     >
-                      РР·РјРµРЅРёС‚СЊ TP/SL
+                      Изменить TP/SL
                     </button>
                     <button className="obtn l" onClick={() => closeTrade(tr.id)}>{t('close')}</button>
                   </div>
@@ -392,10 +392,10 @@ export default function TradesPanel({ defaultAccount = 'user', onTabMounted }: T
                     <td><span className={`tag tag-${tr.direction}`}>{tr.direction.toUpperCase()}</span></td>
                     <td>
                       {tr.status === 'cancelled'
-                        ? <span className="tag tag-cancelled">РѕС‚РјРµРЅС‘РЅ</span>
+                        ? <span className="tag tag-cancelled">отменён</span>
                         : tr.pnl_pct !== null
                           ? (Number(tr.pnl_pct) > 0 ? <span className="pnl-p">+{tr.pnl_pct}%</span> : <span className="pnl-n">{tr.pnl_pct}%</span>)
-                          : 'вЂ”'}
+                          : '—'}
                     </td>
                     <td>{new Date(tr.closed_at || tr.created_at).toLocaleDateString('ru')}</td>
                   </tr>

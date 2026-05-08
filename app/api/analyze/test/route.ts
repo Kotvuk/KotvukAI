@@ -1,4 +1,4 @@
-﻿export const dynamic = 'force-dynamic'
+export const dynamic = 'force-dynamic'
 export const maxDuration = 60
 import { NextRequest, NextResponse } from 'next/server'
 import { fullAnalysis, calcMarketData, type Candle } from '@/lib/analysis'
@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
   const sym  = (url.searchParams.get('pair') || 'BTCUSDT').toUpperCase()
   const interval = url.searchParams.get('tf') || '1h'
   const htfInterval = HTF_MAP[interval] || '1d'
-  const tfLabel = interval.replace('m', 'Рј').replace('h', 'С‡').replace('d', 'Рґ')
+  const tfLabel = interval.replace('m', '�').replace('h', '�').replace('d', '�')
 
   try {
     const [binanceRes, htfRes, frRes] = await Promise.allSettled([

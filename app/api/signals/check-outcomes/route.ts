@@ -1,12 +1,12 @@
-﻿export const dynamic = 'force-dynamic'
+export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { getPendingSignals, setSignalOutcome, createNotification } from '@/lib/db'
 import { getUser } from '@/lib/auth-helper'
 import { sendTelegram } from '@/lib/telegram'
 
 const TF_MAP: Record<string, string> = {
-  '1Рј': '1m', '5Рј': '5m', '15Рј': '15m', '30Рј': '30m',
-  '1С‡': '1h', '4С‡': '4h', '1Рґ': '1d',
+  '1м': '1m', '5м': '5m', '15м': '15m', '30м': '30m',
+  '1ч': '1h', '4ч': '4h', '1д': '1d',
 }
 
 async function fetchCandlesSince(sym: string, interval: string, sinceMs: number): Promise<{ high: number; low: number; close: number }[]> {
@@ -68,11 +68,11 @@ export async function POST(req: NextRequest) {
 
       await setSignalOutcome(signal.id, outcome, pnlPct, user.id)
 
-      const emoji  = outcome === 'win' ? 'рџЋ‰вњ…' : 'вќЊ'
+      const emoji  = outcome === 'win' ? '🎉✅' : '❌'
       const pnlStr = pnlPct > 0 ? `+${pnlPct}%` : `${pnlPct}%`
       const msg = `${emoji} <b>${signal.final_verdict} ${signal.pair}</b> [${signal.timeframe}]\n` +
-        `${outcome === 'win' ? 'TP РґРѕСЃС‚РёРіРЅСѓС‚' : 'SL РїСЂРѕР±РёС‚'} вЂ” <b>${pnlStr}</b>`
-      await createNotification(user.id, `${emoji} ${signal.final_verdict} ${signal.pair} ${signal.timeframe} вЂ” ${outcome === 'win' ? 'TP РґРѕСЃС‚РёРіРЅСѓС‚' : 'SL РїСЂРѕР±РёС‚'} (${pnlStr})`)
+        `${outcome === 'win' ? 'TP достигнут' : 'SL пробит'} — <b>${pnlStr}</b>`
+      await createNotification(user.id, `${emoji} ${signal.final_verdict} ${signal.pair} ${signal.timeframe} — ${outcome === 'win' ? 'TP достигнут' : 'SL пробит'} (${pnlStr})`)
       await sendTelegram(msg)
 
       results.push({ id: signal.id, outcome, pnlPct })

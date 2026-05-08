@@ -1,4 +1,4 @@
-﻿export const dynamic = 'force-dynamic'
+export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { getUser } from '@/lib/auth-helper'
 import { getSubscription, updateSubscriptionTier, SUBSCRIPTION_LIMITS } from '@/lib/db'
@@ -9,28 +9,28 @@ const SUBSCRIPTION_PLANS = [
     name: 'Free',
     price: 0,
     analyses_per_day: SUBSCRIPTION_LIMITS.free,
-    features: ['3 Р°РЅР°Р»РёР·Р° РІ РґРµРЅСЊ', 'РСЃС‚РѕСЂРёСЏ СЃРёРіРЅР°Р»РѕРІ', 'РўРѕСЂРіРѕРІС‹Р№ Р¶СѓСЂРЅР°Р»'],
+    features: ['3 анализа в день', 'История сигналов', 'Торговый журнал'],
   },
   {
     tier: 'starter',
     name: 'Starter',
     price: 9.99,
     analyses_per_day: SUBSCRIPTION_LIMITS.starter,
-    features: ['10 Р°РЅР°Р»РёР·РѕРІ РІ РґРµРЅСЊ', 'Р’СЃРµ С„РёС‡Рё Free', 'Р›РёРјРёС‚РЅС‹Рµ РѕСЂРґРµСЂР°', 'РЈРІРµРґРѕРјР»РµРЅРёСЏ'],
+    features: ['10 анализов в день', 'Все фичи Free', 'Лимитные ордера', 'Уведомления'],
   },
   {
     tier: 'pro',
     name: 'Pro',
     price: 19.99,
     analyses_per_day: SUBSCRIPTION_LIMITS.pro,
-    features: ['30 Р°РЅР°Р»РёР·РѕРІ РІ РґРµРЅСЊ', 'Р’СЃРµ С„РёС‡Рё Starter', 'AI Р§Р°С‚', 'Р Р°СЃС€РёСЂРµРЅРЅР°СЏ РёСЃС‚РѕСЂРёСЏ'],
+    features: ['30 анализов в день', 'Все фичи Starter', 'AI Чат', 'Расширенная история'],
   },
   {
     tier: 'elite',
     name: 'Elite',
     price: 49.99,
     analyses_per_day: SUBSCRIPTION_LIMITS.elite,
-    features: ['100 Р°РЅР°Р»РёР·РѕРІ РІ РґРµРЅСЊ', 'Р’СЃРµ С„РёС‡Рё Pro', 'РџСЂРёРѕСЂРёС‚РµС‚РЅР°СЏ РїРѕРґРґРµСЂР¶РєР°', 'API РґРѕСЃС‚СѓРї'],
+    features: ['100 анализов в день', 'Все фичи Pro', 'Приоритетная поддержка', 'API доступ'],
   },
 ]
 

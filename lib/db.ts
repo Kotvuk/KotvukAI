@@ -1,4 +1,4 @@
-﻿import { neon, type NeonQueryFunction } from '@neondatabase/serverless'
+import { neon, type NeonQueryFunction } from '@neondatabase/serverless'
 
 let _sql: NeonQueryFunction<false, false> | null = null
 
@@ -66,8 +66,8 @@ export interface Trade {
   sl_price: number | null
   leverage: number
   status: 'open' | 'closed' | 'pending' | 'cancelled'
-  limit_price: number | null   // С†РµРЅР° С‚СЂРёРіРіРµСЂР° РґР»СЏ pending РѕСЂРґРµСЂРѕРІ
-  expires_at: string | null    // Р°РІС‚Рѕ-РѕС‚РјРµРЅР° С‡РµСЂРµР· 7 РґРЅРµР№
+  limit_price: number | null   // цена триггера для pending ордеров
+  expires_at: string | null    // авто-отмена через 7 дней
   account_type: 'user' | 'ai'
   pnl: number | null
   pnl_pct: number | null
@@ -145,7 +145,7 @@ export async function triggerLevelAlert(id: number, userId: number, pair: string
     UPDATE level_alerts SET is_triggered = TRUE, triggered_at = NOW()
     WHERE id = ${id} AND user_id = ${userId}
   `
-  const msg = `рџ”” Р¦РµРЅР° РІРѕС€Р»Р° РІ Р·РѕРЅСѓ: ${label || pair}`
+  const msg = `🔔 Цена вошла в зону: ${label || pair}`
   await sql`INSERT INTO notifications (user_id, message) VALUES (${userId}, ${msg})`
 }
 

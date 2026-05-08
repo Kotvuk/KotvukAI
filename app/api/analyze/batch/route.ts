@@ -1,4 +1,4 @@
-﻿export const dynamic = 'force-dynamic'
+export const dynamic = 'force-dynamic'
 export const maxDuration = 60
 import { NextRequest, NextResponse } from 'next/server'
 import { fullAnalysis, calcMarketData, type Candle } from '@/lib/analysis'
@@ -12,8 +12,8 @@ const HTF_MAP: Record<string, string> = {
 }
 
 const TF_LABEL: Record<string, string> = {
-  '1m': '1Рј', '5m': '5Рј', '15m': '15Рј', '30m': '30Рј',
-  '1h': '1С‡', '4h': '4С‡', '1d': '1Рґ',
+  '1m': '1м', '5m': '5м', '15m': '15м', '30m': '30м',
+  '1h': '1ч', '4h': '4ч', '1d': '1д',
 }
 
 export async function GET(req: NextRequest) {
@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
   const sym      = (url.searchParams.get('pair') || 'BTCUSDT').toUpperCase()
   const interval = url.searchParams.get('tf') || '1h'
   const htfInterval = HTF_MAP[interval] || '1d'
-  const tfLabel  = TF_LABEL[interval] || '1С‡'
+  const tfLabel  = TF_LABEL[interval] || '1ч'
 
   try {
     const [binanceRes, htfRes, frRes] = await Promise.allSettled([
@@ -99,7 +99,7 @@ export async function GET(req: NextRequest) {
     })
 
     await createNotification(user.id,
-      `рџ“Љ [BATCH] ${final.verdict} ${sym} ${tfLabel} вЂ” СѓРІРµСЂРµРЅРЅРѕСЃС‚СЊ ${final.confidence}%`
+      `📊 [BATCH] ${final.verdict} ${sym} ${tfLabel} — уверенность ${final.confidence}%`
     )
 
     if (final.verdict === 'LONG' || final.verdict === 'SHORT') {

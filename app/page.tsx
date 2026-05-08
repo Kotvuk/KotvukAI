@@ -1,7 +1,5 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { useAuth } from '@/contexts/AuthContext'
 import { useLang } from '@/contexts/LangContext'
 import Link from 'next/link'
 import LangSwitcher from '@/components/ui/LangSwitcher'
@@ -96,8 +94,6 @@ const COMPARE_FLAGS: [boolean, boolean][] = [
 
 export default function LandingPage() {
   const { t } = useLang()
-  const { user } = useAuth()
-  const router = useRouter()
   const heroRef = useRef<HTMLDivElement>(null)
   const [scrollY, setScrollY] = useState(0)
   const liveTickers = useLiveTicker()
@@ -106,8 +102,6 @@ export default function LandingPage() {
   const smcSection = useInView()
   const compareSection = useInView()
   const ctaSection = useInView()
-
-  useEffect(() => { if (user) router.replace('/dashboard') }, [user, router])
 
   useEffect(() => {
     document.body.style.overflow = 'auto'

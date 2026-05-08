@@ -1,6 +1,5 @@
 'use client'
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth'
 import { auth } from '@/lib/firebase'
 import { useLang } from '@/contexts/LangContext'
@@ -23,7 +22,6 @@ function EyeIcon({ open }: { open: boolean }) {
 
 export default function LoginPage() {
   const { t } = useLang()
-  const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -55,7 +53,7 @@ export default function LoginPage() {
       const cred = await signInWithEmailAndPassword(auth, email, password)
       const token = await cred.user.getIdToken()
       document.cookie = `fb_token=${token}; path=/; max-age=3600; SameSite=Strict`
-      router.push('/dashboard')
+      window.location.href = '/dashboard'
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : t('error')
       setError(msg.replace('Firebase: ', '').replace(/\(auth.*\)/, ''))

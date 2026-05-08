@@ -43,7 +43,7 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  if ((pathname === '/' || pathname === '/login' || pathname === '/register') && token) {
+  if ((pathname === '/login' || pathname === '/register') && token) {
     return NextResponse.redirect(new URL('/dashboard', req.url))
   }
 

@@ -37,8 +37,8 @@ export default function DashboardPage() {
   }, [active, aiMounted])
 
   useEffect(() => {
-    if (!loading && !user) router.push('/login')
-  }, [user, loading, router])
+    if (!loading && !user) window.location.href = '/login'
+  }, [user, loading])
 
   useEffect(() => {
     if (loading || !user) return
@@ -60,9 +60,12 @@ export default function DashboardPage() {
         }
       } catch { /* silent */ }
     }
-    runChecks()
+    // Откладываем фоновые проверки на 2с — не блокируем первый рендер
+    const initTimer = setTimeout(() => {
+      runChecks()
+    }, 2000)
     const interval = setInterval(runChecks, 60_000)
-    return () => clearInterval(interval)
+    return () => { clearTimeout(initTimer); clearInterval(interval) }
   }, [user, loading])
 
   if (!loading && !user) return null

@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
+import { useLang } from '@/contexts/LangContext'
 
 interface DrawingInfo {
   id: string
@@ -21,7 +22,7 @@ const LINE_COLORS = [
   '#5352ed','#eccc68','#ff4757','#2ed573','#1e90ff',
 ]
 
-function ColorPicker({ value, onChange }: { value: string; onChange: (c: string) => void }) {
+function ColorPicker({ value, onChange, customLabel }: { value: string; onChange: (c: string) => void; customLabel: string }) {
   return (
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
       {LINE_COLORS.map(c => (
@@ -40,31 +41,32 @@ function ColorPicker({ value, onChange }: { value: string; onChange: (c: string)
         value={value}
         onChange={e => onChange(e.target.value)}
         style={{ width: 18, height: 18, border: 'none', padding: 0, cursor: 'pointer', background: 'transparent' }}
-        title="Свой цвет"
+        title={customLabel}
       />
     </div>
   )
 }
 
 function RectStyleEditor({
-  fillColor, borderColor, borderSize,
-  onChange,
+  fillColor, borderColor, borderSize, onChange,
+  labelFill, labelBorder, labelWidth, customLabel,
 }: {
   fillColor: string; borderColor: string; borderSize: number
   onChange: (patch: { fillColor?: string; borderColor?: string; borderSize?: number }) => void
+  labelFill: string; labelBorder: string; labelWidth: string; customLabel: string
 }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
       <div>
-        <div style={{ fontSize: '.62rem', color: 'var(--muted)', marginBottom: 6, textTransform: 'uppercase' }}>Цвет заливки</div>
-        <ColorPicker value={fillColor} onChange={c => onChange({ fillColor: c })} />
+        <div style={{ fontSize: '.62rem', color: 'var(--muted)', marginBottom: 6, textTransform: 'uppercase' }}>{labelFill}</div>
+        <ColorPicker value={fillColor} onChange={c => onChange({ fillColor: c })} customLabel={customLabel} />
       </div>
       <div>
-        <div style={{ fontSize: '.62rem', color: 'var(--muted)', marginBottom: 6, textTransform: 'uppercase' }}>Цвет рамки</div>
-        <ColorPicker value={borderColor} onChange={c => onChange({ borderColor: c })} />
+        <div style={{ fontSize: '.62rem', color: 'var(--muted)', marginBottom: 6, textTransform: 'uppercase' }}>{labelBorder}</div>
+        <ColorPicker value={borderColor} onChange={c => onChange({ borderColor: c })} customLabel={customLabel} />
       </div>
       <div>
-        <div style={{ fontSize: '.62rem', color: 'var(--muted)', marginBottom: 6, textTransform: 'uppercase' }}>Толщина рамки</div>
+        <div style={{ fontSize: '.62rem', color: 'var(--muted)', marginBottom: 6, textTransform: 'uppercase' }}>{labelWidth}</div>
         <div style={{ display: 'flex', gap: 6 }}>
           {[1, 2, 3, 4].map(w => (
             <button
@@ -85,20 +87,21 @@ function RectStyleEditor({
 }
 
 function LineStyleEditor({
-  color, width, style: lineStyle,
-  onChange,
+  color, width, style: lineStyle, onChange,
+  labelColor, labelWidth, labelStyle, customLabel,
 }: {
   color: string; width: number; style: string
   onChange: (patch: { color?: string; width?: number; style?: string }) => void
+  labelColor: string; labelWidth: string; labelStyle: string; customLabel: string
 }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       <div>
-        <div style={{ fontSize: '.62rem', color: 'var(--muted)', marginBottom: 6, textTransform: 'uppercase' }}>Цвет</div>
-        <ColorPicker value={color} onChange={c => onChange({ color: c })} />
+        <div style={{ fontSize: '.62rem', color: 'var(--muted)', marginBottom: 6, textTransform: 'uppercase' }}>{labelColor}</div>
+        <ColorPicker value={color} onChange={c => onChange({ color: c })} customLabel={customLabel} />
       </div>
       <div>
-        <div style={{ fontSize: '.62rem', color: 'var(--muted)', marginBottom: 6, textTransform: 'uppercase' }}>Толщина</div>
+        <div style={{ fontSize: '.62rem', color: 'var(--muted)', marginBottom: 6, textTransform: 'uppercase' }}>{labelWidth}</div>
         <div style={{ display: 'flex', gap: 6 }}>
           {[1, 2, 3, 4].map(w => (
             <button
@@ -115,7 +118,7 @@ function LineStyleEditor({
         </div>
       </div>
       <div>
-        <div style={{ fontSize: '.62rem', color: 'var(--muted)', marginBottom: 6, textTransform: 'uppercase' }}>Стиль</div>
+        <div style={{ fontSize: '.62rem', color: 'var(--muted)', marginBottom: 6, textTransform: 'uppercase' }}>{labelStyle}</div>
         <div style={{ display: 'flex', gap: 6 }}>
           {[
             { key: 'solid',  label: '——' },
@@ -139,6 +142,7 @@ function LineStyleEditor({
 }
 
 export default function DrawingSettingsModal({ info, onClose, onSave, onDelete }: Props) {
+  const { t } = useLang()
   const [lineColor, setLineColor] = useState('#00e676')
   const [lineWidth, setLineWidth] = useState(1)
   const [lineStyle, setLineStyle] = useState('solid')
@@ -175,18 +179,18 @@ export default function DrawingSettingsModal({ info, onClose, onSave, onDelete }
 
   const isRect = info.name === 'priceRect'
   const titleMap: Record<string, string> = {
-    segment: 'Линия тренда',
-    rayLine: 'Луч',
-    horizontalStraightLine: 'Горизонтальная линия',
-    verticalStraightLine: 'Вертикальная линия',
-    priceLine: 'Ценовая линия',
-    parallelStraightLine: 'Параллельный канал',
-    priceChannelLine: 'Ценовой канал',
-    priceRect: 'Прямоугольник',
-    circle: 'Окружность',
-    polygon: 'Многоугольник',
-    polyline: 'Траектория',
-    fibRetracement: 'Фибоначчи',
+    segment:               t('draw_segment_lbl'),
+    rayLine:               t('draw_ray_lbl'),
+    horizontalStraightLine:t('draw_hline_full_lbl'),
+    verticalStraightLine:  t('draw_vline_full_lbl'),
+    priceLine:             t('draw_price_line_lbl'),
+    parallelStraightLine:  t('draw_parallel_lbl'),
+    priceChannelLine:      t('draw_price_channel_lbl'),
+    priceRect:             t('draw_rect_full_lbl'),
+    circle:                t('draw_circle_lbl'),
+    polygon:               t('draw_polygon_lbl'),
+    polyline:              t('draw_polyline_lbl'),
+    fibRetracement:        t('draw_fibonacci_lbl'),
   }
 
   return (
@@ -206,7 +210,7 @@ export default function DrawingSettingsModal({ info, onClose, onSave, onDelete }
           padding: '12px 16px', borderBottom: '1px solid var(--line2)',
         }}>
           <span style={{ fontSize: '.7rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.05em' }}>
-            {titleMap[info.name] || 'Настройки'}
+            {titleMap[info.name] || t('draw_settings_lbl')}
           </span>
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '1rem' }}>✕</button>
         </div>
@@ -223,6 +227,10 @@ export default function DrawingSettingsModal({ info, onClose, onSave, onDelete }
                 if (p.borderColor !== undefined) setRectBorder(p.borderColor)
                 if (p.borderSize !== undefined) setRectBorderSize(p.borderSize)
               }}
+              labelFill={t('draw_fill_color_lbl')}
+              labelBorder={t('draw_border_color_lbl')}
+              labelWidth={t('draw_border_width_lbl')}
+              customLabel={t('draw_custom_color_lbl')}
             />
           ) : (
             <LineStyleEditor
@@ -234,6 +242,10 @@ export default function DrawingSettingsModal({ info, onClose, onSave, onDelete }
                 if (p.width !== undefined) setLineWidth(p.width)
                 if (p.style !== undefined) setLineStyle(p.style)
               }}
+              labelColor={t('draw_line_color_lbl')}
+              labelWidth={t('draw_line_width_lbl')}
+              labelStyle={t('draw_line_style_lbl')}
+              customLabel={t('draw_custom_color_lbl')}
             />
           )}
         </div>
@@ -246,16 +258,16 @@ export default function DrawingSettingsModal({ info, onClose, onSave, onDelete }
           <button
             onClick={() => { onDelete(info.id); onClose() }}
             style={{ padding: '6px 14px', background: 'none', border: '1px solid var(--short)', color: 'var(--short)', borderRadius: 4, cursor: 'pointer', fontSize: '.65rem' }}
-          >Удалить</button>
+          >{t('draw_delete_lbl')}</button>
           <div style={{ display: 'flex', gap: 8 }}>
             <button
               onClick={onClose}
               style={{ padding: '6px 14px', background: 'none', border: '1px solid var(--line2)', color: 'var(--muted)', borderRadius: 4, cursor: 'pointer', fontSize: '.65rem' }}
-            >Отмена</button>
+            >{t('draw_cancel_lbl')}</button>
             <button
               onClick={handleSave}
               style={{ padding: '6px 14px', background: 'var(--cyan)', border: 'none', color: '#000', borderRadius: 4, cursor: 'pointer', fontSize: '.65rem', fontWeight: 600 }}
-            >Сохранить</button>
+            >{t('draw_save_lbl')}</button>
           </div>
         </div>
       </div>

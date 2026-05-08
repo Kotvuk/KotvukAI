@@ -63,7 +63,7 @@ export default function TradesPanel({ defaultAccount = 'user', onTabMounted }: T
       if (d.leverage)    setLev(Math.min(d.leverage, 3))
       if (d.order_type)  setOrderType(d.order_type as 'market' | 'limit')
       localStorage.removeItem('kotvuk:trade_prefill')
-      showToast('Данные из AI анализа загружены', 'ok')
+      showToast(t('ai_data_loaded_msg'), 'ok')
     } catch {}
   }, [])
 
@@ -129,7 +129,7 @@ export default function TradesPanel({ defaultAccount = 'user', onTabMounted }: T
       })
       const d = await r.json()
       if (!d.ok) throw new Error(d.error)
-      showToast('Ордер отменён')
+      showToast(t('order_cancelled_msg'))
       loadTrades()
     } catch (e: unknown) { showToast(e instanceof Error ? e.message : t('error'), 'err') }
   }
@@ -158,11 +158,11 @@ export default function TradesPanel({ defaultAccount = 'user', onTabMounted }: T
       })
       const d = await r.json()
       if (!d.ok) throw new Error(d.error)
-      showToast('TP/SL обновлены', 'ok')
+      showToast(t('tp_sl_updated_msg'), 'ok')
       setEditStates(prev => { const n = { ...prev }; delete n[id]; return n })
       loadTrades()
     } catch (e: unknown) {
-      showToast(e instanceof Error ? e.message : 'Ошибка', 'err')
+      showToast(e instanceof Error ? e.message : t('error'), 'err')
       setEditStates(prev => ({ ...prev, [id]: { ...prev[id], saving: false } }))
     }
   }
@@ -185,13 +185,11 @@ export default function TradesPanel({ defaultAccount = 'user', onTabMounted }: T
       <div style={{ maxWidth: 820, margin: '0 auto' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
           <div className="tg" style={{ flex: 1 }}>
-            <button className={`tb ${account === 'user' ? 'a-d' : ''}`} onClick={() => setAccount('user')}
-              title="Ваши ручные позиции, открытые вручную">
-              Мой счёт
+            <button className={`tb ${account === 'user' ? 'a-d' : ''}`} onClick={() => setAccount('user')}>
+              {t('my_account')}
             </button>
-            <button className={`tb ${account === 'ai' ? 'a-d' : ''}`} onClick={() => setAccount('ai')}
-              title="Автоматические сделки, открытые AI после анализа">
-              Счёт ИИ
+            <button className={`tb ${account === 'ai' ? 'a-d' : ''}`} onClick={() => setAccount('ai')}>
+              {t('ai_account')}
             </button>
           </div>
           <span style={{ fontSize: '.55rem', color: '#ffa500', background: 'rgba(255,165,0,0.12)', border: '1px solid rgba(255,165,0,0.3)', borderRadius: 4, padding: '2px 8px', whiteSpace: 'nowrap' }}>
@@ -199,7 +197,7 @@ export default function TradesPanel({ defaultAccount = 'user', onTabMounted }: T
           </span>
         </div>
         <div style={{ fontSize: '.58rem', color: 'var(--dim)', marginBottom: 10 }}>
-          {account === 'ai' ? 'Счёт ИИ — автоматические сделки по сигналам AI. Мой счёт — ваши ручные позиции.' : 'Виртуальный счёт. Реальные средства не используются.'}
+          {account === 'ai' ? t('account_desc_both') : t('virtual_account_desc')}
         </div>
         <div className="kpi-grid" style={{ marginBottom: 12 }}>
           <div className="kpi" title="Виртуальный баланс — не реальные средства"><div className="kpi-v" style={{ color: '#ffa500' }}>$10,000</div><div className="kpi-l">{t('balance')} <span style={{ fontSize: '.5rem', opacity: .6 }}>(virtual)</span></div></div>
@@ -210,12 +208,12 @@ export default function TradesPanel({ defaultAccount = 'user', onTabMounted }: T
 
         {account === 'ai' && (
           <div style={{ padding: '10px 14px', marginBottom: 12, background: 'var(--card2)', borderRadius: 8, fontSize: '.65rem', color: 'var(--muted)' }}>
-            Счёт ИИ — сделки открываются автоматически после анализа. Вы также можете открыть сделку вручную.
+            {t('ai_auto_trades_desc')}
           </div>
         )}
         {pending.length > 0 && (<>
           <div className="sec" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            Лимитные ордера
+            {t('pending_orders')}
             <span style={{ background: '#ffd60a22', color: '#ffd60a', border: '1px solid #ffd60a44', borderRadius: 20, padding: '1px 8px', fontSize: '.58rem', fontWeight: 700 }}>
               {pending.length}
             </span>
@@ -231,15 +229,15 @@ export default function TradesPanel({ defaultAccount = 'user', onTabMounted }: T
                   <span className="tag tag-pending">LIMIT</span>
                   <span style={{ fontSize: '.62rem', color: 'var(--muted)' }}>{tr.leverage}× · ${parseFloat(String(tr.amount)).toFixed(2)}</span>
                   <span style={{ fontSize: '.62rem', color: 'var(--muted)' }}>
-                    триггер: <span style={{ color: '#ffd60a' }}>${parseFloat(String(tr.limit_price || 0)).toLocaleString()}</span>
+                    {t('trigger_at')} <span style={{ color: '#ffd60a' }}>${parseFloat(String(tr.limit_price || 0)).toLocaleString()}</span>
                   </span>
                   {tr.tp_price && <span style={{ fontSize: '.62rem', color: 'var(--muted)' }}>TP: <span style={{ color: 'var(--long)' }}>${parseFloat(String(tr.tp_price)).toLocaleString()}</span></span>}
                   {tr.sl_price && <span style={{ fontSize: '.62rem', color: 'var(--muted)' }}>SL: <span style={{ color: 'var(--short)' }}>${parseFloat(String(tr.sl_price)).toLocaleString()}</span></span>}
                   <span style={{ marginLeft: 'auto', fontSize: '.6rem', color: hoursLeft !== null && hoursLeft < 24 ? '#ff9f0a' : 'var(--dim)' }}>
-                    {hoursLeft !== null ? `истекает через ${hoursLeft}ч` : ''}
+                    {hoursLeft !== null ? `${t('expires_in_h')} ${hoursLeft}h` : ''}
                   </span>
                   <button className="obtn" style={{ fontSize: '.6rem', color: '#ff453a', borderColor: '#ff453a44' }} onClick={() => cancelTrade(tr.id)}>
-                    Отменить
+                    {t('cancel_order')}
                   </button>
                 </div>
               )
@@ -259,7 +257,7 @@ export default function TradesPanel({ defaultAccount = 'user', onTabMounted }: T
                 </div>
                 {pairOpen && (
                   <div className="dm" style={{ width: '100%' }}>
-                    <input className="ds" placeholder="Поиск..." value={pairSearch} onChange={e => setPairSearch(e.target.value)} autoFocus />
+                    <input className="ds" placeholder={t('search_pair_input')} value={pairSearch} onChange={e => setPairSearch(e.target.value)} autoFocus />
                     <div className="dl">
                       {filtered.map(pp => (
                         <div key={pp} className={`di ${pp === pair ? 'sel' : ''}`} onClick={() => { setPair(pp); setPairOpen(false); setPairSearch('') }}>{pp}</div>
@@ -331,7 +329,7 @@ export default function TradesPanel({ defaultAccount = 'user', onTabMounted }: T
                   <span className={`tag tag-${tr.direction}`}>{tr.direction.toUpperCase()}</span>
                   <span style={{ fontSize: '.62rem', color: 'var(--muted)' }}>{tr.leverage}× · ${parseFloat(String(tr.amount)).toFixed(2)}</span>
                   <span style={{ marginLeft: 'auto', fontSize: '.62rem', color: 'var(--muted)' }}>
-                    вход: {ep ? '$' + ep.toLocaleString() : '—'}
+                    {t('entry_at')} {ep ? '$' + ep.toLocaleString() : '—'}
                   </span>
                   {pct != null && (
                     <span style={{ fontWeight: 700, fontSize: '.72rem', color: pct >= 0 ? 'var(--long)' : 'var(--short)' }}>
@@ -353,7 +351,7 @@ export default function TradesPanel({ defaultAccount = 'user', onTabMounted }: T
                       value={es.sl} onChange={e => setEditStates(prev => ({ ...prev, [tr.id]: { ...prev[tr.id], sl: e.target.value } }))}
                     />
                     <button className="obtn l" onClick={() => saveEdit(tr.id)} disabled={es.saving}>
-                      {es.saving ? '...' : 'Сохранить'}
+                      {es.saving ? '...' : t('save_changes_btn')}
                     </button>
                     <button className="obtn" onClick={() => setEditStates(prev => { const n = { ...prev }; delete n[tr.id]; return n })}>
                       ✕
@@ -370,7 +368,7 @@ export default function TradesPanel({ defaultAccount = 'user', onTabMounted }: T
                         [tr.id]: { tp: tr.tp_price ? String(tr.tp_price) : '', sl: tr.sl_price ? String(tr.sl_price) : '', saving: false }
                       }))}
                     >
-                      Изменить TP/SL
+                      {t('edit_tp_sl_btn')}
                     </button>
                     <button className="obtn l" onClick={() => closeTrade(tr.id)}>{t('close')}</button>
                   </div>
@@ -392,7 +390,7 @@ export default function TradesPanel({ defaultAccount = 'user', onTabMounted }: T
                     <td><span className={`tag tag-${tr.direction}`}>{tr.direction.toUpperCase()}</span></td>
                     <td>
                       {tr.status === 'cancelled'
-                        ? <span className="tag tag-cancelled">отменён</span>
+                        ? <span className="tag tag-cancelled">{t('status_cancelled')}</span>
                         : tr.pnl_pct !== null
                           ? (Number(tr.pnl_pct) > 0 ? <span className="pnl-p">+{tr.pnl_pct}%</span> : <span className="pnl-n">{tr.pnl_pct}%</span>)
                           : '—'}

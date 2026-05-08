@@ -32,7 +32,7 @@ export default function LoginPage() {
 
   async function handleForgot(e: React.FormEvent) {
     e.preventDefault()
-    if (!email) { setError('Введите email'); return }
+    if (!email) { setError(t('enter_email_required')); return }
     setError('')
     setLoading(true)
     try {
@@ -119,7 +119,7 @@ export default function LoginPage() {
                 onClick={() => { setForgotMode(true); setError(''); setForgotSent(false) }}
                 style={{ background: 'none', border: 'none', color: 'var(--cyan)', fontSize: '.65rem', cursor: 'pointer', padding: 0 }}
               >
-                Забыли пароль?
+                {t('forgot_password')}
               </button>
             </div>
             <div className="auth-link">
@@ -130,12 +130,12 @@ export default function LoginPage() {
           <div style={{ marginTop: 14 }}>
             {forgotSent ? (
               <div style={{ background: 'rgba(0,230,118,0.1)', border: '1px solid rgba(0,230,118,0.3)', borderRadius: 4, padding: '10px 14px', fontSize: '.65rem', color: 'var(--long)', textAlign: 'center' }}>
-                Письмо отправлено на <strong>{email}</strong>.<br />Проверьте почту и следуйте инструкции.
+                {t('forgot_sent_prefix')} <strong>{email}</strong>.<br />{t('forgot_sent_check')}
               </div>
             ) : (
               <form onSubmit={handleForgot}>
                 <div style={{ fontSize: '.65rem', color: 'var(--muted)', marginBottom: 10 }}>
-                  Введите email — мы пришлём ссылку для сброса пароля.
+                  {t('forgot_desc')}
                 </div>
                 {error && <div className="auth-err">{error}</div>}
                 <div className="auth-ff">
@@ -147,7 +147,7 @@ export default function LoginPage() {
                   />
                 </div>
                 <button type="submit" className="ssave" style={{ width: '100%', padding: '9px' }} disabled={loading}>
-                  {loading ? '...' : 'Отправить письмо'}
+                  {loading ? '...' : t('forgot_send')}
                 </button>
               </form>
             )}
@@ -157,7 +157,7 @@ export default function LoginPage() {
                 onClick={() => { setForgotMode(false); setError(''); setForgotSent(false) }}
                 style={{ background: 'none', border: 'none', color: 'var(--muted)', fontSize: '.63rem', cursor: 'pointer', padding: 0 }}
               >
-                ← Назад ко входу
+                {t('forgot_back')}
               </button>
             </div>
           </div>

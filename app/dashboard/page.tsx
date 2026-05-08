@@ -119,7 +119,7 @@ export default function DashboardPage() {
           <div className="loading">
             <div className="ld-bar" />
             <div className="ld-t">KOTVUK AI</div>
-            <div className="ld-s">инициализация...</div>
+            <div className="ld-s">{t('initializing')}</div>
           </div>
         </div>
       </div>
@@ -160,7 +160,7 @@ export default function DashboardPage() {
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
               </svg>
-              Админ
+              {t('admin_btn')}
             </button>
           )}
         </nav>

@@ -1,25 +1,9 @@
 'use client'
 import { useState, useEffect } from 'react'
-
-const STEPS = [
-  {
-    title: 'Добро пожаловать в KotvukAI',
-    icon: '🤖',
-    body: 'KotvukAI — AI-аналитик криптовалют на основе Smart Money Concepts. Автоматически находит Order Blocks, Fair Value Gaps, определяет HTF Bias и генерирует сигналы LONG/SHORT.',
-  },
-  {
-    title: 'Как пользоваться',
-    icon: '📊',
-    body: 'Перейдите во вкладку "AI Анализ" → выберите торговую пару и таймфрейм → нажмите "Запустить анализ". AI проведёт 4-шаговый разбор и выдаст сигнал с точками входа, TP и SL.',
-  },
-  {
-    title: 'Торговый журнал и история',
-    icon: '📈',
-    body: 'Все сигналы автоматически сохраняются в "История". В разделе "Сделки" ведите торговый журнал с PnL. Отмечайте результаты (Win/Loss) — AI будет считать статистику и помогать улучшить систему.',
-  },
-]
+import { useLang } from '@/contexts/LangContext'
 
 export default function OnboardingModal() {
+  const { t } = useLang()
   const [visible, setVisible] = useState(false)
   const [step, setStep] = useState(0)
 
@@ -35,6 +19,12 @@ export default function OnboardingModal() {
   }
 
   if (!visible) return null
+
+  const STEPS = [
+    { title: t('ob_step1_title'), icon: '🤖', body: t('ob_step1_body') },
+    { title: t('ob_step2_title'), icon: '📊', body: t('ob_step2_body') },
+    { title: t('ob_step3_title'), icon: '📈', body: t('ob_step3_body') },
+  ]
 
   const s = STEPS[step]
   const isLast = step === STEPS.length - 1
@@ -73,21 +63,21 @@ export default function OnboardingModal() {
               onClick={() => setStep(s => s - 1)}
               style={{ flex: 1, padding: '9px', background: 'var(--bg3)', border: '1px solid var(--line2)', borderRadius: 5, color: 'var(--muted)', fontSize: '.65rem', cursor: 'pointer' }}
             >
-              Назад
+              {t('ob_back_lbl')}
             </button>
           )}
           <button
             onClick={() => isLast ? finish() : setStep(s => s + 1)}
             style={{ flex: 2, padding: '9px', background: 'var(--cyan)', border: 'none', borderRadius: 5, color: '#000', fontSize: '.68rem', fontWeight: 700, cursor: 'pointer' }}
           >
-            {isLast ? 'Начать работу' : 'Далее →'}
+            {isLast ? t('ob_start_lbl') : t('ob_next_lbl')}
           </button>
         </div>
 
         <button
           onClick={finish}
           style={{ position: 'absolute', top: 12, right: 14, background: 'none', border: 'none', color: 'var(--dim)', fontSize: '.75rem', cursor: 'pointer', padding: 4 }}
-          title="Пропустить"
+          title={t('ob_skip_lbl')}
         >
           ✕
         </button>

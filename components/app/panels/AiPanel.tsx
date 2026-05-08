@@ -15,20 +15,11 @@ import AiResultPanel from '@/components/app/ai/AiResultPanel'
 import AiBacktestModal from '@/components/app/ai/AiBacktestModal'
 import { usePairs } from '@/hooks/usePairs'
 
-const DRAW_TOOLS = [
-  { key: 'segment',                label: 'Линия тренда' },
-  { key: 'rayLine',                label: 'Луч' },
-  { key: 'horizontalStraightLine', label: 'Горизонт. линия' },
-  { key: 'verticalStraightLine',   label: 'Вертик. линия' },
-  { key: 'priceLine',              label: 'Ценовой уровень' },
-  { key: 'parallelStraightLine',   label: 'Парал. канал' },
-  { key: 'priceChannelLine',       label: 'Ценовой канал' },
-  { key: 'priceRect',              label: 'Прямоугольник' },
-  { key: 'circle',                 label: 'Окружность' },
-  { key: 'polygon',                label: 'Многоугольник' },
-  { key: 'polyline',               label: 'Траектория' },
-  { key: 'fibRetracement',         label: 'Фибоначчи' },
-]
+const DRAW_TOOL_KEYS = [
+  'segment', 'rayLine', 'horizontalStraightLine', 'verticalStraightLine',
+  'priceLine', 'parallelStraightLine', 'priceChannelLine', 'priceRect',
+  'circle', 'polygon', 'polyline', 'fibRetracement',
+] as const
 const TFS = [
   { label: '1M', val: '1м' }, { label: '5M', val: '5м' }, { label: '15M', val: '15м' },
   { label: '30M', val: '30м' }, { label: '1H', val: '1ч' }, { label: '4H', val: '4ч' }, { label: '1D', val: '1д' },
@@ -49,6 +40,21 @@ interface AiPanelProps {
 export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelProps) {
   const { t } = useLang()
   const { getValidToken } = useAuth()
+
+  const DRAW_TOOLS = useMemo(() => ({
+    segment:                t('draw_segment_lbl'),
+    rayLine:                t('draw_ray_lbl'),
+    horizontalStraightLine: t('draw_hline_full_lbl'),
+    verticalStraightLine:   t('draw_vline_full_lbl'),
+    priceLine:              t('draw_price_line_lbl'),
+    parallelStraightLine:   t('draw_parallel_lbl'),
+    priceChannelLine:       t('draw_price_channel_lbl'),
+    priceRect:              t('draw_rect_full_lbl'),
+    circle:                 t('draw_circle_lbl'),
+    polygon:                t('draw_polygon_lbl'),
+    polyline:               t('draw_polyline_lbl'),
+    fibRetracement:         t('draw_fibonacci_lbl'),
+  }), [t])
   const { pairs: allPairs } = usePairs()
   const chartRef = useRef<KLineChartHandle>(null)
   const [pair, setPair] = useState('BTC/USDT')
@@ -635,7 +641,7 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
                     style={{ padding: '3px 7px', fontSize: '.6rem', display: 'flex', alignItems: 'center', gap: 4, minWidth: 80 }}
                   >
                     <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M13 2L14 5 5 14H2v-3L11 2z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/></svg>
-                    <span style={{ flex: 1, textAlign: 'left' }}>{DRAW_TOOLS.find(t => t.key === drawTool)?.label}</span>
+                    <span style={{ flex: 1, textAlign: 'left' }}>{DRAW_TOOLS[drawTool as keyof typeof DRAW_TOOLS] ?? drawTool}</span>
                     <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor"><path d="M1 2.5l3 3 3-3"/></svg>
                   </button>
                   {drawMenuOpen && (
@@ -647,25 +653,25 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
                       }}
                       onMouseLeave={() => setDrawMenuOpen(false)}
                     >
-                      {DRAW_TOOLS.map(tool => (
+                      {DRAW_TOOL_KEYS.map(key => (
                         <div
-                          key={tool.key}
+                          key={key}
                           onClick={() => {
-                            setDrawTool(tool.key)
+                            setDrawTool(key)
                             setDrawMenuOpen(false)
-                            chartRef.current?.setDrawing(tool.key)
+                            chartRef.current?.setDrawing(key)
                             setIsDrawing(true)
                           }}
                           style={{
                             padding: '6px 12px', fontSize: '.63rem', cursor: 'pointer',
-                            background: drawTool === tool.key ? 'var(--bg3)' : 'transparent',
-                            color: drawTool === tool.key ? 'var(--cyan)' : 'var(--text)',
-                            borderLeft: drawTool === tool.key ? '2px solid var(--cyan)' : '2px solid transparent',
+                            background: drawTool === key ? 'var(--bg3)' : 'transparent',
+                            color: drawTool === key ? 'var(--cyan)' : 'var(--text)',
+                            borderLeft: drawTool === key ? '2px solid var(--cyan)' : '2px solid transparent',
                           }}
                           onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bg3)' }}
-                          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = drawTool === tool.key ? 'var(--bg3)' : 'transparent' }}
+                          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = drawTool === key ? 'var(--bg3)' : 'transparent' }}
                         >
-                          {tool.label}
+                          {DRAW_TOOLS[key]}
                         </div>
                       ))}
                     </div>
@@ -678,7 +684,7 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
                     chartRef.current?.setDrawing(drawTool)
                     setIsDrawing(true)
                   }}
-                  title={`Нарисовать: ${DRAW_TOOLS.find(t => t.key === drawTool)?.label}`}
+                  title={`${t('draw')}: ${DRAW_TOOLS[drawTool as keyof typeof DRAW_TOOLS] ?? drawTool}`}
                   style={{ padding: '4px 7px', color: isDrawing ? 'var(--cyan)' : undefined }}
                 >
                   <svg width="14" height="14" viewBox="0 0 16 16" fill="none">

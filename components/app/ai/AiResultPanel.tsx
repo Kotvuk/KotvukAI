@@ -64,7 +64,7 @@ export default function AiResultPanel({ aiData, pair, tf, smcProb, onNavigate, o
         {[
           { key: 'step1', label: t('step1_technical'), sig: (p.step1 as Record<string,unknown>)?.signal,  val: `${(p.step1 as Record<string,unknown>)?.strength}/10`, sum: (p.step1 as Record<string,unknown>)?.summary },
           { key: 'step2', label: t('step2_risk'),      sig: (p.step2 as Record<string,unknown>)?.verdict, val: `${(p.step2 as Record<string,unknown>)?.confidence}%`,  sum: (p.step2 as Record<string,unknown>)?.summary },
-          { key: 'step3', label: t('step3_final'),     sig: (p.step3 as Record<string,unknown>)?.verdict, val: `${(p.step3 as Record<string,unknown>)?.confidence}%`,  sum: 'SMC конфлюэнс' },
+          { key: 'step3', label: t('step3_final'),     sig: (p.step3 as Record<string,unknown>)?.verdict, val: `${(p.step3 as Record<string,unknown>)?.confidence}%`,  sum: t('smc_confluence_lbl') },
         ].map(st => (
           <div className="pc" key={st.key}>
             <div className="pn">{st.label}</div>
@@ -89,11 +89,11 @@ export default function AiResultPanel({ aiData, pair, tf, smcProb, onNavigate, o
         return (
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', margin: '8px 0', padding: '8px 10px', background: 'rgba(255,255,255,0.03)', borderRadius: 6, border: '1px solid rgba(255,255,255,0.07)' }}>
             {[
-              { l: 'БАЛАНС',  v: `$${Number(rm.balance  || 0).toLocaleString()}`,           c: 'var(--text)' },
-              { l: 'РИСК $',  v: `$${Number(rm.risk_usd || 0).toFixed(2)}`,                 c: '#ff6b6b' },
-              { l: 'ПОЗИЦИЯ', v: `$${Number(rm.pos_usd  || 0).toLocaleString()}`,           c: 'var(--text)' },
-              { l: 'R:R',     v: rm.rr     ? `1:${Number(rm.rr    ).toFixed(1)}` : '—',    c: '#00e676' },
-              { l: 'МИН R:R', v: rm.min_rr ? `1:${Number(rm.min_rr).toFixed(1)}` : '—',    c: 'var(--dim)' },
+              { l: t('rm_balance_lbl'),  v: `$${Number(rm.balance  || 0).toLocaleString()}`,           c: 'var(--text)' },
+              { l: t('rm_risk_lbl'),     v: `$${Number(rm.risk_usd || 0).toFixed(2)}`,                 c: '#ff6b6b' },
+              { l: t('rm_position_lbl'), v: `$${Number(rm.pos_usd  || 0).toLocaleString()}`,           c: 'var(--text)' },
+              { l: 'R:R',                v: rm.rr     ? `1:${Number(rm.rr    ).toFixed(1)}` : '—',    c: '#00e676' },
+              { l: t('rm_min_rr_lbl'),   v: rm.min_rr ? `1:${Number(rm.min_rr).toFixed(1)}` : '—',    c: 'var(--dim)' },
             ].map(({ l, v, c }) => (
               <div key={l} style={{ flex: '1 1 60px', textAlign: 'center' }}>
                 <div style={{ fontSize: '.52rem', color: 'var(--dim)', marginBottom: 2 }}>{l}</div>
@@ -115,20 +115,20 @@ export default function AiResultPanel({ aiData, pair, tf, smcProb, onNavigate, o
           <div style={{ margin: '8px 0', padding: '9px 12px', background: 'rgba(255,255,255,0.03)', borderRadius: 6, border: `1px solid ${scoreColor}30` }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
               <span style={{ fontSize: '.56rem', color: 'var(--dim)', fontWeight: 700, letterSpacing: '.06em' }}>
-                {isBull ? '↑ BULLISH' : '↓ BEARISH'} ORDER BLOCK — ЗОНА ВХОДА
+                {isBull ? '↑ BULLISH' : '↓ BEARISH'} ORDER BLOCK — {t('ob_entry_zone_lbl')}
               </span>
               <span style={{ fontSize: '.64rem', fontWeight: 700, color: scoreColor }}>{score}/100 — {String(ob.verdict ?? '')}</span>
             </div>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 4 }}>
               <span style={{ fontSize: '.62rem', fontWeight: 800, color: qualColor, background: `${qualColor}18`, padding: '2px 7px', borderRadius: 4 }}>{String(ob.quality ?? '?')}</span>
               <span style={{ fontSize: '.62rem', color: 'var(--text)' }}>${Number(ob.low ?? 0).toLocaleString()} — ${Number(ob.high ?? 0).toLocaleString()}</span>
-              {Boolean(ob.isFresh) && <span style={{ fontSize: '.6rem', color: '#00e676', background: 'rgba(0,230,118,0.12)', padding: '2px 6px', borderRadius: 4 }}>✓ Свежий</span>}
+              {Boolean(ob.isFresh) && <span style={{ fontSize: '.6rem', color: '#00e676', background: 'rgba(0,230,118,0.12)', padding: '2px 6px', borderRadius: 4 }}>{t('ob_fresh_lbl')}</span>}
             </div>
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-              <span style={{ fontSize: '.58rem', color: 'var(--dim)' }}>Объём: <b style={{ color: 'var(--text)' }}>{Number(ob.relVolume ?? 0).toFixed(1)}×</b></span>
-              <span style={{ fontSize: '.58rem', color: 'var(--dim)' }}>Импульс: <b style={{ color: 'var(--text)' }}>{Number(ob.impulseSize ?? 0).toFixed(1)}%</b></span>
-              <span style={{ fontSize: '.58rem', color: 'var(--dim)' }}>Возраст: <b style={{ color: 'var(--text)' }}>{Number(ob.ageCandles ?? 0)} св.</b></span>
-              <span style={{ fontSize: '.58rem', color: 'var(--dim)' }}>Касания: <b style={{ color: 'var(--text)' }}>{Number(ob.touchCount ?? 0)}</b></span>
+              <span style={{ fontSize: '.58rem', color: 'var(--dim)' }}>{t('ob_volume_lbl')} <b style={{ color: 'var(--text)' }}>{Number(ob.relVolume ?? 0).toFixed(1)}×</b></span>
+              <span style={{ fontSize: '.58rem', color: 'var(--dim)' }}>{t('ob_impulse_lbl')} <b style={{ color: 'var(--text)' }}>{Number(ob.impulseSize ?? 0).toFixed(1)}%</b></span>
+              <span style={{ fontSize: '.58rem', color: 'var(--dim)' }}>{t('ob_age_lbl')} <b style={{ color: 'var(--text)' }}>{Number(ob.ageCandles ?? 0)}</b></span>
+              <span style={{ fontSize: '.58rem', color: 'var(--dim)' }}>{t('ob_touches_lbl')} <b style={{ color: 'var(--text)' }}>{Number(ob.touchCount ?? 0)}</b></span>
             </div>
           </div>
         )
@@ -154,14 +154,14 @@ export default function AiResultPanel({ aiData, pair, tf, smcProb, onNavigate, o
             borderTop: `1px solid ${String(a.verdict) === 'LONG' ? 'var(--long)' : 'var(--short)'}`,
           }}
         >
-          ОТКРЫТЬ {String(a.verdict)} ПОЗИЦИЮ →
+          {t('open_position_lbl')} {String(a.verdict)} →
         </button>
       )}
 
       {/* WAIT block */}
       {String(a.verdict) === 'WAIT' && a.wait_for && (
         <div style={{ margin: '10px 0', padding: '12px 14px', background: 'rgba(255,165,0,0.08)', borderRadius: 6, border: '1px solid rgba(255,165,0,0.25)' }}>
-          <div style={{ fontSize: '.6rem', color: '#ffa500', fontWeight: 700, marginBottom: 4 }}>⏳ ЖДАТЬ СИГНАЛА</div>
+          <div style={{ fontSize: '.6rem', color: '#ffa500', fontWeight: 700, marginBottom: 4 }}>{t('wait_signal_lbl')}</div>
           <div style={{ fontSize: '.65rem', color: 'var(--text)', lineHeight: 1.6 }}>{String(a.wait_for)}</div>
         </div>
       )}
@@ -169,33 +169,33 @@ export default function AiResultPanel({ aiData, pair, tf, smcProb, onNavigate, o
       <div className="desc">{String(a.full_description || '—')}</div>
 
       {/* Instructions */}
-      <div className="instr"><span className="ik" style={{ background: '#f0a500' }}>ВХОД</span><span>{String(a.entry_instruction || '—')}</span></div>
+      <div className="instr"><span className="ik" style={{ background: '#f0a500' }}>{t('entry_badge_lbl')}</span><span>{String(a.entry_instruction || '—')}</span></div>
       {a.entry_type === 'limit' && a.entry_limit && (
         <div className="instr" style={{ background: 'rgba(240,165,0,0.08)', borderLeft: '2px solid #f0a500' }}>
-          <span className="ik" style={{ background: '#f0a500' }}>ЛИМИТ</span>
-          <span>Лимитный ордер по <b>${Number(a.entry_limit).toLocaleString()}</b></span>
+          <span className="ik" style={{ background: '#f0a500' }}>{t('limit_badge_lbl')}</span>
+          <span>{t('limit_order_at')} <b>${Number(a.entry_limit).toLocaleString()}</b></span>
         </div>
       )}
       {a.confluence && (
         <div className="instr" style={{ background: 'rgba(0,230,118,0.06)', borderLeft: '2px solid #00e676' }}>
-          <span className="ik" style={{ background: '#00e676', color: '#000' }}>КОНФЛЮЭНС</span>
+          <span className="ik" style={{ background: '#00e676', color: '#000' }}>{t('confluence_badge_lbl')}</span>
           <span>{String(a.confluence)}</span>
         </div>
       )}
       {a.invalidation && (
         <div className="instr" style={{ background: 'rgba(255,61,87,0.06)', borderLeft: '2px solid #ff3d57' }}>
-          <span className="ik" style={{ background: '#ff3d57' }}>ИНВАЛИД</span>
+          <span className="ik" style={{ background: '#ff3d57' }}>{t('invalidation_badge_lbl')}</span>
           <span>{String(a.invalidation)}</span>
         </div>
       )}
       {a.position_size && (
         <div className="instr" style={{ background: 'rgba(100,180,255,0.06)', borderLeft: '2px solid #64b4ff' }}>
-          <span className="ik" style={{ background: '#64b4ff', color: '#000' }}>ОБЪЁМ</span>
+          <span className="ik" style={{ background: '#64b4ff', color: '#000' }}>{t('volume_badge_lbl')}</span>
           <span>{String(a.position_size)}</span>
         </div>
       )}
       <div className="instr" style={{ marginBottom: 10 }}>
-        <span className="ik" style={{ background: '#ff3d57' }}>ВЫХОД</span>
+        <span className="ik" style={{ background: '#ff3d57' }}>{t('exit_badge_lbl')}</span>
         <span>{String(a.exit_instruction || '—')}</span>
       </div>
 
@@ -222,7 +222,7 @@ export default function AiResultPanel({ aiData, pair, tf, smcProb, onNavigate, o
       {smcProb && (
         <div className="tbox" style={{ marginBottom: 20 }}>
           <div className="thead">
-            <span className="thead-t">SMC ВЕРОЯТНОСТЬ</span>
+            <span className="thead-t">{t('smc_prob_title_lbl')}</span>
             <span style={{
               fontSize: '.58rem', padding: '2px 7px', borderRadius: 3, marginLeft: 8,
               background: smcProb.scenario === 'LONG' ? 'rgba(0,230,118,0.15)' : smcProb.scenario === 'SHORT' ? 'rgba(255,61,87,0.15)' : 'rgba(136,136,136,0.15)',
@@ -232,7 +232,7 @@ export default function AiResultPanel({ aiData, pair, tf, smcProb, onNavigate, o
           <div style={{ padding: '10px 12px' }}>
             <div style={{ marginBottom: 10 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                <span style={{ fontSize: '.6rem', color: 'var(--muted)' }}>Вероятность</span>
+                <span style={{ fontSize: '.6rem', color: 'var(--muted)' }}>{t('probability_lbl')}</span>
                 <span style={{ fontSize: '.6rem', color: 'var(--text)', fontWeight: 600 }}>{smcProb.probability}%</span>
               </div>
               <div style={{ height: 5, background: 'var(--bg3)', borderRadius: 3 }}>
@@ -246,7 +246,7 @@ export default function AiResultPanel({ aiData, pair, tf, smcProb, onNavigate, o
               {[
                 { l: 'R:R',         v: `${smcProb.riskReward}:1` },
                 { l: 'Expected R',  v: `${smcProb.expectedR > 0 ? '+' : ''}${smcProb.expectedR}R` },
-                { l: 'Уверенность', v: `${smcProb.confidence}%` },
+                { l: t('confidence'), v: `${smcProb.confidence}%` },
               ].map(({ l, v }) => (
                 <div key={l} style={{ flex: 1, background: 'var(--bg3)', borderRadius: 3, padding: '5px 7px' }}>
                   <div style={{ fontSize: '.55rem', color: 'var(--muted)', marginBottom: 2 }}>{l}</div>
@@ -254,15 +254,15 @@ export default function AiResultPanel({ aiData, pair, tf, smcProb, onNavigate, o
                 </div>
               ))}
             </div>
-            <div style={{ fontSize: '.58rem', color: 'var(--muted)', marginBottom: 5, textTransform: 'uppercase' }}>Факторы</div>
+            <div style={{ fontSize: '.58rem', color: 'var(--muted)', marginBottom: 5, textTransform: 'uppercase' }}>{t('factors_lbl')}</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 10 }}>
               {[
-                { name: 'HTF Структура',     val: smcProb.factors.htfStructure,     max: 25 },
-                { name: 'Зоны конфлюэнса',   val: smcProb.factors.confluenceZones,  max: 20 },
-                { name: 'Профиль объёма',     val: smcProb.factors.volumeProfile,    max: 15 },
-                { name: 'Временной контекст', val: smcProb.factors.temporalContext,  max: 15 },
-                { name: 'Исторические стат.', val: smcProb.factors.historicalStats,  max: 20 },
-                { name: 'Сентимент рынка',    val: smcProb.factors.marketSentiment,  max: 5  },
+                { name: t('htf_structure_lbl'),     val: smcProb.factors.htfStructure,     max: 25 },
+                { name: t('confluence_zones_lbl'),   val: smcProb.factors.confluenceZones,  max: 20 },
+                { name: t('volume_profile_lbl'),     val: smcProb.factors.volumeProfile,    max: 15 },
+                { name: t('temporal_context_lbl'),   val: smcProb.factors.temporalContext,  max: 15 },
+                { name: t('historical_stats_lbl'),   val: smcProb.factors.historicalStats,  max: 20 },
+                { name: t('market_sentiment_lbl'),   val: smcProb.factors.marketSentiment,  max: 5  },
               ].map(({ name, val, max }) => (
                 <div key={name} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                   <span style={{ width: 105, fontSize: '.58rem', color: 'var(--muted)', flexShrink: 0 }}>{name}</span>
@@ -281,7 +281,7 @@ export default function AiResultPanel({ aiData, pair, tf, smcProb, onNavigate, o
                 {smcProb.alerts.map((alert, i) => {
                   const alertBg     = alert.color === 'green' ? 'rgba(0,230,118,0.1)' : alert.color === 'red' ? 'rgba(255,61,87,0.1)' : alert.color === 'orange' ? 'rgba(255,165,0,0.1)' : 'rgba(255,220,0,0.1)'
                   const alertBorder = alert.color === 'green' ? '#00e676' : alert.color === 'red' ? '#ff3d57' : alert.color === 'orange' ? '#ffa500' : '#ffdd00'
-                  const stageName   = alert.level === 'watchlist' ? 'НАБЛЮДАТЬ' : alert.level === 'setup_ready' ? 'ГОТОВО' : 'ТРИГГЕР'
+                  const stageName   = alert.level === 'watchlist' ? t('stage_watchlist_lbl') : alert.level === 'setup_ready' ? t('stage_ready_lbl') : t('stage_trigger_lbl')
                   return (
                     <div key={i} style={{ background: alertBg, border: `1px solid ${alertBorder}40`, borderLeft: `3px solid ${alertBorder}`, borderRadius: 3, padding: '6px 9px' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
@@ -309,7 +309,7 @@ export default function AiResultPanel({ aiData, pair, tf, smcProb, onNavigate, o
               <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.4"/>
               <path d="M8 5v3l2 2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
             </svg>
-            История похожих сетапов
+            {t('similar_setups_lbl')}
           </button>
         </div>
       )}

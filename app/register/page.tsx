@@ -35,7 +35,7 @@ export default function RegisterPage() {
     e.preventDefault()
     setError('')
     if (password !== confirm) { setError(t('passwords_no_match')); return }
-    if (password.length < 6) { setError('Минимум 6 символов'); return }
+    if (password.length < 6) { setError(t('password_min_6')); return }
     setLoading(true)
     try {
       const cred = await createUserWithEmailAndPassword(auth, email, password)

@@ -54,7 +54,7 @@ export default function AiChat({ onNavigate, getContext }: Props) {
         body: JSON.stringify({ message: msg, context: ctx }),
       })
       const data = await r.json()
-      const text = data.text || 'Готово!'
+      const text = data.text || t('chat_done_lbl')
       const action = data.action || null
 
       setMessages(prev => [...prev, { role: 'assistant', text, action }])
@@ -63,7 +63,7 @@ export default function AiChat({ onNavigate, getContext }: Props) {
         dispatchAction(action)
       }
     } catch {
-      setMessages(prev => [...prev, { role: 'assistant', text: 'Ошибка соединения. Проверьте GROQ_API_KEY.' }])
+      setMessages(prev => [...prev, { role: 'assistant', text: t('chat_conn_error_lbl') }])
     }
     setThinking(false)
   }, [input, thinking, getContext])

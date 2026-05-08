@@ -79,8 +79,8 @@ export default function SettingsPanel() {
       })
       const d = await r.json()
       if (d.ok && d.url) window.location.href = d.url
-      else showToast(d.error || 'Ошибка оплаты', 'err')
-    } catch { showToast('Ошибка соединения', 'err') }
+      else showToast(d.error || t('payment_error'), 'err')
+    } catch { showToast(t('conn_error'), 'err') }
     setPurchasing(null)
   }
 
@@ -90,8 +90,8 @@ export default function SettingsPanel() {
       const r = await fetch('/api/billing/portal', { method: 'POST' })
       const d = await r.json()
       if (d.ok && d.url) window.location.href = d.url
-      else showToast(d.error || 'Нет активной подписки', 'err')
-    } catch { showToast('Ошибка соединения', 'err') }
+      else showToast(d.error || t('no_active_sub'), 'err')
+    } catch { showToast(t('conn_error'), 'err') }
     setPortalLoading(false)
   }
 
@@ -102,7 +102,7 @@ export default function SettingsPanel() {
       const r = await fetch(url)
       const d = await r.json()
       const rows = type === 'trades' ? d.trades : d.signals
-      if (!rows?.length) { showToast('Нет данных для экспорта', 'err'); return }
+      if (!rows?.length) { showToast(t('no_export_data'), 'err'); return }
 
       let csv = ''
       if (type === 'trades') {
@@ -128,8 +128,8 @@ export default function SettingsPanel() {
       link.href = URL.createObjectURL(blob)
       link.download = `kotvukai_${type}_${new Date().toISOString().slice(0, 10)}.csv`
       link.click()
-      showToast(`Экспорт ${rows.length} записей`)
-    } catch { showToast('Ошибка экспорта', 'err') }
+      showToast(`${rows.length} ${t('export_count_lbl')}`)
+    } catch { showToast(t('export_error'), 'err') }
     setExporting(false)
   }
 
@@ -142,7 +142,7 @@ export default function SettingsPanel() {
 
         {/* ── Подписка ── */}
         <div className="sb2">
-          <div className="st">Подписка</div>
+          <div className="st">{t('subscription_title')}</div>
 
           {/* Текущий план */}
           {sub && (
@@ -152,8 +152,8 @@ export default function SettingsPanel() {
                   {tierInfo.name} Plan
                 </div>
                 <div className="sub-bar-usage">
-                  {sub.analyses_today} / {sub.limit} анализов сегодня
-                  &nbsp;·&nbsp; осталось: <span style={{ color: tierInfo.color }}>{sub.remaining}</span>
+                  {sub.analyses_today} / {sub.limit} {t('analyses_today_lbl')}
+                  &nbsp;·&nbsp; {t('remaining_lbl')} <span style={{ color: tierInfo.color }}>{sub.remaining}</span>
                 </div>
                 <div className="sub-bar-progress" style={{ marginTop: 8 }}>
                   <div className="sub-bar-fill" style={{ width: `${usagePct}%`, background: tierInfo.color }} />
@@ -168,9 +168,9 @@ export default function SettingsPanel() {
           {/* Карточки тарифов */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 12 }}>
             {([
-              { tier: 'starter', price: '$9', analyses: 10,  color: '#0a84ff', features: ['10 анализов/день', 'SMC сигналы', 'История'] },
-              { tier: 'pro',     price: '$29', analyses: 30, color: '#30d158', features: ['30 анализов/день', 'Приоритет', 'Экспорт CSV'] },
-              { tier: 'elite',   price: '$79', analyses: 100, color: '#ffd60a', features: ['100 анализов/день', 'Без ограничений', 'VIP поддержка'] },
+              { tier: 'starter', price: '$9', analyses: 10,  color: '#0a84ff', features: [`10 ${t('analyses_today_lbl')}`, 'SMC signals', t('nav_history')] },
+              { tier: 'pro',     price: '$29', analyses: 30, color: '#30d158', features: [`30 ${t('analyses_today_lbl')}`, t('priority'), 'CSV Export'] },
+              { tier: 'elite',   price: '$79', analyses: 100, color: '#ffd60a', features: [`100 ${t('analyses_today_lbl')}`, t('unlimited'), 'VIP Support'] },
             ] as const).map(({ tier, price, color, features }) => {
               const isCurrent = sub?.tier === tier
               const isLoading = purchasing === tier
@@ -184,7 +184,7 @@ export default function SettingsPanel() {
                     {tier}
                   </div>
                   <div style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text)', marginBottom: 8 }}>
-                    {price}<span style={{ fontSize: '.55rem', color: 'var(--dim)', fontWeight: 400 }}>/мес</span>
+                    {price}<span style={{ fontSize: '.55rem', color: 'var(--dim)', fontWeight: 400 }}>{t('per_month')}</span>
                   </div>
                   <div style={{ marginBottom: 10 }}>
                     {features.map(f => (
@@ -192,7 +192,7 @@ export default function SettingsPanel() {
                     ))}
                   </div>
                   {isCurrent ? (
-                    <div style={{ fontSize: '.58rem', color, fontWeight: 600, padding: '4px 0' }}>✓ Активен</div>
+                    <div style={{ fontSize: '.58rem', color, fontWeight: 600, padding: '4px 0' }}>{t('plan_active_lbl')}</div>
                   ) : (
                     <button
                       onClick={() => subscribe(tier)}
@@ -204,7 +204,7 @@ export default function SettingsPanel() {
                         opacity: purchasing ? 0.6 : 1,
                       }}
                     >
-                      {isLoading ? '...' : 'Оформить'}
+                      {isLoading ? '...' : t('subscribe_btn')}
                     </button>
                   )}
                 </div>
@@ -223,22 +223,22 @@ export default function SettingsPanel() {
                 fontSize: '.6rem', cursor: 'pointer', width: '100%',
               }}
             >
-              {portalLoading ? 'Загрузка...' : '⚙ Управление подпиской / Отмена'}
+              {portalLoading ? t('sub_loading') : t('manage_sub_btn')}
             </button>
           )}
         </div>
 
         {/* ── AI Трейдинг ── */}
         <div className="sb2">
-          <div className="st">Настройки AI-трейдинга</div>
+          <div className="st">{t('ai_trading_title')}</div>
           <p style={{ fontSize: '.6rem', color: 'var(--dim)', marginBottom: 10 }}>
-            Параметры для автоматических сделок, которые открывает AI после анализа.
+            {t('ai_trading_desc')}
           </p>
           <div className="fg">
             <div className="ff full">
               <div className="rw">
                 <div className="rt">
-                  <label className="fl">Баланс депозита ($)</label>
+                  <label className="fl">{t('deposit_balance_label')}</label>
                   <span className="rv">${aiBalance.toLocaleString()}</span>
                 </div>
                 <input type="range" min={10} max={100000} step={10}
@@ -259,21 +259,21 @@ export default function SettingsPanel() {
             <div className="ff full">
               <div className="rw">
                 <div className="rt">
-                  <label className="fl">Риск на сделку (%)</label>
+                  <label className="fl">{t('risk_per_trade_label')}</label>
                   <span className="rv">{aiRisk.toFixed(1)}%</span>
                 </div>
                 <input type="range" min={0.1} max={10} step={0.1} value={aiRisk}
                   onChange={e => setAiRisk(parseFloat(e.target.value))} />
                 <div className="rm"><span>0.1%</span><span>10%</span></div>
                 <div style={{ fontSize: '.58rem', color: 'var(--dim)', marginTop: 2 }}>
-                  Риск ${Math.round(aiBalance * aiRisk / 100)} на сделку · ≈ {Math.round(100 / aiRisk)} сделок до полного слива
+                  ${Math.round(aiBalance * aiRisk / 100)} {t('rm_risk_lbl').replace('$', '').trim()} · ≈ {Math.round(100 / aiRisk)}×
                 </div>
               </div>
             </div>
             <div className="ff full">
               <div className="rw">
                 <div className="rt">
-                  <label className="fl">Макс. плечо AI</label>
+                  <label className="fl">{t('max_ai_leverage_label')}</label>
                   <span className="rv">{aiLeverage}×</span>
                 </div>
                 <input type="range" min={1} max={125} step={1} value={aiLeverage}
@@ -283,7 +283,7 @@ export default function SettingsPanel() {
             </div>
           </div>
           <p style={{ fontSize: '.58rem', color: 'var(--dim)', marginTop: 6 }}>
-            ⚠️ Это виртуальный счёт (Paper Trading). Реальные средства не используются.
+            {t('paper_trading_note')}
           </p>
         </div>
 
@@ -326,15 +326,15 @@ export default function SettingsPanel() {
 
         {/* ── Export ── */}
         <div className="sb2">
-          <div className="st">Экспорт данных</div>
+          <div className="st">{t('export_data_title')}</div>
           <div style={{ display: 'flex', gap: 8 }}>
             <button className="run" disabled={exporting} onClick={() => exportCSV('trades')}
               style={{ flex: 1, fontSize: '.62rem' }}>
-              📥 Сделки CSV
+              {t('export_trades_btn')}
             </button>
             <button className="run" disabled={exporting} onClick={() => exportCSV('signals')}
               style={{ flex: 1, fontSize: '.62rem', background: 'var(--bg3)', color: 'var(--cyan)', border: '1px solid var(--line2)' }}>
-              📥 Сигналы CSV
+              {t('export_signals_btn')}
             </button>
           </div>
         </div>

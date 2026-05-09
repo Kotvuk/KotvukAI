@@ -24,7 +24,6 @@ function toCandles(rows: number[][]): Candle[] {
 
 async function analyzeOne(
   sym: string,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   user: Record<string, any>,
   interval = '1h',
 ): Promise<{ ok: boolean; verdict?: string; confidence?: number; error?: string }> {
@@ -151,7 +150,6 @@ export async function GET(req: NextRequest) {
   if (!users.length) {
     return NextResponse.json({ error: `User not found: ${adminEmail}` }, { status: 404 })
   }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const user = users[0] as Record<string, any>
 
   const userWatchlist = await getUserWatchlist(Number(user.id))

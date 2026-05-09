@@ -60,7 +60,6 @@ export default function DashboardPage() {
         }
       } catch { /* silent */ }
     }
-    // Откладываем фоновые проверки на 2с — не блокируем первый рендер
     const initTimer = setTimeout(() => {
       runChecks()
     }, 2000)

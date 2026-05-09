@@ -13,7 +13,6 @@ try {
     needDefaultPointFigure: true,
     needDefaultXAxisFigure: true,
     needDefaultYAxisFigure: true,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     createPointFigures: ({ overlay, coordinates }: any) => {
       if (coordinates.length < 2) return []
       const figures = []
@@ -36,14 +35,12 @@ try {
     needDefaultPointFigure: false,
     needDefaultXAxisFigure: false,
     needDefaultYAxisFigure: true,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     createPointFigures: ({ coordinates, bounding, overlay }: any) => {
       if (!coordinates[0]) return []
       const y      = coordinates[0].y
       const lineStyle = overlay.styles?.line ?? {}
       const color    = lineStyle.color ?? '#ffffff'
       const label    = typeof overlay.extendData === 'string' ? overlay.extendData : ''
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const figures: any[] = [
 
         {
@@ -80,7 +77,6 @@ try {
     needDefaultPointFigure: false,
     needDefaultXAxisFigure: false,
     needDefaultYAxisFigure: false,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     createPointFigures: ({ coordinates, bounding, overlay, yAxis }: any) => {
       if (!coordinates[0] || !yAxis) return []
       const d = overlay.extendData as { p1: number; p2: number; fillColor: string; strokeColor: string } | null
@@ -106,7 +102,6 @@ try {
     needDefaultPointFigure: true,
     needDefaultXAxisFigure: true,
     needDefaultYAxisFigure: true,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     createPointFigures: ({ overlay, coordinates }: any) => {
       if (coordinates.length < 2) return []
       const tl = coordinates[0]
@@ -238,7 +233,6 @@ interface Props {
 const KLineChartComponent = forwardRef<KLineChartHandle, Props>(
   ({ onOHLC, onReady, onCandleCloseTime, chartId = 'kline-container' }, ref) => {
     const containerRef = useRef<HTMLDivElement>(null)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const chartRef = useRef<any>(null)
     const candlesRef = useRef<CandleData[]>([])
     const onReadyRef = useRef(onReady)
@@ -293,7 +287,6 @@ const KLineChartComponent = forwardRef<KLineChartHandle, Props>(
           chartRef.current = null
         }
       }
-      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
     function initChart() {
@@ -322,7 +315,6 @@ const KLineChartComponent = forwardRef<KLineChartHandle, Props>(
             },
           },
         })
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         onReadyRef.current?.()
       } catch (e) { console.error('klinecharts init error:', e) }
     }
@@ -404,7 +396,6 @@ const KLineChartComponent = forwardRef<KLineChartHandle, Props>(
       getYForPrice(price: number): number | null {
         if (!chartRef.current || !containerRef.current) return null
         try {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const r = chartRef.current.convertToPixel([{ value: price }], { paneId: 'candle_pane' }) as any[]
           if (typeof r?.[0]?.y !== 'number') return null
           return containerRef.current.getBoundingClientRect().top + r[0].y
@@ -415,7 +406,6 @@ const KLineChartComponent = forwardRef<KLineChartHandle, Props>(
         if (!chartRef.current) return
         chartRef.current.createOverlay({
           name: type,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           onDrawEnd(event: any) {
 
             window.dispatchEvent(new CustomEvent('kotvuk:overlay:drawend', {
@@ -423,14 +413,12 @@ const KLineChartComponent = forwardRef<KLineChartHandle, Props>(
             }))
             return false
           },
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           onDoubleClick(event: any) {
             window.dispatchEvent(new CustomEvent('kotvuk:overlay:dblclick', {
               detail: { id: event.overlay.id, name: event.overlay.name, extendData: event.overlay.extendData, styles: event.overlay.styles },
             }))
             return true
           },
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           onRightClick(event: any) {
             window.dispatchEvent(new CustomEvent('kotvuk:overlay:rightclick', {
               detail: { id: event.overlay.id, name: event.overlay.name },
@@ -442,7 +430,6 @@ const KLineChartComponent = forwardRef<KLineChartHandle, Props>(
 
       updateOverlay(id: string, updates: { extendData?: unknown; styles?: unknown }) {
         if (!chartRef.current) return
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const patch: any = { id }
         if (updates.extendData !== undefined) patch.extendData = updates.extendData
         if (updates.styles !== undefined) patch.styles = updates.styles
@@ -471,7 +458,6 @@ const KLineChartComponent = forwardRef<KLineChartHandle, Props>(
         const lastTs   = candles[candles.length - 1].timestamp
         const spanMs   = Math.max(INTERVAL_MS[currentIntervalRef.current] ?? 3_600_000, 3_600_000) * 30
         const fromTs   = lastTs - spanMs
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const pt = () => false as any
 
         chartRef.current.removeOverlay({ groupId: 'ai_selected_ob' })
@@ -521,7 +507,6 @@ const KLineChartComponent = forwardRef<KLineChartHandle, Props>(
         const intervalMs = INTERVAL_MS[currentIntervalRef.current] || 3_600_000
 
         if (s.ob) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const passThrough = () => false as any  // не блокировать панинг графика
 
           ;(smc.orderBlocks || []).forEach((ob, i) => {
@@ -538,7 +523,6 @@ const KLineChartComponent = forwardRef<KLineChartHandle, Props>(
               onPressedMoveStart: passThrough,
               onPressedMoving: passThrough,
               onPressedMoveEnd: passThrough,
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               onRightClick: () => true as any,
               points: [{ timestamp: ob.timestamp, value: ob.high }, { timestamp: lastTs, value: ob.low }],
               styles: { polygon: { style: 'stroke_fill', color: fill, borderColor: border, borderSize: bSize } },
@@ -547,7 +531,6 @@ const KLineChartComponent = forwardRef<KLineChartHandle, Props>(
           })
         }
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const passThrough = () => false as any
 
         if (s.fvg) {
@@ -559,7 +542,6 @@ const KLineChartComponent = forwardRef<KLineChartHandle, Props>(
               name: 'priceRect', groupId: 'smc_fvg', id: `fvg_${i}`, lock: true,
               onMouseDown: passThrough, onMouseMove: passThrough,
               onPressedMoveStart: passThrough, onPressedMoving: passThrough, onPressedMoveEnd: passThrough,
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               onRightClick: () => true as any,
               points: [{ timestamp: fvg.startTimestamp, value: fvg.high }, { timestamp: lastTs, value: fvg.low }],
               styles: { polygon: { style: 'stroke_fill', color: fill, borderColor: border, borderSize: 1 } },
@@ -570,7 +552,6 @@ const KLineChartComponent = forwardRef<KLineChartHandle, Props>(
               name: 'segment', groupId: 'smc_fvg', id: `fvg_mid_${i}`, lock: true,
               onMouseDown: passThrough, onMouseMove: passThrough,
               onPressedMoveStart: passThrough, onPressedMoving: passThrough, onPressedMoveEnd: passThrough,
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               onRightClick: () => true as any,
               points: [{ timestamp: fvg.startTimestamp, value: mid }, { timestamp: lastTs, value: mid }],
               styles: { line: { color: border, size: 1, style: 'dashed' } },
@@ -590,7 +571,6 @@ const KLineChartComponent = forwardRef<KLineChartHandle, Props>(
               groupId: 'smc_liq', id: `liq_${i}`, lock: true,
               onMouseDown: passThrough, onMouseMove: passThrough,
               onPressedMoveStart: passThrough, onPressedMoving: passThrough, onPressedMoveEnd: passThrough,
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               onRightClick: () => true as any,
               points: [
                 { timestamp: startTs, value: liq.price },
@@ -696,7 +676,6 @@ const KLineChartComponent = forwardRef<KLineChartHandle, Props>(
       getUserDrawings() {
         if (!chartRef.current) return []
         try {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const allOverlays: any[] = chartRef.current.getOverlaysByPaneId?.('candle_pane') ?? []
           const systemGroups = new Set(['ai', 'smc_ob', 'smc_fvg', 'smc_liq', 'smc_bb', 'smc_bos', 'smc_tl'])
           return allOverlays

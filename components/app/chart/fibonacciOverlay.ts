@@ -28,7 +28,6 @@ export function registerFibonacciOverlay() {
   if (_registered) return
   _registered = true
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   klinecharts.registerOverlay({
     name: 'fibRetracement',
     totalStep: 3,
@@ -36,7 +35,6 @@ export function registerFibonacciOverlay() {
     needDefaultXAxisFigure: true,
     needDefaultYAxisFigure: true,
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     createPointFigures({ coordinates, bounding, overlay }: any) {
       if (coordinates.length < 2) return []
 
@@ -48,7 +46,6 @@ export function registerFibonacciOverlay() {
       const xLeft  = 0
       const xRight = bounding.width
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const figures: any[] = []
 
       const yMin = Math.min(p1.y, p2.y)
@@ -95,7 +92,6 @@ export function registerFibonacciOverlay() {
     },
 
     onDoubleClick(event: unknown) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const ev = event as any
       window.dispatchEvent(new CustomEvent('kotvuk:overlay:dblclick', {
         detail: {
@@ -109,7 +105,6 @@ export function registerFibonacciOverlay() {
     },
 
     onRightClick(event: unknown) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const ev = event as any
       window.dispatchEvent(new CustomEvent('kotvuk:overlay:rightclick', {
         detail: {

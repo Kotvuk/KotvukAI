@@ -1,13 +1,11 @@
-﻿import type { Auth } from 'firebase-admin/auth'
+import type { Auth } from 'firebase-admin/auth'
 
 let _adminAuth: Auth | null = null
 
 function getAdminAuth(): Auth {
   if (_adminAuth) return _adminAuth
 
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { initializeApp, getApps, cert } = require('firebase-admin/app')
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { getAuth } = require('firebase-admin/auth')
 
   const app = getApps().length > 0

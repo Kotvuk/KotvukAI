@@ -382,7 +382,6 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
     if (showTL) { chartRef.current?.clearTrendlines(); setShowTL(false) }
     chartRef.current?.loadChart(p, tfRef.current)
     loadDrawings(p, tfRef.current)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showSMC, showTL, saveDrawings, loadDrawings])
 
   const selectTf = useCallback((v: string) => {
@@ -394,7 +393,6 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
     if (showTL) { chartRef.current?.clearTrendlines(); setShowTL(false) }
     chartRef.current?.loadChart(pairRef.current, v)
     loadDrawings(pairRef.current, v)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showSMC, showTL, saveDrawings, loadDrawings])
 
   async function runSMC() {

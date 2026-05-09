@@ -11,7 +11,6 @@ export async function GET(req: NextRequest) {
     let url = `https://fapi.binance.com/fapi/v1/klines?symbol=${symbol}&interval=${interval}&limit=${Math.min(Number(limit), 1500)}`
     if (endTime) url += `&endTime=${endTime}`
 
-    // isHistorical: запрос завершённых свечей (больше 90 секунд назад)
     const isHistorical = !!endTime && Number(endTime) < Date.now() - 90_000
 
     const r = await fetch(url, {
@@ -25,16 +24,15 @@ export async function GET(req: NextRequest) {
     const data = await r.json()
 
     const formattedData = data.map((d: any[]) => [
-      d[0],             // timestamp
-      parseFloat(d[1]), // open
-      parseFloat(d[2]), // high
-      parseFloat(d[3]), // low
-      parseFloat(d[4]), // close
-      parseFloat(d[5]), // volume
+      d[0],
+      parseFloat(d[1]),
+      parseFloat(d[2]),
+      parseFloat(d[3]),
+      parseFloat(d[4]),
+      parseFloat(d[5]),
     ])
 
     const res = NextResponse.json(formattedData)
-    // Браузерный кэш: 15с для текущих свечей, 5 мин для исторических
     res.headers.set('Cache-Control', isHistorical
       ? 'public, max-age=300, stale-while-revalidate=60'
       : 'public, max-age=15, stale-while-revalidate=5'

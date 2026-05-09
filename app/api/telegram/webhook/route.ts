@@ -31,7 +31,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: 'Invalid JSON' })
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const message = (body?.message || body?.edited_message) as Record<string, any> | undefined
   if (!message?.text) return NextResponse.json({ ok: true })
 

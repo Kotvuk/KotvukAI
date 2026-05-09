@@ -382,5 +382,11 @@
   "zone_drawn_lbl": "Zone drawn: {label}",
   "liq_drawn_lbl": "Liquidity drawn",
   "opacity_changed_lbl": "Opacity changed",
-  "stage_lbl": "STAGE"
+  "stage_lbl": "STAGE",
+  "tg_section_title": "Telegram notifications",
+  "tg_chat_id_label": "Your Telegram Chat ID",
+  "tg_how_to": "How to get Chat ID: open @userinfobot in Telegram → type /start → copy your ID.",
+  "tg_placeholder": "e.g. 123456789",
+  "tg_connected": "✅ Telegram connected",
+  "tg_save_btn": "Connect"
 }

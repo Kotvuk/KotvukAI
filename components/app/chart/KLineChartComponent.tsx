@@ -251,6 +251,9 @@ const KLineChartComponent = forwardRef<KLineChartHandle, Props>(
     const currentIntervalRef = useRef<string>('1h')
     const wsReconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
     const wsReconnectAttempts = useRef(0)
+    const pollTimer = useRef<ReturnType<typeof setInterval> | null>(null)
+    const onOHLCRef = useRef(onOHLC)
+    onOHLCRef.current = onOHLC
 
     function openWS(sym: string, interval: string) {
       if (wsRef.current) { wsRef.current.close(); wsRef.current = null }
@@ -275,7 +278,7 @@ const KLineChartComponent = forwardRef<KLineChartHandle, Props>(
           }
           if (!chartRef.current) return
           chartRef.current.updateData(candle)
-          if (onOHLC) onOHLC(candle)
+          onOHLCRef.current?.(candle)
           onCandleCloseTimeRef.current?.(k.T)
         } catch {  }
       }
@@ -293,6 +296,7 @@ const KLineChartComponent = forwardRef<KLineChartHandle, Props>(
     useEffect(() => {
       initChart()
       return () => {
+        if (pollTimer.current) { clearInterval(pollTimer.current); pollTimer.current = null }
         if (wsReconnectTimer.current) { clearTimeout(wsReconnectTimer.current); wsReconnectTimer.current = null }
         if (wsRef.current) { wsRef.current.close(); wsRef.current = null }
         if (chartRef.current) {
@@ -335,6 +339,7 @@ const KLineChartComponent = forwardRef<KLineChartHandle, Props>(
     useImperativeHandle(ref, () => ({
       async loadChart(pair: string, tf: string) {
         if (!chartRef.current) return
+        if (pollTimer.current) { clearInterval(pollTimer.current); pollTimer.current = null }
         const sym = pair.replace('/', '')
         const interval = TF_MAP[tf] || '1h'
         currentSymRef.current = sym
@@ -358,8 +363,32 @@ const KLineChartComponent = forwardRef<KLineChartHandle, Props>(
           try { chartRef.current.setBarSpace(4) } catch {}
           try { chartRef.current.scrollToRealTime() } catch {}
           const last = candlesRef.current[candlesRef.current.length - 1]
-          if (last && onOHLC) onOHLC(last)
+          if (last) onOHLCRef.current?.(last)
           if (lastMarkup.current) drawMarkupInternal(lastMarkup.current)
+
+          const pollSym = sym; const pollInt = interval
+          pollTimer.current = setInterval(async () => {
+            if (wsRef.current?.readyState === WebSocket.OPEN) return
+            try {
+              const pr = await fetch(`https://fapi.binance.com/fapi/v1/klines?symbol=${pollSym}&interval=${pollInt}&limit=1`)
+              if (!pr.ok) return
+              const pd: number[][] = await pr.json()
+              if (!pd?.[0] || !chartRef.current) return
+              const pc = pd[0]
+              const pcandle: CandleData = {
+                timestamp: pc[0], open: parseFloat(String(pc[1])), high: parseFloat(String(pc[2])),
+                low: parseFloat(String(pc[3])), close: parseFloat(String(pc[4])), volume: parseFloat(String(pc[5])),
+              }
+              const arr = candlesRef.current
+              if (arr.length && arr[arr.length - 1].timestamp === pcandle.timestamp) {
+                arr[arr.length - 1] = pcandle
+              } else if (pcandle.timestamp > (arr[arr.length - 1]?.timestamp ?? 0)) {
+                arr.push(pcandle)
+              }
+              chartRef.current.updateData(pcandle)
+              onOHLCRef.current?.(pcandle)
+            } catch {}
+          }, 1000)
         } catch (e) { console.error('chart fetch error:', e) }
       },
 

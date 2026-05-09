@@ -1,8 +1,8 @@
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
 import { NextRequest, NextResponse } from 'next/server'
-import { getAllPendingSignals, expireOldSignals, setSignalOutcome, createNotification } from '@/lib/db'
-import { sendTelegram } from '@/lib/telegram'
+import { getAllPendingSignals, expireOldSignals, setSignalOutcome, createNotification, getUserById } from '@/lib/db'
+import { sendTelegram, sendTelegramToUser } from '@/lib/telegram'
 
 async function fetchCandles(sym: string, sinceMs: number): Promise<{ high: number; low: number }[]> {
   const url = `https://fapi.binance.com/fapi/v1/klines?symbol=${sym}&interval=1h&startTime=${sinceMs}&limit=200`
@@ -37,6 +37,12 @@ export async function GET(req: NextRequest) {
     const key = sig.pair.replace('/', '')
     if (!pairGroups[key]) pairGroups[key] = []
     pairGroups[key].push(sig)
+  }
+
+  const userCache: Record<number, { telegram_chat_id?: string | null }> = {}
+  async function getTgChatId(userId: number): Promise<string> {
+    if (!userCache[userId]) userCache[userId] = (await getUserById(userId)) ?? {}
+    return String(userCache[userId].telegram_chat_id || '')
   }
 
   let updated = 0
@@ -89,11 +95,11 @@ export async function GET(req: NextRequest) {
       const emoji  = outcome === 'win' ? '✅' : '❌'
       const pnlStr = pnlPct >= 0 ? `+${pnlPct}%` : `${pnlPct}%`
 
+      const tgMsg = `${emoji} <b>${signal.final_verdict} ${signal.pair}</b> [${signal.timeframe}]\n`
+        + `${outcome === 'win' ? 'TP достигнут' : 'SL пробит'} — <b>${pnlStr}</b>`
+      const tgChatId = await getTgChatId(signal.user_id)
       await Promise.allSettled([
-        sendTelegram(
-          `${emoji} <b>${signal.final_verdict} ${signal.pair}</b> [${signal.timeframe}]\n` +
-          `${outcome === 'win' ? 'TP достигнут' : 'SL пробит'} — <b>${pnlStr}</b>`
-        ),
+        tgChatId ? sendTelegramToUser(tgChatId, tgMsg) : sendTelegram(tgMsg),
         createNotification(
           signal.user_id,
           `${emoji} ${signal.final_verdict} ${signal.pair} ${signal.timeframe} — ${outcome === 'win' ? 'TP' : 'SL'} (${pnlStr})`

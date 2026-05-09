@@ -382,5 +382,11 @@
   "zone_drawn_lbl": "Аймақ салынды: {label}",
   "liq_drawn_lbl": "Өтімділік салынды",
   "opacity_changed_lbl": "Мөлдірлік өзгертілді",
-  "stage_lbl": "КЕЗЕҢ"
+  "stage_lbl": "КЕЗЕҢ",
+  "tg_section_title": "Telegram хабарландырулары",
+  "tg_chat_id_label": "Telegram Chat ID-іңіз",
+  "tg_how_to": "Chat ID алу: Telegram-да @userinfobot ашыңыз → /start жазыңыз → ID-ді көшіріңіз.",
+  "tg_placeholder": "Мысалы: 123456789",
+  "tg_connected": "✅ Telegram қосылды",
+  "tg_save_btn": "Қосу"
 }

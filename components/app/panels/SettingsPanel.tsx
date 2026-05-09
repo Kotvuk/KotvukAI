@@ -28,6 +28,8 @@ export default function SettingsPanel() {
   const [aiBalance, setAiBalance]   = useState(1000)
   const [aiRisk, setAiRisk]         = useState(1.0)
   const [aiLeverage, setAiLeverage] = useState(20)
+  const [tgChatId, setTgChatId]     = useState('')
+  const [tgSaving, setTgSaving]     = useState(false)
 
   useEffect(() => {
     fetch('/api/settings').then(r => r.json()).then(d => {
@@ -37,6 +39,7 @@ export default function SettingsPanel() {
         if (d.settings.ai_balance)        setAiBalance(d.settings.ai_balance)
         if (d.settings.ai_risk_per_trade) setAiRisk(d.settings.ai_risk_per_trade)
         if (d.settings.ai_max_leverage)   setAiLeverage(d.settings.ai_max_leverage)
+        if (d.settings.telegram_chat_id)  setTgChatId(d.settings.telegram_chat_id)
       }
     }).catch(() => {})
     if (user?.email) setEmail(user.email)
@@ -53,7 +56,7 @@ export default function SettingsPanel() {
     try {
       const r = await fetch('/api/settings', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nickname, email, lang, ai_balance: aiBalance, ai_risk_per_trade: aiRisk, ai_max_leverage: aiLeverage }),
+        body: JSON.stringify({ nickname, email, lang, ai_balance: aiBalance, ai_risk_per_trade: aiRisk, ai_max_leverage: aiLeverage, telegram_chat_id: tgChatId }),
       })
       const d = await r.json()
       if (!d.ok) { showToast(d.error || t('error'), 'err'); return }
@@ -322,6 +325,49 @@ export default function SettingsPanel() {
           <p style={{ fontSize: '.6rem', color: 'var(--dim)', marginTop: 8 }}>
             {lang === 'ru' ? 'Русский' : lang === 'en' ? 'English' : 'Қазақша'}
           </p>
+        </div>
+
+        {/* ── Telegram ── */}
+        <div className="sb2">
+          <div className="st">{t('tg_section_title')}</div>
+          <p style={{ fontSize: '.6rem', color: 'var(--dim)', marginBottom: 10 }}>
+            {t('tg_how_to')}
+          </p>
+          {tgChatId && (
+            <div style={{ fontSize: '.6rem', color: '#30d158', marginBottom: 8 }}>
+              {t('tg_connected')}: <b>{tgChatId}</b>
+            </div>
+          )}
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <input
+              type="text"
+              className="fi"
+              value={tgChatId}
+              onChange={e => setTgChatId(e.target.value.replace(/\D/g, ''))}
+              placeholder={t('tg_placeholder')}
+              style={{ flex: 1 }}
+            />
+            <button
+              className="run"
+              disabled={tgSaving || !tgChatId}
+              onClick={async () => {
+                setTgSaving(true)
+                try {
+                  const r = await fetch('/api/settings', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ telegram_chat_id: tgChatId }),
+                  })
+                  const d = await r.json()
+                  if (d.ok) showToast(t('tg_connected'))
+                  else showToast(d.error || t('error'), 'err')
+                } catch { showToast(t('error'), 'err') }
+                setTgSaving(false)
+              }}
+              style={{ whiteSpace: 'nowrap', fontSize: '.62rem', padding: '6px 14px' }}
+            >
+              {tgSaving ? '...' : t('tg_save_btn')}
+            </button>
+          </div>
         </div>
 
         {/* ── Export ── */}

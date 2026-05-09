@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { fullAnalysis, calcMarketData, type Candle } from '@/lib/analysis'
 import { calcEnhancedSMC } from '@/lib/smc'
 import { sql, saveSignal, createTrade, createNotification, getUserWatchlist } from '@/lib/db'
-import { sendTelegram } from '@/lib/telegram'
+import { sendTelegram, sendTelegramToUser } from '@/lib/telegram'
 import { DEFAULT_WATCHLIST } from '@/lib/pairs'
 
 const HTF_MAP: Record<string, string> = {
@@ -125,8 +125,9 @@ async function analyzeOne(
         + `Вход: $${entry} | TP: $${tp} | SL: $${sl}\n`
         + `Плечо: ${final.leverage}x | R:R: ${final.rr}`
 
+      const tgChatId = String(user.telegram_chat_id || '')
       await Promise.allSettled([
-        sendTelegram(msg),
+        tgChatId ? sendTelegramToUser(tgChatId, msg) : sendTelegram(msg),
         createNotification(userId, `🤖 AUTO ${final.verdict} ${sym} — уверенность ${final.confidence}%`),
       ])
     }

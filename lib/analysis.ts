@@ -391,7 +391,10 @@ Reply with ONLY one line of valid JSON (all numeric fields must be numbers, not 
   const posUsd       = Number(json.pos_usd || 0)
   const riskUsdFinal = Number(json.risk_usd || riskUsd)
 
-  const verdict     = String(json.v || json.verdict || 'WAIT')
+  const rawVerdict  = String(json.v || json.verdict || 'WAIT')
+  const verdict     = (rawVerdict === 'WAIT' && consensus.decision !== 'WAIT' && !strictMode)
+    ? consensus.decision
+    : rawVerdict
   const confidence  = Number(json.c || json.confidence || 50)
   const rawRisk     = Number(json.r || json.risk_score || 5)
   const riskScore   = rawRisk > 0 && rawRisk < 1 ? Math.round(rawRisk * 10) : Math.round(rawRisk)

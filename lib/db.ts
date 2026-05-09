@@ -10,8 +10,7 @@ function getSQL(): NeonQueryFunction<false, false> {
   return _sql
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const sql: NeonQueryFunction<false, false> = new Proxy(function () {} as any, {
+export const sql: NeonQueryFunction<false, false> = new Proxy(function () {} as unknown as NeonQueryFunction<false, false>, {
   apply(_t, _this, args) {
     return (getSQL() as unknown as (...a: unknown[]) => unknown)(...args)
   },

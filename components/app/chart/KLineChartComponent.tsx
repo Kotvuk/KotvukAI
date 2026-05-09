@@ -249,10 +249,15 @@ const KLineChartComponent = forwardRef<KLineChartHandle, Props>(
     const wsRef = useRef<WebSocket | null>(null)
     const currentSymRef = useRef<string>('BTCUSDT')
     const currentIntervalRef = useRef<string>('1h')
+    const wsReconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+    const wsReconnectAttempts = useRef(0)
 
     function openWS(sym: string, interval: string) {
       if (wsRef.current) { wsRef.current.close(); wsRef.current = null }
+      if (wsReconnectTimer.current) { clearTimeout(wsReconnectTimer.current); wsReconnectTimer.current = null }
+
       const ws = new WebSocket(`wss://fstream.binance.com/ws/${sym.toLowerCase()}@kline_${interval}`)
+      ws.onopen = () => { wsReconnectAttempts.current = 0 }
       ws.onmessage = (e) => {
         if (!chartRef.current) return
         try {
@@ -275,12 +280,20 @@ const KLineChartComponent = forwardRef<KLineChartHandle, Props>(
         } catch {  }
       }
       ws.onerror = () => ws.close()
+      ws.onclose = () => {
+        wsRef.current = null
+        if (currentSymRef.current !== sym || currentIntervalRef.current !== interval) return
+        const delay = Math.min(1000 * Math.pow(2, wsReconnectAttempts.current), 30_000)
+        wsReconnectAttempts.current++
+        wsReconnectTimer.current = setTimeout(() => openWS(sym, interval), delay)
+      }
       wsRef.current = ws
     }
 
     useEffect(() => {
       initChart()
       return () => {
+        if (wsReconnectTimer.current) { clearTimeout(wsReconnectTimer.current); wsReconnectTimer.current = null }
         if (wsRef.current) { wsRef.current.close(); wsRef.current = null }
         if (chartRef.current) {
           try { klinecharts.dispose(chartId) } catch {}
@@ -330,47 +343,13 @@ const KLineChartComponent = forwardRef<KLineChartHandle, Props>(
         openWS(sym, interval)
 
         try {
-          const TARGET = 10_000, BATCH = 1500
-          const intervalMs = INTERVAL_MS[interval] || 3_600_000
-
-          const firstRes = await fetch(
-            `/api/klines?symbol=${sym}&interval=${interval}&limit=${BATCH}`
+          const r = await fetch(
+            `https://fapi.binance.com/fapi/v1/klines?symbol=${sym}&interval=${interval}&limit=1000`
           )
-          const firstBatch: number[][] = await firstRes.json()
-          if (!Array.isArray(firstBatch) || firstBatch.length === 0) return
+          const data: number[][] = await r.json()
+          if (!Array.isArray(data) || data.length === 0) return
 
-          let allRaw: number[][] = firstBatch
-
-          if (firstBatch.length === BATCH) {
-            const remaining = Math.ceil(TARGET / BATCH) - 1
-            const oldestTs = firstBatch[0][0]
-
-            const endTimes = Array.from({ length: remaining }, (_, i) =>
-              oldestTs - i * BATCH * intervalMs - 1
-            )
-
-            const otherBatches = await Promise.all(
-              endTimes.map(et =>
-                fetch(
-                  `/api/klines?symbol=${sym}&interval=${interval}&limit=${BATCH}&endTime=${et}`
-                )
-                  .then(r => r.json())
-                  .catch(() => [] as number[][])
-              )
-            )
-
-            const seen = new Set<number>()
-            allRaw = [...otherBatches.flat(), ...firstBatch]
-              .filter((c): c is number[] => {
-                if (!Array.isArray(c) || seen.has(c[0])) return false
-                seen.add(c[0])
-                return true
-              })
-              .sort((a, b) => a[0] - b[0])
-          }
-
-          if (allRaw.length === 0) return
-          candlesRef.current = allRaw.map(c => ({
+          candlesRef.current = data.map(c => ({
             timestamp: c[0], open: parseFloat(String(c[1])), high: parseFloat(String(c[2])),
             low: parseFloat(String(c[3])), close: parseFloat(String(c[4])), volume: parseFloat(String(c[5])),
           }))

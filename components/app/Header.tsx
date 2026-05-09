@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useLang } from '@/contexts/LangContext'
@@ -50,7 +50,7 @@ export default function Header() {
   }, [])
 
   return (
-    <header id="hdr">
+    <div id="hdr">
       <div className="logo">
         <div className="logo-mark" />
         <span className="logo-text">{t('app_name')}</span>
@@ -78,6 +78,6 @@ export default function Header() {
         <span className="hdr-time">{time}</span>
         <div className="live-dot" />
       </div>
-    </header>
+    </div>
   )
 }

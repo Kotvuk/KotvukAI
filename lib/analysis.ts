@@ -267,19 +267,19 @@ Reply with a single-line JSON:
     trendDir === 'bearish' && !s1.ranging_risk ? 'SHORT' : 'WAIT'
 
   const smcFactors: string[] = []
-  if (trendDir === 'bullish')             smcFactors.push('Восходящий тренд')
-  else if (trendDir === 'bearish')        smcFactors.push('Нисходящий тренд')
-  if (s1.bos_confirmed)                   smcFactors.push('BOS подтверждён')
-  if (s1.sweep_ssl || s1.sweep_bsl)       smcFactors.push('Свип ликвидности')
-  if (s1.choch)                           smcFactors.push('CHoCH — смена характера')
-  if (s1.phase)                           smcFactors.push(`Фаза: ${s1.phase}`)
+  if (trendDir === 'bullish')             smcFactors.push('Uptrend')
+  else if (trendDir === 'bearish')        smcFactors.push('Downtrend')
+  if (s1.bos_confirmed)                   smcFactors.push('BOS confirmed')
+  if (s1.sweep_ssl || s1.sweep_bsl)       smcFactors.push('Liquidity sweep')
+  if (s1.choch)                           smcFactors.push('CHoCH — change of character')
+  if (s1.phase)                           smcFactors.push(`Phase: ${s1.phase}`)
 
   const smcMethod: MethodResult = {
     method: 'SMC',
     signal: smcSignal,
     confidence: s1.bos_confirmed ? 68 : 52,
-    factors: smcFactors.length ? smcFactors : ['Структурный анализ'],
-    summary: summary1 || `Тренд: ${trendDir}, HTF: ${htf}`,
+    factors: smcFactors.length ? smcFactors : ['Structure analysis'],
+    summary: `Trend: ${trendDir}, HTF: ${htf}`,
   }
 
   const allMethods = [smcMethod, indResult, paResult, wyResult, vpResult, frResult]

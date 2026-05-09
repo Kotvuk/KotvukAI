@@ -507,7 +507,7 @@ const KLineChartComponent = forwardRef<KLineChartHandle, Props>(
         const intervalMs = INTERVAL_MS[currentIntervalRef.current] || 3_600_000
 
         if (s.ob) {
-          const passThrough = () => false as any  // не блокировать панинг графика
+          const passThrough = () => false as any
 
           ;(smc.orderBlocks || []).forEach((ob, i) => {
             if (ob.isMitigated) return

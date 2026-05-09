@@ -59,7 +59,7 @@ export default function Header() {
         {SYMS.map(({ k, label }) => (
           <div key={k} className="tick">
             <span className="tick-sym">{label}</span>
-            <span className="tick-price">{tickers[k]?.price || 'вЂ”'}</span>
+            <span className="tick-price">{tickers[k]?.price || '—'}</span>
             <span className={tickers[k]?.up ? 'tick-up' : 'tick-dn'}>
               {tickers[k]?.change || ''}
             </span>

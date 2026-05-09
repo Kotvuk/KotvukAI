@@ -43,7 +43,7 @@ export default function AiPanelToolbar({
         </div>
         {pairOpen && (
           <div className="dm">
-            <input className="ds" placeholder="Поиск..." value={pairSearch} onChange={e => setPairSearch(e.target.value)} autoFocus />
+            <input className="ds" placeholder={t('search_pair_input')} value={pairSearch} onChange={e => setPairSearch(e.target.value)} autoFocus />
             <div className="dl">
               {filteredPairs.map(pp => (
                 <div key={pp} className={`di ${pp === pair ? 'sel' : ''}`} onClick={() => { onSelectPair(pp); setPairOpen(false); setPairSearch('') }}>{pp}</div>

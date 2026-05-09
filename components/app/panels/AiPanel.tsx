@@ -153,7 +153,7 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
     function onOverlayRightClick(e: Event) {
       const d = (e as CustomEvent).detail
       if (d?.id) {
-        if (window.confirm('Удалить этот объект с графика?')) {
+        if (window.confirm(t('confirm_delete_overlay_lbl'))) {
           chartRef.current?.removeOverlayById(d.id)
         }
       }
@@ -169,13 +169,13 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
       window.removeEventListener('kotvuk:overlay:rightclick', onOverlayRightClick)
       window.removeEventListener('kotvuk:overlay:drawend', onOverlayDrawEnd)
     }
-  }, [])
+  }, [t])
 
   useEffect(() => {
     function onUpdateMarkup(e: Event) {
       const d = (e as CustomEvent).detail
       chartRef.current?.updateMarkup(d.tp, d.sl, d.entry)
-      showToast('Уровни обновлены', 'ok')
+      showToast(t('levels_updated_lbl'), 'ok')
     }
     function onDrawZone(e: Event) {
       const d = (e as CustomEvent).detail
@@ -201,8 +201,8 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
             drawn++
           })
         }
-        if (!drawn) { showToast('Нет активных зон. Сначала нажмите SMC.', 'err'); return }
-        showToast(`Нарисовано ${drawn} ${isOB ? 'OB' : 'FVG'} зон`, 'ok')
+        if (!drawn) { showToast(t('no_active_zones_lbl'), 'err'); return }
+        showToast(t('zones_drawn_lbl').replace('{count}', String(drawn)).replace('{type}', isOB ? 'OB' : 'FVG'), 'ok')
         return
       }
 
@@ -211,36 +211,36 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
         const items = isOB
           ? smc.orderBlocks.filter(o => (isBull ? o.type === 'bullish' : o.type === 'bearish') && !o.isMitigated)
           : smc.fvgs.filter(f => (isBull ? f.type === 'bullish' : f.type === 'bearish'))
-        if (!items.length) { showToast('Нет активных зон. Сначала нажмите SMC.', 'err'); return }
+        if (!items.length) { showToast(t('no_active_zones_lbl'), 'err'); return }
         const color = isBull ? '#00e676' : (isFVG ? '#00c8ff' : '#ff3d57')
         items.forEach((z, i) => {
           chartRef.current?.drawZone(z.high, z.low, color, `${isBull ? 'Bull' : 'Bear'} ${isOB ? 'OB' : 'FVG'} ${i + 1}`, 'chat_ob')
         })
-        showToast(`Нарисовано ${items.length} ${isOB ? 'OB' : 'FVG'} зон`, 'ok')
+        showToast(t('zones_drawn_lbl').replace('{count}', String(items.length)).replace('{type}', isOB ? 'OB' : 'FVG'), 'ok')
         return
       }
 
-      if (!d.priceFrom || !d.priceTo) { showToast('Сначала нажмите SMC для получения данных', 'err'); return }
+      if (!d.priceFrom || !d.priceTo) { showToast(t('ob_load_smc_lbl'), 'err'); return }
       const color = d.color || (isBull ? '#00e676' : isFVG ? '#00c8ff' : '#f0a500')
       chartRef.current?.drawZone(d.priceFrom, d.priceTo, color, d.label || zoneType || 'Zone', zoneType || 'chat_zone')
-      showToast(`Зона нарисована: ${d.label || zoneType}`, 'ok')
+      showToast(t('zone_drawn_lbl').replace('{label}', d.label || zoneType), 'ok')
     }
     function onDrawLiquidity(e: Event) {
       const d = (e as CustomEvent).detail
       chartRef.current?.drawZone(d.level * 1.001, d.level * 0.999, d.side === 'sell' ? '#ff3d57' : '#00e676', d.side === 'sell' ? 'SSL' : 'BSL', 'chat_liq')
-      showToast('Ликвидность нарисована', 'ok')
+      showToast(t('liq_drawn_lbl'), 'ok')
     }
     function onClearZones(e: Event) {
       const d = (e as CustomEvent).detail
       if (d.target === 'all' || d.target === 'markup') chartRef.current?.clearDrawings()
       if (d.target === 'all' || d.target === 'ob' || d.target === 'fvg' || d.target === 'liquidity') chartRef.current?.clearSMC()
-      showToast('Очищено', 'ok')
+      showToast(t('cleared'), 'ok')
     }
     function onSetOpacity(e: Event) {
       const d = (e as CustomEvent).detail
       const group = d.group === 'ob' ? 'smc_ob' : d.group === 'fvg' ? 'smc_fvg' : d.group === 'liquidity' ? 'smc_liq' : 'ai'
       chartRef.current?.setZoneOpacity(group, d.opacityValue || 0.2)
-      showToast('Прозрачность изменена', 'ok')
+      showToast(t('opacity_changed_lbl'), 'ok')
     }
     window.addEventListener('kotvuk:update_markup', onUpdateMarkup)
     window.addEventListener('kotvuk:draw_zone', onDrawZone)
@@ -254,7 +254,7 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
       window.removeEventListener('kotvuk:clear_zones', onClearZones)
       window.removeEventListener('kotvuk:set_opacity', onSetOpacity)
     }
-  }, [])
+  }, [t])
 
   useEffect(() => {
     fetch('/api/subscription').then(r => r.json()).then(d => {
@@ -589,7 +589,7 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
           </div>
           {pairOpen && (
             <div className="dm">
-              <input className="ds" placeholder="Поиск..." value={pairSearch} onChange={e => setPairSearch(e.target.value)} autoFocus />
+              <input className="ds" placeholder={t('search_pair_input')} value={pairSearch} onChange={e => setPairSearch(e.target.value)} autoFocus />
               <div className="dl">
                 {filteredPairs.map(pp => (
                   <div key={pp} className={`di ${pp === pair ? 'sel' : ''}`} onClick={() => selectPair(pp)}>{pp}</div>
@@ -610,8 +610,8 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
         {quota !== null && (
           <div style={{ fontSize: '.58rem', color: quota.remaining <= 0 ? 'var(--short)' : quota.remaining <= 2 ? '#ffa500' : 'var(--dim)', marginTop: 4, textAlign: 'center' }}>
             {quota.remaining <= 0
-              ? `⛔ Лимит исчерпан — обновите тариф`
-              : `осталось ${quota.remaining} / ${quota.limit} анализов`}
+              ? t('quota_exhausted_lbl')
+              : t('quota_remaining_lbl').replace('{remaining}', String(quota.remaining)).replace('{limit}', String(quota.limit))}
           </div>
         )}
       </div>
@@ -635,7 +635,7 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
                   <button
                     className={`vl-btn draw-tool-btn ${isDrawing ? 'active' : ''}`}
                     onClick={() => setDrawMenuOpen(v => !v)}
-                    title="Выбрать инструмент"
+                    title={t('select_tool_lbl')}
                     style={{ padding: '3px 7px', fontSize: '.6rem', display: 'flex', alignItems: 'center', gap: 4, minWidth: 80 }}
                   >
                     <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M13 2L14 5 5 14H2v-3L11 2z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/></svg>
@@ -691,7 +691,7 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
                   </svg>
                 </button>
                 {}
-                <button className="vl-btn" onClick={() => { chartRef.current?.clearDrawings(); setIsDrawing(false) }} title="Очистить рисунки" style={{ padding: '4px 7px', color: 'var(--short)' }}>
+                <button className="vl-btn" onClick={() => { chartRef.current?.clearDrawings(); setIsDrawing(false) }} title={t('clear_drawings_lbl')} style={{ padding: '4px 7px', color: 'var(--short)' }}>
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                     <line x1="2" y1="4.5" x2="14" y2="4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
                     <path d="M5.5 4.5V3.5C5.5 3.22 5.72 3 6 3h4c.28 0 .5.22.5.5V4.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
@@ -714,7 +714,7 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
                   <button
                     className="vl-btn"
                     style={{ padding: '2px 4px', color: smcSettingsOpen ? 'var(--cyan)' : 'var(--muted)' }}
-                    title="Настройки SMC"
+                    title={t('smc_settings_lbl')}
                     onClick={() => setSmcSettingsOpen(v => !v)}
                   >
                     <svg width="11" height="11" viewBox="0 0 20 20" fill="currentColor">
@@ -728,7 +728,7 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
                       boxShadow: '0 6px 20px rgba(0,0,0,0.5)', width: 188, padding: '6px 0',
                     }}>
                       <div style={{ fontSize: '.52rem', color: 'var(--muted)', padding: '2px 11px 5px', textTransform: 'uppercase', letterSpacing: '.08em' }}>
-                        SMC Настройки
+                        {t('smc_settings_lbl')}
                       </div>
                       {([
                         { key: 'ob',       label: 'Order Blocks' },
@@ -760,7 +760,7 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
                 <button
                   className={`vl-btn ${showTL ? 'active' : ''}`}
                   style={{ color: showTL ? 'var(--cyan)' : 'var(--muted)', fontSize: '.55rem', padding: '2px 6px' }}
-                  title="Линии тренда (авто)"
+                  title={t('trendlines_lbl')}
                   onClick={() => {
                     if (showTL) {
                       chartRef.current?.clearTrendlines()
@@ -777,7 +777,7 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
                 <button
                   className={`vl-btn ${showAlerts ? 'active' : ''}`}
                   style={{ color: showAlerts ? '#ffa500' : 'var(--muted)', fontSize: '.55rem', padding: '2px 6px', position: 'relative' }}
-                  title="Алерты по зонам OB"
+                  title={t('ob_alerts_lbl')}
                   onClick={() => setShowAlerts(v => !v)}
                 >
                   🔔
@@ -790,7 +790,7 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
                 <button
                   className="vl-btn"
                   style={{ color: 'var(--muted)', fontSize: '.5rem', padding: '2px 5px' }}
-                  title="Бэктест OB-стратегии на истории"
+                  title={t('bt_hist_lbl')}
                   onClick={runBacktest}
                   disabled={backtestLoading}
                 >
@@ -799,7 +799,7 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
                 <button
                   className="vl-btn"
                   style={{ color: 'var(--muted)', fontSize: '.55rem', padding: '2px 5px' }}
-                  title="Глоссарий SMC терминов"
+                  title={t('glossary_lbl')}
                   onClick={() => setShowGlossary(true)}
                 >
                   📖
@@ -845,12 +845,12 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
           {showAlerts && (
             <div style={{ marginTop: 8, background: 'var(--bg2)', border: '1px solid rgba(255,165,0,0.25)', borderRadius: 6, padding: '10px 12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                <span style={{ fontSize: '.6rem', color: '#ffa500', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.06em' }}>🔔 Алерты по зонам</span>
-                <span style={{ fontSize: '.55rem', color: 'var(--dim)' }}>Уведомление при входе цены в зону</span>
+                <span style={{ fontSize: '.6rem', color: '#ffa500', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.06em' }}>{t('ob_alerts_zone_lbl')}</span>
+                <span style={{ fontSize: '.55rem', color: 'var(--dim)' }}>{t('ob_alerts_hint_lbl')}</span>
               </div>
               {smcDataRef.current ? (
                 <>
-                  <div style={{ fontSize: '.58rem', color: 'var(--muted)', marginBottom: 6 }}>Нажмите 🔔 чтобы поставить алерт на OB зону:</div>
+                  <div style={{ fontSize: '.58rem', color: 'var(--muted)', marginBottom: 6 }}>{t('ob_alerts_click_lbl')}</div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 8 }}>
                     {smcDataRef.current.orderBlocks.slice(0, 5).map((ob, i) => {
                       const existing = alerts.find(a => a.pair === pair && Math.abs(a.price_high - ob.high) < 0.01 && Math.abs(a.price_low - ob.low) < 0.01)
@@ -869,16 +869,16 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
                       )
                     })}
                     {smcDataRef.current.orderBlocks.length === 0 && (
-                      <div style={{ fontSize: '.6rem', color: 'var(--dim)', textAlign: 'center', padding: '8px 0' }}>Нет активных OB зон. Нажмите SMC.</div>
+                      <div style={{ fontSize: '.6rem', color: 'var(--dim)', textAlign: 'center', padding: '8px 0' }}>{t('ob_no_zones_lbl')}</div>
                     )}
                   </div>
                 </>
               ) : (
-                <div style={{ fontSize: '.6rem', color: 'var(--dim)', textAlign: 'center', padding: '8px 0' }}>Сначала нажмите SMC для загрузки зон</div>
+                <div style={{ fontSize: '.6rem', color: 'var(--dim)', textAlign: 'center', padding: '8px 0' }}>{t('ob_load_smc_lbl')}</div>
               )}
               {alerts.filter(a => a.pair === pair).length > 0 && (
                 <>
-                  <div style={{ fontSize: '.58rem', color: 'var(--muted)', marginBottom: 5, marginTop: 8, borderTop: '1px solid var(--line2)', paddingTop: 8 }}>Активные алерты для {pair}:</div>
+                  <div style={{ fontSize: '.58rem', color: 'var(--muted)', marginBottom: 5, marginTop: 8, borderTop: '1px solid var(--line2)', paddingTop: 8 }}>{t('ob_active_alerts_lbl').replace('{pair}', pair)}</div>
                   {alerts.filter(a => a.pair === pair).map(alert => (
                     <div key={alert.id} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '3px 6px', background: 'rgba(255,165,0,0.06)', borderRadius: 3, marginBottom: 3 }}>
                       <span style={{ fontSize: '.6rem', color: '#ffa500' }}>🔔</span>

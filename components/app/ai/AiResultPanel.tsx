@@ -338,7 +338,7 @@ export default function AiResultPanel({ aiData, pair, tf, smcProb, onNavigate, o
                   return (
                     <div key={i} style={{ background: alertBg, border: `1px solid ${alertBorder}40`, borderLeft: `3px solid ${alertBorder}`, borderRadius: 3, padding: '6px 9px' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
-                        <span style={{ fontSize: '.55rem', color: alertBorder, fontWeight: 700, textTransform: 'uppercase' }}>СТАДИЯ {alert.stage} · {stageName}</span>
+                        <span style={{ fontSize: '.55rem', color: alertBorder, fontWeight: 700, textTransform: 'uppercase' }}>{t('stage_lbl')} {alert.stage} · {stageName}</span>
                         <span style={{ fontSize: '.55rem', color: 'var(--muted)' }}>{alert.confidence}%</span>
                       </div>
                       <div style={{ fontSize: '.6rem', color: 'var(--text)', lineHeight: 1.4 }}>{alert.message}</div>

@@ -183,6 +183,43 @@ export async function getUserById(id: number): Promise<User | null> {
   return (rows[0] as User) || null
 }
 
+export async function getPublicProfile(userId: number) {
+  const rows = await sql`
+    SELECT
+      u.id,
+      u.nickname,
+      u.created_at,
+      s.tier,
+      COUNT(sig.id)                                                         AS total_signals,
+      COUNT(sig.id) FILTER (WHERE sig.outcome IS NOT NULL)                  AS resolved,
+      COUNT(sig.id) FILTER (WHERE sig.outcome = 'win')                      AS wins,
+      ROUND(AVG(sig.final_confidence) FILTER (WHERE sig.outcome IS NOT NULL)) AS avg_confidence,
+      ROUND(AVG(sig.actual_pnl_pct)  FILTER (WHERE sig.outcome = 'win'))    AS avg_pnl
+    FROM users u
+    LEFT JOIN subscriptions s ON s.user_id = u.id
+    LEFT JOIN signals sig ON sig.user_id = u.id
+    WHERE u.id = ${userId}
+    GROUP BY u.id, u.nickname, u.created_at, s.tier
+    LIMIT 1
+  `
+  if (!rows[0]) return null
+  const r = rows[0] as Record<string, unknown>
+  const resolved = Number(r.resolved ?? 0)
+  const wins     = Number(r.wins ?? 0)
+  return {
+    id:           Number(r.id),
+    nickname:     (r.nickname as string | null) || 'Trader',
+    tier:         (r.tier as string | null) || 'free',
+    joinedAt:     r.created_at as string,
+    totalSignals: Number(r.total_signals ?? 0),
+    winRate:      resolved > 0 ? Math.round((wins / resolved) * 100) : null,
+    wins,
+    losses:       resolved - wins,
+    avgConf:      r.avg_confidence !== null ? Number(r.avg_confidence) : null,
+    avgPnl:       r.avg_pnl !== null ? Number(r.avg_pnl) : null,
+  }
+}
+
 export async function setStripeCustomerId(userId: number, customerId: string): Promise<void> {
   await sql`UPDATE users SET stripe_customer_id = ${customerId} WHERE id = ${userId}`
 }
@@ -226,6 +263,7 @@ export async function getStats(userId: number) {
   const [statsRow] = await sql`
     SELECT
       COUNT(*) AS total,
+      COUNT(*) FILTER (WHERE outcome IS NOT NULL) AS resolved,
       AVG(final_confidence)::int AS avg_confidence,
       COUNT(*) FILTER (WHERE outcome = 'win')::float /
         NULLIF(COUNT(*) FILTER (WHERE outcome IS NOT NULL), 0) * 100 AS win_rate,
@@ -240,10 +278,12 @@ export async function getStats(userId: number) {
     FROM signals WHERE user_id = ${userId}
     GROUP BY pair ORDER BY total DESC LIMIT 10
   `
+  const resolved = Number(statsRow.resolved ?? 0)
   return {
     total: Number(statsRow.total),
+    resolved,
     avg_confidence: statsRow.avg_confidence,
-    win_rate: statsRow.win_rate ? Math.round(Number(statsRow.win_rate)) : null,
+    win_rate: resolved >= 3 ? (statsRow.win_rate ? Math.round(Number(statsRow.win_rate)) : null) : null,
     avg_pnl_pct: statsRow.avg_pnl_pct ? Number(statsRow.avg_pnl_pct).toFixed(1) : null,
     by_pair: byPair.map(r => ({
       pair: r.pair,
@@ -397,6 +437,31 @@ export async function setSignalOutcome(id: number, outcome: 'win' | 'loss', pnlP
     UPDATE signals SET outcome = ${outcome}, actual_pnl_pct = ${pnlPct}
     WHERE id = ${id} AND user_id = ${userId}
   `
+}
+
+export async function getAllPendingSignals(): Promise<Signal[]> {
+  const rows = await sql`
+    SELECT * FROM signals
+    WHERE outcome IS NULL
+      AND final_verdict IN ('LONG', 'SHORT')
+      AND final_tp IS NOT NULL
+      AND final_sl IS NOT NULL
+      AND created_at < NOW() - INTERVAL '5 minutes'
+    ORDER BY created_at ASC
+    LIMIT 500
+  `
+  return rows as Signal[]
+}
+
+export async function expireOldSignals(): Promise<number> {
+  const result = await sql`
+    UPDATE signals
+    SET outcome = 'loss', actual_pnl_pct = 0
+    WHERE outcome IS NULL
+      AND final_verdict IN ('LONG', 'SHORT')
+      AND created_at < NOW() - INTERVAL '7 days'
+  `
+  return Number((result as unknown as { count: number }).count ?? 0)
 }
 
 export async function getDrawings(userId: number, pair: string, timeframe: string): Promise<unknown[]> {

@@ -16,36 +16,6 @@ function vc(v: string | null) {
   return u === 'LONG' ? 'long' : u === 'SHORT' ? 'short' : 'wait'
 }
 
-function buildHourlyStats(signals: Signal[]) {
-  const hourMap: Record<number, { wins: number; total: number; sumR: number }> = {}
-  for (let h = 0; h < 24; h++) hourMap[h] = { wins: 0, total: 0, sumR: 0 }
-  for (const s of signals) {
-    if (!s.outcome) continue
-    const h = new Date(s.created_at).getUTCHours()
-    hourMap[h].total++
-    if (s.outcome === 'win') {
-      hourMap[h].wins++
-      hourMap[h].sumR += s.actual_pnl_pct ? Number(s.actual_pnl_pct) : 1
-    } else {
-      hourMap[h].sumR -= s.actual_pnl_pct ? Math.abs(Number(s.actual_pnl_pct)) : 1
-    }
-  }
-  return hourMap
-}
-
-function buildPairStats(signals: Signal[]) {
-  const map: Record<string, { wins: number; total: number }> = {}
-  for (const s of signals) {
-    if (!s.outcome) continue
-    if (!map[s.pair]) map[s.pair] = { wins: 0, total: 0 }
-    map[s.pair].total++
-    if (s.outcome === 'win') map[s.pair].wins++
-  }
-  return Object.entries(map)
-    .map(([pair, v]) => ({ pair, ...v, wr: Math.round((v.wins / v.total) * 100) }))
-    .sort((a, b) => b.wr - a.wr)
-}
-
 const ERROR_CATEGORIES = [
   { id: 'fomo',     label: 'FOMO вход', desc: 'Вход без подтверждения, погоня за движением' },
   { id: 'htf_bias', label: 'Против HTF', desc: 'Сделка против старшего таймфрейма' },
@@ -243,13 +213,13 @@ const QUIZ_SCENARIOS = [
 
 export default function HistoryPanel() {
   const { t } = useLang()
-  const [tab, setTab] = useState<'history' | 'analytics' | 'review' | 'quiz'>('history')
+  const [tab, setTab] = useState<'history' | 'review' | 'quiz'>('history')
   const [signals, setSignals] = useState<Signal[]>([])
   const [loading, setLoading] = useState(false)
 
-  const [analyticsLoaded, setAnalyticsLoaded] = useState(false)
-  const [confBuckets, setConfBuckets] = useState<{ bucket: number; label: string; total: number; wins: number; win_rate: number | null; avg_pnl: number | null }[]>([])
-  const [advStats, setAdvStats] = useState<{ profit_factor: number | null; max_drawdown: number; sharpe_ratio: number | null; expectancy: number; avg_win: number; avg_loss: number; total_resolved: number } | null>(null)
+  const [offset, setOffset] = useState(0)
+  const [hasMore, setHasMore] = useState(false)
+  const [loadingMore, setLoadingMore] = useState(false)
 
   const [filterPair, setFilterPair] = useState('all')
   const [filterTf, setFilterTf] = useState('all')
@@ -266,22 +236,36 @@ export default function HistoryPanel() {
   const [qFinished, setQFinished] = useState(false)
   const [qHistory, setQHistory] = useState<{ correct: boolean; chosen: number }[]>([])
 
+  const PAGE = 50
+
   const load = useCallback(async () => {
     setLoading(true)
-    const [sigRes, confRes, advRes] = await Promise.all([
-      fetch('/api/signals?limit=200'),
-      fetch('/api/stats/confidence'),
-      fetch('/api/stats/advanced'),
-    ])
+    const sigRes = await fetch(`/api/signals?limit=${PAGE}&offset=0`)
     const sigData = await sigRes.json()
-    if (sigData.ok) setSignals(sigData.signals || [])
-    const confData = await confRes.json()
-    if (confData.ok) setConfBuckets(confData.buckets || [])
-    const advData = await advRes.json()
-    if (advData.ok && advData.stats) setAdvStats(advData.stats)
+    if (sigData.ok) {
+      const loaded: Signal[] = sigData.signals || []
+      setSignals(loaded)
+      setHasMore(loaded.length === PAGE)
+      setOffset(loaded.length)
+    }
     setLoading(false)
-    setAnalyticsLoaded(true)
   }, [])
+
+  const loadMore = useCallback(async () => {
+    setLoadingMore(true)
+    try {
+      const res = await fetch(`/api/signals?limit=${PAGE}&offset=${offset}`)
+      const data = await res.json()
+      if (data.ok) {
+        const more: Signal[] = data.signals || []
+        setSignals(prev => [...prev, ...more])
+        setHasMore(more.length === PAGE)
+        setOffset(prev => prev + more.length)
+      }
+    } finally {
+      setLoadingMore(false)
+    }
+  }, [offset])
 
   useEffect(() => {
     fetch('/api/signals/check-outcomes', { method: 'POST' })
@@ -339,21 +323,12 @@ export default function HistoryPanel() {
     return true
   })
 
-  const resolved = signals.filter(s => s.outcome)
-  const wins = resolved.filter(s => s.outcome === 'win').length
-  const wr = resolved.length ? Math.round((wins / resolved.length) * 100) : 0
-  const avgConf = signals.length ? Math.round(signals.reduce((a, s) => a + (s.final_confidence || 0), 0) / signals.length) : 0
-  const hourlyStats = buildHourlyStats(signals)
-  const pairStats = buildPairStats(signals)
-  const maxHourTotal = Math.max(...Object.values(hourlyStats).map(h => h.total), 1)
-
   const losses = signals.filter(s => s.outcome === 'loss')
 
   const TABS = [
-    { id: 'history',   label: 'История' },
-    { id: 'analytics', label: 'Аналитика' },
-    { id: 'review',    label: 'Разбор ошибок' },
-    { id: 'quiz',      label: 'Квиз' },
+    { id: 'history', label: 'История' },
+    { id: 'review',  label: 'Разбор ошибок' },
+    { id: 'quiz',    label: 'Квиз' },
   ] as const
 
   return (
@@ -457,211 +432,20 @@ export default function HistoryPanel() {
               </table>
             </div>
           )}
-        </div>
-      )}
-
-      {}
-      {tab === 'analytics' && (
-        <div>
-          {}
-          <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
-            {[
-              { l: 'Сигналов', v: signals.length },
-              { l: 'Разрешено', v: resolved.length },
-              { l: 'Win Rate', v: `${wr}%`, c: wr >= 55 ? 'var(--long)' : wr >= 45 ? 'var(--wait)' : 'var(--short)' },
-              { l: 'Ср. уверенность', v: `${avgConf}%` },
-              { l: 'Побед', v: wins },
-              { l: 'Поражений', v: resolved.length - wins },
-            ].map(({ l, v, c }) => (
-              <div key={l} style={{ flex: 1, background: 'var(--bg3)', borderRadius: 4, padding: '8px 10px', textAlign: 'center' }}>
-                <div style={{ fontSize: '.55rem', color: 'var(--muted)', marginBottom: 3 }}>{l}</div>
-                <div style={{ fontSize: '.8rem', fontWeight: 700, color: c || 'var(--text)' }}>{v}</div>
-              </div>
-            ))}
-          </div>
-
-          {}
-          {advStats && (
-            <div className="tbox" style={{ marginBottom: 12 }}>
-              <div className="thead"><span className="thead-t">РАСШИРЕННАЯ СТАТИСТИКА</span></div>
-              <div style={{ padding: '10px 12px' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
-                  {[
-                    {
-                      label: 'Profit Factor',
-                      value: advStats.profit_factor !== null ? advStats.profit_factor.toFixed(2) : '—',
-                      color: advStats.profit_factor !== null ? (advStats.profit_factor >= 1.5 ? 'var(--long)' : advStats.profit_factor >= 1 ? '#ffa500' : 'var(--short)') : 'var(--muted)',
-                      tip: '>1.5 отлично, >1 прибыльно, <1 убыточно',
-                    },
-                    {
-                      label: 'Max Drawdown',
-                      value: `-${advStats.max_drawdown.toFixed(1)}%`,
-                      color: advStats.max_drawdown > 30 ? 'var(--short)' : advStats.max_drawdown > 15 ? '#ffa500' : 'var(--long)',
-                      tip: 'Максимальная просадка от пика',
-                    },
-                    {
-                      label: 'Sharpe Ratio',
-                      value: advStats.sharpe_ratio !== null ? advStats.sharpe_ratio.toFixed(2) : '—',
-                      color: advStats.sharpe_ratio !== null ? (advStats.sharpe_ratio >= 1 ? 'var(--long)' : advStats.sharpe_ratio >= 0 ? '#ffa500' : 'var(--short)') : 'var(--muted)',
-                      tip: '>1 хорошо, >2 отлично. Доходность на единицу риска.',
-                    },
-                    {
-                      label: 'Expectancy',
-                      value: `${advStats.expectancy >= 0 ? '+' : ''}${advStats.expectancy.toFixed(2)}%`,
-                      color: advStats.expectancy >= 0 ? 'var(--long)' : 'var(--short)',
-                      tip: 'Средний ожидаемый результат на сделку',
-                    },
-                  ].map(({ label, value, color, tip }) => (
-                    <div key={label} title={tip} style={{ background: 'var(--bg3)', borderRadius: 4, padding: '8px 10px', textAlign: 'center', cursor: 'help' }}>
-                      <div style={{ fontSize: '.52rem', color: 'var(--dim)', marginBottom: 3 }}>{label}</div>
-                      <div style={{ fontSize: '.78rem', fontWeight: 700, color }}>{value}</div>
-                    </div>
-                  ))}
-                </div>
-                <div style={{ display: 'flex', gap: 16, marginTop: 10, fontSize: '.6rem', color: 'var(--muted)' }}>
-                  <span>Ср. профит: <span style={{ color: 'var(--long)' }}>+{advStats.avg_win}%</span></span>
-                  <span>Ср. убыток: <span style={{ color: 'var(--short)' }}>-{advStats.avg_loss}%</span></span>
-                  <span>Разрешено: <span style={{ color: 'var(--text)' }}>{advStats.total_resolved}</span></span>
-                </div>
-              </div>
+          {!loading && hasMore && (
+            <div style={{ textAlign: 'center', padding: '10px 0 4px' }}>
+              <button
+                onClick={loadMore}
+                disabled={loadingMore}
+                style={{
+                  padding: '6px 20px', background: 'var(--bg3)', border: '1px solid var(--line2)',
+                  borderRadius: 4, cursor: loadingMore ? 'default' : 'pointer',
+                  fontSize: '.62rem', color: loadingMore ? 'var(--dim)' : 'var(--muted)',
+                }}
+              >
+                {loadingMore ? t('fetching') : `${t('load_more_lbl')} (${signals.length} ${t('loaded_count_lbl')})`}
+              </button>
             </div>
-          )}
-
-          {}
-          <div className="tbox" style={{ marginBottom: 12 }}>
-            <div className="thead"><span className="thead-t">АКТИВНОСТЬ ПО ЧАСАМ (UTC)</span></div>
-            <div style={{ padding: '10px 12px' }}>
-              <div style={{ display: 'flex', gap: 2, alignItems: 'flex-end', height: 60 }}>
-                {Array.from({ length: 24 }, (_, h) => {
-                  const s = hourlyStats[h]
-                  const height = s.total > 0 ? Math.max(6, (s.total / maxHourTotal) * 54) : 3
-                  const wr2 = s.total > 0 ? s.wins / s.total : 0
-                  const color = s.total === 0 ? 'var(--bg3)' : wr2 >= 0.6 ? '#00e676' : wr2 >= 0.4 ? '#ffa500' : '#ff3d57'
-                  return (
-                    <div key={h} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-                      <div
-                        title={`${h}:00 UTC — ${s.total} сигн., ${s.wins}W/${s.total-s.wins}L`}
-                        style={{ width: '100%', height, background: color, borderRadius: 2, transition: 'height .3s', opacity: s.total === 0 ? 0.3 : 1 }}
-                      />
-                      {h % 4 === 0 && <span style={{ fontSize: '.45rem', color: 'var(--dim)' }}>{h}</span>}
-                    </div>
-                  )
-                })}
-              </div>
-              <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
-                {[['var(--long)', '>60% WR'], ['#ffa500', '40-60% WR'], ['var(--short)', '<40% WR'], ['var(--bg3)', 'нет данных']].map(([c, l]) => (
-                  <div key={l} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <div style={{ width: 8, height: 8, background: c as string, borderRadius: 1 }} />
-                    <span style={{ fontSize: '.52rem', color: 'var(--dim)' }}>{l}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {}
-          <div className="tbox" style={{ marginBottom: 12 }}>
-            <div className="thead"><span className="thead-t">СЕССИИ</span></div>
-            <div style={{ padding: '8px 12px' }}>
-              {[
-                { name: 'Азия', hours: [0, 8], color: '#70a1ff' },
-                { name: 'Лондон', hours: [7, 16], color: '#ffa502' },
-                { name: 'Нью-Йорк', hours: [13, 21], color: '#ff6b6b' },
-              ].map(sess => {
-                let tw = 0, tt = 0
-                for (let h = sess.hours[0]; h < sess.hours[1]; h++) {
-                  tw += hourlyStats[h]?.wins || 0
-                  tt += hourlyStats[h]?.total || 0
-                }
-                const sWr = tt > 0 ? Math.round((tw / tt) * 100) : null
-                return (
-                  <div key={sess.name} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 7 }}>
-                    <div style={{ width: 8, height: 8, background: sess.color, borderRadius: 1 }} />
-                    <span style={{ fontSize: '.62rem', color: 'var(--text)', width: 70 }}>{sess.name}</span>
-                    <span style={{ fontSize: '.58rem', color: 'var(--muted)' }}>{sess.hours[0]}:00–{sess.hours[1]}:00 UTC</span>
-                    <span style={{ marginLeft: 'auto', fontSize: '.62rem', fontWeight: 600 }}>
-                      {sWr !== null ? `${sWr}% WR` : '—'} <span style={{ color: 'var(--dim)', fontWeight: 400 }}>({tt} сигн.)</span>
-                    </span>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-
-          {}
-          {confBuckets.length > 0 && (
-            <div className="tbox" style={{ marginBottom: 12 }}>
-              <div className="thead"><span className="thead-t">КАЛИБРОВКА УВЕРЕННОСТИ</span></div>
-              <div style={{ padding: '10px 12px' }}>
-                <p style={{ fontSize: '.58rem', color: 'var(--dim)', marginBottom: 10 }}>
-                  Реальный Win Rate для каждого диапазона уверенности AI. Чем ближе WR к confidence — тем лучше откалиброван.
-                </p>
-                {confBuckets.map(b => {
-                  const wr = b.win_rate ?? 0
-                  const wrColor = wr >= 60 ? 'var(--long)' : wr >= 45 ? '#ffa500' : 'var(--short)'
-                  const confMid = b.bucket + 5
-                  const gap = Math.abs(wr - confMid)
-                  return (
-                    <div key={b.bucket} style={{ marginBottom: 10 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                        <span style={{ fontSize: '.6rem', color: 'var(--muted)', width: 56 }}>{b.label}</span>
-                        <div style={{ flex: 1, height: 6, background: 'var(--bg3)', borderRadius: 3, position: 'relative' }}>
-                          {/* Полоса WR */}
-                          <div style={{ height: 6, borderRadius: 3, width: `${wr}%`, background: wrColor, transition: 'width .4s' }} />
-                          {/* Маркер ожидаемого confidence */}
-                          <div style={{ position: 'absolute', top: -2, left: `${confMid}%`, width: 2, height: 10, background: 'var(--cyan)', borderRadius: 1 }} title={`AI заявляет ~${confMid}%`} />
-                        </div>
-                        <span style={{ fontSize: '.6rem', fontWeight: 700, color: wrColor, width: 38, textAlign: 'right' }}>
-                          {b.win_rate !== null ? `${b.win_rate}%` : '—'}
-                        </span>
-                        <span style={{ fontSize: '.55rem', color: 'var(--dim)', width: 44 }}>
-                          {b.total} сигн.
-                        </span>
-                        <span style={{ fontSize: '.52rem', color: gap <= 10 ? 'var(--long)' : gap <= 20 ? '#ffa500' : 'var(--short)', width: 48 }}
-                          title="Расхождение между заявленной уверенностью и реальным WR">
-                          {gap <= 10 ? '✓ точно' : gap <= 20 ? '~ норм' : '✗ завышен'}
-                        </span>
-                      </div>
-                      {b.avg_pnl !== null && (
-                        <div style={{ fontSize: '.54rem', color: 'var(--dim)', marginLeft: 64 }}>
-                          средний PnL: <span style={{ color: b.avg_pnl >= 0 ? 'var(--long)' : 'var(--short)' }}>
-                            {b.avg_pnl >= 0 ? '+' : ''}{b.avg_pnl}%
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  )
-                })}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6 }}>
-                  <div style={{ width: 2, height: 10, background: 'var(--cyan)', borderRadius: 1 }} />
-                  <span style={{ fontSize: '.52rem', color: 'var(--dim)' }}>— заявленная уверенность AI</span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {}
-          {pairStats.length > 0 && (
-            <div className="tbox">
-              <div className="thead"><span className="thead-t">ПАРЫ</span></div>
-              <div style={{ padding: '8px 12px' }}>
-                {pairStats.slice(0, 10).map(ps => (
-                  <div key={ps.pair} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                    <span style={{ fontSize: '.62rem', width: 80 }}>{ps.pair}</span>
-                    <div style={{ flex: 1, height: 4, background: 'var(--bg3)', borderRadius: 2 }}>
-                      <div style={{ height: 4, borderRadius: 2, width: `${ps.wr}%`, background: ps.wr >= 55 ? 'var(--long)' : ps.wr >= 45 ? 'var(--wait)' : 'var(--short)' }} />
-                    </div>
-                    <span style={{ fontSize: '.6rem', color: 'var(--muted)', width: 60, textAlign: 'right' }}>
-                      {ps.wr}% ({ps.total})
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {!analyticsLoaded && (
-            <div style={{ textAlign: 'center', padding: 24, color: 'var(--dim)', fontSize: '.65rem' }}>Запустите анализ чтобы собрать статистику</div>
           )}
         </div>
       )}

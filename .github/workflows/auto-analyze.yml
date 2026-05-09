@@ -43,3 +43,14 @@ jobs:
           curl -sf --max-time 70 \
             "${{ secrets.APP_URL }}/api/analyze/auto?secret=${{ secrets.AUTO_ANALYZE_SECRET }}&batch=2" \
             | jq '.'
+
+  check-signals:
+    name: Check signal outcomes
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'schedule' || github.event.inputs.batch == 'all' }}
+    steps:
+      - name: Check TP/SL hits
+        run: |
+          curl -sf --max-time 70 \
+            "${{ secrets.APP_URL }}/api/signals/auto-check?secret=${{ secrets.AUTO_ANALYZE_SECRET }}" \
+            | jq '.'

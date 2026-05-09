@@ -75,7 +75,7 @@ async function analyzeOne(
     const userId   = Number(user.id)
     const tfLabel  = interval === '1h' ? '1ч' : interval === '4h' ? '4ч' : interval
 
-    const { step1, step2, final } = await fullAnalysis(sym, tfLabel, market, [], maxLev, balance, riskPct)
+    const { step1, step2, final } = await fullAnalysis(sym, tfLabel, market, candles, [], maxLev, balance, riskPct)
 
     await saveSignal(userId, {
       pair: sym, timeframe: tfLabel,

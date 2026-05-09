@@ -345,5 +345,10 @@
   "export_error": "Экспорт қатесі",
   "export_count_lbl": "жазба",
   "priority": "Басымдық",
-  "unlimited": "Шектеусіз"
+  "unlimited": "Шектеусіз",
+  "methods_title_lbl": "Талдау әдістері",
+  "consensus_lbl": "Консенсус",
+  "load_more_lbl": "Көбірек жүктеу",
+  "loaded_count_lbl": "жүктелді",
+  "resolved_lbl": "жабылды"
 }

@@ -68,7 +68,7 @@ export async function GET(req: NextRequest) {
     const debug = url.searchParams.get('debug') === '1'
 
     const start = Date.now()
-    const { step1, step2, final } = await fullAnalysis(sym, tfLabel, market, [], 20, 1000, 1.0)
+    const { step1, step2, final } = await fullAnalysis(sym, tfLabel, market, candles, [], 20, 1000, 1.0)
     const elapsed = ((Date.now() - start) / 1000).toFixed(1)
 
     const currentPx = market.price

@@ -467,29 +467,40 @@ const KLineChartComponent = forwardRef<KLineChartHandle, Props>(
 
       highlightOB(high: number, low: number, type: 'bullish' | 'bearish', label?: string) {
         if (!chartRef.current || !candlesRef.current.length) return
-        const lastTs = candlesRef.current[candlesRef.current.length - 1].timestamp
+        const candles  = candlesRef.current
+        const lastTs   = candles[candles.length - 1].timestamp
+        const spanMs   = Math.max(INTERVAL_MS[currentIntervalRef.current] ?? 3_600_000, 3_600_000) * 30
+        const fromTs   = lastTs - spanMs
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const passThrough = () => false as any
+        const pt = () => false as any
+
+        chartRef.current.removeOverlay({ groupId: 'ai_selected_ob' })
+
+        const fillColor   = type === 'bullish' ? 'rgba(0,230,118,0.22)' : 'rgba(255,61,87,0.22)'
+        const borderColor = type === 'bullish' ? '#00e676' : '#ff3d57'
+        const mid = (high + low) / 2
+
         chartRef.current.createOverlay({
           name: 'priceRect',
           groupId: 'ai_selected_ob',
           id: 'selected_ob',
           lock: true,
-          onMouseDown: passThrough,
-          onMouseMove: passThrough,
-          onPressedMoveStart: passThrough,
-          onPressedMoving: passThrough,
-          onPressedMoveEnd: passThrough,
-          points: [{ timestamp: lastTs, value: high }, { timestamp: lastTs - 86400 * 1000, value: low }],
+          onMouseDown: pt, onMouseMove: pt, onPressedMoveStart: pt, onPressedMoving: pt, onPressedMoveEnd: pt,
+          points: [{ timestamp: fromTs, value: high }, { timestamp: lastTs, value: low }],
           styles: {
-            polygon: {
-              style: 'stroke_fill',
-              color: type === 'bullish' ? 'rgba(0,230,118,0.15)' : 'rgba(255,61,87,0.15)',
-              borderColor: type === 'bullish' ? '#00e676' : '#ff3d57',
-              borderSize: 3,
-            },
+            polygon: { style: 'stroke_fill', color: fillColor, borderColor, borderSize: 2 },
           },
-          extendData: label || (type === 'bullish' ? 'Bull OB (Selected)' : 'Bear OB (Selected)'),
+          extendData: label || (type === 'bullish' ? '↑ AI ENTRY ZONE' : '↓ AI ENTRY ZONE'),
+        })
+
+        chartRef.current.createOverlay({
+          name: 'horizontalStraightLine',
+          groupId: 'ai_selected_ob',
+          id: 'selected_ob_mid',
+          lock: true,
+          onMouseDown: pt, onMouseMove: pt, onPressedMoveStart: pt, onPressedMoving: pt, onPressedMoveEnd: pt,
+          points: [{ timestamp: fromTs, value: mid }],
+          styles: { line: { color: borderColor, size: 1, style: 'dashed' } },
         })
       },
 

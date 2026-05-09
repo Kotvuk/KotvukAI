@@ -345,5 +345,10 @@
   "export_error": "Export error",
   "export_count_lbl": "records",
   "priority": "Priority",
-  "unlimited": "Unlimited"
+  "unlimited": "Unlimited",
+  "methods_title_lbl": "Analysis Methods",
+  "consensus_lbl": "Consensus",
+  "load_more_lbl": "Load more",
+  "loaded_count_lbl": "loaded",
+  "resolved_lbl": "resolved"
 }

@@ -120,7 +120,7 @@ export async function POST(req: NextRequest) {
     const balance       = Number(user.ai_balance ?? 1000)
     const riskPct       = Number(user.ai_risk_per_trade ?? 1.0)
     const userMaxLev    = Number(user.ai_max_leverage ?? 20)
-    const { step1, step2, final: analysis } = await fullAnalysis(pair, timeframe, market, memorySignals, userMaxLev, balance, riskPct)
+    const { step1, step2, final: analysis, methods, consensus } = await fullAnalysis(pair, timeframe, market, candles, memorySignals, userMaxLev, balance, riskPct)
 
     const elapsed = ((Date.now() - start) / 1000).toFixed(1)
 
@@ -190,6 +190,8 @@ export async function POST(req: NextRequest) {
         step2: { verdict: step2.verdict, confidence: step2.confidence, summary: step2.summary },
         step3: { verdict: analysis.verdict, confidence: analysis.confidence },
       },
+      methods,
+      consensus,
       signal_id: signal.id,
       quota: { remaining: quota.remaining, tier: quota.tier, limit: quota.limit },
       risk_management: {

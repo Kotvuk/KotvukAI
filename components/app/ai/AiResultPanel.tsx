@@ -1,6 +1,21 @@
 'use client'
 import { useLang } from '@/contexts/LangContext'
 import type { ProbabilityResult } from '@/lib/smc'
+import SMCTooltip from '@/components/ui/SMCTooltip'
+
+const SMC_TERMS = ['CHoCH', 'BOS', 'FVG', 'OTE', 'BSL', 'SSL', 'HTF', 'OB', 'BB'] as const
+type SMCTerm = typeof SMC_TERMS[number]
+
+function smcWrap(text: string) {
+  const pattern = new RegExp(`\\b(${SMC_TERMS.join('|')})\\b`, 'g')
+  const parts = text.split(pattern)
+  if (parts.length === 1) return text
+  return parts.map((part, i) =>
+    (SMC_TERMS as readonly string[]).includes(part)
+      ? <SMCTooltip key={i} term={part as SMCTerm}>{part}</SMCTooltip>
+      : part
+  )
+}
 
 function vc(v: string | null) {
   if (!v) return 'wait'
@@ -76,6 +91,44 @@ export default function AiResultPanel({ aiData, pair, tf, smcProb, onNavigate, o
         ))}
       </div>
 
+      {/* Multi-method analysis */}
+      {Array.isArray(aiData.methods) && (aiData.methods as unknown[]).length > 0 && (() => {
+        type MR = { method: string; signal: string; confidence: number; summary: string }
+        type CR = { long: number; short: number; wait: number; decision: string; agreeing: string[]; threshold: number }
+        const methods = aiData.methods as MR[]
+        const cs = aiData.consensus as CR | undefined
+        return (
+          <div className="tbox" style={{ marginBottom: 10 }}>
+            <div className="thead">
+              <span className="thead-t">{t('methods_title_lbl')}</span>
+              {cs && (
+                <span style={{
+                  fontSize: '.6rem', fontWeight: 700,
+                  color: cs.decision === 'LONG' ? 'var(--long)' : cs.decision === 'SHORT' ? 'var(--short)' : 'var(--wait)',
+                }}>
+                  {cs.long}L · {cs.short}S · {cs.wait}W → {cs.decision}
+                </span>
+              )}
+            </div>
+            <div style={{ padding: '8px 10px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {methods.map(m => {
+                const sc = m.signal === 'LONG' ? 'var(--long)' : m.signal === 'SHORT' ? 'var(--short)' : 'var(--wait)'
+                return (
+                  <div key={m.method} style={{ display: 'flex', alignItems: 'center', gap: 7 }} title={m.summary}>
+                    <span style={{ width: 88, fontSize: '.6rem', color: 'var(--muted)', flexShrink: 0 }}>{m.method}</span>
+                    <span style={{ width: 40, fontSize: '.58rem', fontWeight: 700, color: sc, flexShrink: 0 }}>{m.signal}</span>
+                    <div style={{ flex: 1, height: 3, background: 'var(--bg3)', borderRadius: 2 }}>
+                      <div style={{ height: 3, borderRadius: 2, background: sc, width: `${m.confidence}%`, transition: 'width .3s' }} />
+                    </div>
+                    <span style={{ fontSize: '.6rem', color: 'var(--text)', width: 28, textAlign: 'right' }}>{m.confidence}%</span>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )
+      })()}
+
       {/* Levels */}
       <div className="levels">
         <div className="lv"><div className="lv-l">{t('entry')}</div><div className="lv-v lv-entry">${Number(a.entry_price || 0).toLocaleString()}</div><div className="lv-p">{a.entry_type === 'market' ? 'market' : 'limit'}</div></div>
@@ -115,7 +168,7 @@ export default function AiResultPanel({ aiData, pair, tf, smcProb, onNavigate, o
           <div style={{ margin: '8px 0', padding: '9px 12px', background: 'rgba(255,255,255,0.03)', borderRadius: 6, border: `1px solid ${scoreColor}30` }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
               <span style={{ fontSize: '.56rem', color: 'var(--dim)', fontWeight: 700, letterSpacing: '.06em' }}>
-                {isBull ? '↑ BULLISH' : '↓ BEARISH'} ORDER BLOCK — {t('ob_entry_zone_lbl')}
+                {isBull ? '↑ BULLISH' : '↓ BEARISH'} <SMCTooltip term="OB">ORDER BLOCK</SMCTooltip> — {t('ob_entry_zone_lbl')}
               </span>
               <span style={{ fontSize: '.64rem', fontWeight: 700, color: scoreColor }}>{score}/100 — {String(ob.verdict ?? '')}</span>
             </div>
@@ -166,7 +219,7 @@ export default function AiResultPanel({ aiData, pair, tf, smcProb, onNavigate, o
         </div>
       )}
 
-      <div className="desc">{String(a.full_description || '—')}</div>
+      <div className="desc">{smcWrap(String(a.full_description || '—'))}</div>
 
       {/* Instructions */}
       <div className="instr"><span className="ik" style={{ background: '#f0a500' }}>{t('entry_badge_lbl')}</span><span>{String(a.entry_instruction || '—')}</span></div>
@@ -179,13 +232,13 @@ export default function AiResultPanel({ aiData, pair, tf, smcProb, onNavigate, o
       {a.confluence && (
         <div className="instr" style={{ background: 'rgba(0,230,118,0.06)', borderLeft: '2px solid #00e676' }}>
           <span className="ik" style={{ background: '#00e676', color: '#000' }}>{t('confluence_badge_lbl')}</span>
-          <span>{String(a.confluence)}</span>
+          <span>{smcWrap(String(a.confluence))}</span>
         </div>
       )}
       {a.invalidation && (
         <div className="instr" style={{ background: 'rgba(255,61,87,0.06)', borderLeft: '2px solid #ff3d57' }}>
           <span className="ik" style={{ background: '#ff3d57' }}>{t('invalidation_badge_lbl')}</span>
-          <span>{String(a.invalidation)}</span>
+          <span>{smcWrap(String(a.invalidation))}</span>
         </div>
       )}
       {a.position_size && (
@@ -205,7 +258,7 @@ export default function AiResultPanel({ aiData, pair, tf, smcProb, onNavigate, o
         {((a.insights as { icon: string; tag: string; text: string }[]) || []).map((ins, i) => (
           <div className="ins" key={i}>
             <div className="ins-top"><span className="ins-icon">{ins.icon}</span><span className="ins-tag">{ins.tag}</span></div>
-            <div className="ins-txt">{ins.text}</div>
+            <div className="ins-txt">{smcWrap(ins.text)}</div>
           </div>
         ))}
       </div>
@@ -214,7 +267,7 @@ export default function AiResultPanel({ aiData, pair, tf, smcProb, onNavigate, o
       <div className="tbox" style={{ marginBottom: 10 }}>
         <div className="thead"><span className="thead-t">{t('why_signal')}</span></div>
         <div style={{ padding: '9px 12px', fontSize: '.67rem', color: 'var(--muted)', lineHeight: 1.65 }}>
-          {String(a.why_this_signal || '—')}
+          {smcWrap(String(a.why_this_signal || '—'))}
         </div>
       </div>
 

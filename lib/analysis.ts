@@ -1,5 +1,6 @@
 import { calcEnhancedSMC, scoreOrderBlock, type SMCData, type OrderBlock, type Candle } from './smc'
 import { loadGroqKeys, getGroqModel, getGroqFastModel, groqGenerate } from './groq'
+import { analyzeIndicators, analyzePriceAction, analyzeWyckoff, analyzeVolumeProfile, analyzeFunding, calcConsensus, type MethodResult, type ConsensusResult } from './indicators'
 export type { SMCData, Candle }
 
 function extractJSON(text: string): Record<string, unknown> {
@@ -209,17 +210,24 @@ export async function fullAnalysis(
   pair: string,
   tf: string,
   market: MarketData,
+  candles: Candle[],
   memorySignals: MemorySignal[] = [],
   maxLeverage = 20,
   balance = 1000,
   riskPct = 1.0
-): Promise<{ step1: Step1Result; step2: Step2Result; final: FinalResult }> {
+): Promise<{ step1: Step1Result; step2: Step2Result; final: FinalResult; methods: MethodResult[]; consensus: ConsensusResult }> {
   const keys       = loadGroqKeys()
   const mainModel  = getGroqModel()
   const quickModel = getGroqFastModel()
   const price      = market.price
   const ctx        = getContext(market)
   const histCtx    = getHistory(memorySignals)
+
+  const indResult = analyzeIndicators(candles)
+  const paResult  = analyzePriceAction(candles)
+  const wyResult  = analyzeWyckoff(candles)
+  const vpResult  = analyzeVolumeProfile(candles)
+  const frResult  = analyzeFunding(market.fundingRate)
 
   const riskUsd = parseFloat((balance * riskPct / 100).toFixed(2))
   const atrPct  = market.atr14pct ?? 2.0
@@ -254,11 +262,41 @@ Reply with a single-line JSON:
   const summary1 = String(s1.summary || '')
   const htf      = String(s1.htf || 'neutral')
 
+  const smcSignal: 'LONG' | 'SHORT' | 'WAIT' =
+    trendDir === 'bullish' && !s1.ranging_risk ? 'LONG' :
+    trendDir === 'bearish' && !s1.ranging_risk ? 'SHORT' : 'WAIT'
+
+  const smcFactors: string[] = []
+  if (trendDir === 'bullish')             smcFactors.push('Восходящий тренд')
+  else if (trendDir === 'bearish')        smcFactors.push('Нисходящий тренд')
+  if (s1.bos_confirmed)                   smcFactors.push('BOS подтверждён')
+  if (s1.sweep_ssl || s1.sweep_bsl)       smcFactors.push('Свип ликвидности')
+  if (s1.choch)                           smcFactors.push('CHoCH — смена характера')
+  if (s1.phase)                           smcFactors.push(`Фаза: ${s1.phase}`)
+
+  const smcMethod: MethodResult = {
+    method: 'SMC',
+    signal: smcSignal,
+    confidence: s1.bos_confirmed ? 68 : 52,
+    factors: smcFactors.length ? smcFactors : ['Структурный анализ'],
+    summary: summary1 || `Тренд: ${trendDir}, HTF: ${htf}`,
+  }
+
+  const allMethods = [smcMethod, indResult, paResult, wyResult, vpResult, frResult]
+  const consensus  = calcConsensus(allMethods, 3)
+
+  const consensusCtx = [
+    '━━━ MULTI-METHOD ANALYSIS (6 methods) ━━━',
+    allMethods.map(m => `${m.method}: ${m.signal} ${m.confidence}%`).join(' | '),
+    `Consensus: ${consensus.long}×LONG / ${consensus.short}×SHORT / ${consensus.wait}×WAIT → ${consensus.decision} (≥${consensus.threshold} required)`,
+    consensus.agreeing.length ? `Agreeing: ${consensus.agreeing.join(', ')}` : '',
+  ].filter(Boolean).join('\n')
+
   if (trendDir === 'ranging' && (htf === 'neutral' || htf === 'ranging') || s1.ranging_risk === true) {
     const waitStep1: Step1Result = { signal: 'WAIT', strength: 3, trend: trendDir, summary: summary1 }
     const waitStep2: Step2Result = { verdict: 'WAIT', confidence: 45, risk_score: 5, leverage: 1, summary: 'Флэт + нейтральный HTF — нет чёткого направления' }
-    const waitFinal = makeWait(45, 'Флэт без ясного HTF-bias. Ожидаем разрешения структуры.', riskUsd, balance, riskPct)
-    return translateResponse(keys, { step1: waitStep1, step2: waitStep2, final: waitFinal })
+    const waitFinal = makeWait(45, 'Флэт без ясного HTF-bias. Ожидаем разрешения структуры.', riskUsd, balance, riskPct, allMethods, consensus)
+    return translateResponse(keys, { step1: waitStep1, step2: waitStep2, final: waitFinal, methods: allMethods, consensus })
   }
 
   const strictWarning = strictMode ? `\n⚠️ STRICT MODE (${consecutiveLosses} consecutive losses): require at least 4 confluence factors, confluence_count≥4, else WAIT.\n` : ''
@@ -296,8 +334,8 @@ Reply with a single-line JSON:
   if (!confluenceOk) {
     const waitStep1: Step1Result = { signal: 'WAIT', strength: 4, trend: trendDir, summary: summary1 }
     const waitStep2: Step2Result = { verdict: 'WAIT', confidence: 48, risk_score: 5, leverage: 1, summary: `Only ${confluenceCount} factor(s) out of ${minConfluence} required. ${step2Summary}` }
-    const waitFinal = makeWait(48, `Insufficient confluence (${confluenceCount}/${minConfluence}). ${String(s2.wait_reason || 'Wait for a cleaner setup.')}`, riskUsd, balance, riskPct)
-    return translateResponse(keys, { step1: waitStep1, step2: waitStep2, final: waitFinal })
+    const waitFinal = makeWait(48, `Insufficient confluence (${confluenceCount}/${minConfluence}). ${String(s2.wait_reason || 'Wait for a cleaner setup.')}`, riskUsd, balance, riskPct, allMethods, consensus)
+    return translateResponse(keys, { step1: waitStep1, step2: waitStep2, final: waitFinal, methods: allMethods, consensus })
   }
 
   const systemPrompt3 = `You are an institutional SMC trader with 10 years of experience trading Smart Money Concepts. Your goal is high-quality signals with minimum R:R of 1:1.5. You only trade when there is confluence of at least 3 factors. You do not trade in ranging markets. A liquidity sweep is a mandatory condition for entry. Reply only with valid JSON.`
@@ -306,6 +344,7 @@ Reply with a single-line JSON:
 
   const prompt3 = `Final signal for ${pair} (${tf}). Confluence: ${confluenceCount} factors. ${sweepWarn}.
 ${strictMode ? `⚠️ STRICT MODE: ${consecutiveLosses} consecutive losses — require confidence≥70% or WAIT.` : ''}
+${consensusCtx}
 ${histCtx}
 
 ━━━ MARKET STRUCTURE ━━━
@@ -409,39 +448,6 @@ Reply with ONLY one line of valid JSON (all numeric fields must be numbers, not 
   const sl_pct = parseFloat(((entryPrice - slPrice) / entryPrice * 100).toFixed(2))
   const rrStr  = sl_pct !== 0 ? (Math.abs(tp_pct) / Math.abs(sl_pct)).toFixed(1) : '?'
 
-  let daBlocked = false
-  let daReason  = ''
-
-  if ((isLongV || isShortV) && confidence < 90) {
-    const prompt4 = `/no_think
-You are a skeptical analyst. Signal ${verdict} ${pair} with confidence ${confidence}%.
-Entry: $${entryPrice} | TP: $${tpPrice.toFixed(2)} | SL: $${slPrice.toFixed(2)} | R:R 1:${rrStr}
-Trend: ${s1.trend} | HTF: ${s1.htf} | Sweep: ${sweepOk} | Confluence: ${confluenceCount}
-${!sweepOk ? 'Liquidity sweep NOT confirmed — primary risk.' : ''}
-${strictMode ? `Ongoing loss streak of ${consecutiveLosses}.` : ''}
-
-Name the TOP-2 reasons this signal could fail. Should it be blocked?
-BLOCK only on HIGH risk (no sweep + HTF against + ranging).
-
-Reply with a single-line JSON: {"block":true|false,"risk":"high|medium|low","reason":"<main blocking reason or 'signal is justified'>","da1":"<risk 1>","da2":"<risk 2>"}`
-
-    try {
-      const raw4 = await groqGenerate(keys, quickModel, prompt4, 250, 0.2, undefined, 'low')
-      const da = extractJSON(raw4)
-      if (da.block === true && String(da.risk) === 'high') {
-        daBlocked = true
-        daReason  = String(da.reason || 'Devil\'s Advocate blocked the signal')
-      }
-    } catch { /* продолжаем без блокировки */ }
-  }
-
-  if (daBlocked) {
-    const waitStep1: Step1Result = { signal: 'WAIT', strength: 5, trend: trendDir, summary: summary1 }
-    const waitStep2: Step2Result = { verdict: 'WAIT', confidence: 55, risk_score: 6, leverage: 1, summary: step2Summary }
-    const waitFinal = makeWait(55, `Signal rejected: ${daReason}`, riskUsd, balance, riskPct)
-    return translateResponse(keys, { step1: waitStep1, step2: waitStep2, final: waitFinal })
-  }
-
   const i1 = String(json.i1 || trend)
   const i2 = String(json.i2 || `Entry $${entryPrice} → TP $${tpPrice.toFixed(2)} (+${tp_pct}%)`)
   const i3 = String(json.i3 || `SL $${slPrice.toFixed(2)} (-${sl_pct}%) | R:R 1:${rrStr}`)
@@ -483,11 +489,13 @@ Reply with a single-line JSON: {"block":true|false,"risk":"high|medium|low","rea
       { icon: '🎯', tag: 'ЗОНА',      text: i2 },
       { icon: '💧', tag: 'ЛИКВИДНОСТЬ', text: i3 },
     ],
+    methods: allMethods,
+    consensus,
   }
-  return translateResponse(keys, { step1, step2, final })
+  return translateResponse(keys, { step1, step2, final, methods: allMethods, consensus })
 }
 
-function makeWait(confidence: number, reason: string, riskUsd: number, balance: number, riskPct: number): FinalResult {
+function makeWait(confidence: number, reason: string, riskUsd: number, balance: number, riskPct: number, methods?: MethodResult[], consensus?: ConsensusResult): FinalResult {
   return {
     verdict: 'WAIT', confidence, risk_score: 4, leverage: 1,
     entry_price: 0, entry_limit: null, entry_type: 'limit',
@@ -506,13 +514,15 @@ function makeWait(confidence: number, reason: string, riskUsd: number, balance: 
       { icon: '📊', tag: 'БАЛАНС', text: `$${balance} | Риск ${riskPct}% = $${riskUsd}` },
       { icon: '🎯', tag: 'УСЛОВИЕ', text: 'Ждём подтверждения структуры и свипа ликвидности' },
     ],
+    methods,
+    consensus,
   }
 }
 
 async function translateResponse(
   keys: string[],
-  result: { step1: Step1Result; step2: Step2Result; final: FinalResult }
-): Promise<{ step1: Step1Result; step2: Step2Result; final: FinalResult }> {
+  result: { step1: Step1Result; step2: Step2Result; final: FinalResult; methods?: MethodResult[]; consensus?: ConsensusResult }
+): Promise<{ step1: Step1Result; step2: Step2Result; final: FinalResult; methods: MethodResult[]; consensus: ConsensusResult }> {
   const ins = result.final.insights
   const texts: Record<string, string> = {
     s1: result.step1.summary || '',
@@ -533,7 +543,13 @@ async function translateResponse(
   const toTranslate = Object.fromEntries(
     Object.entries(texts).filter(([, v]) => v.trim().length > 5 && /[a-zA-Z]{4,}/.test(v))
   )
-  if (Object.keys(toTranslate).length === 0) return result
+  if (Object.keys(toTranslate).length === 0) return {
+    step1: result.step1,
+    step2: result.step2,
+    final: result.final,
+    methods: result.methods ?? ([] as MethodResult[]),
+    consensus: result.consensus ?? { long: 0, short: 0, wait: 0, threshold: 3, decision: 'WAIT' as const, avgConfidenceLong: 0, avgConfidenceShort: 0, agreeing: [], disagreeing: [] },
+  }
 
   const prompt = `/no_think
 Translate the following JSON values to Russian. Rules:
@@ -566,9 +582,17 @@ ${JSON.stringify(toTranslate)}`
         position_size:     g('ps'),
         insights: ins.map((item, i) => ({ ...item, text: g(`i${i}`) })),
       },
+      methods: result.methods ?? ([] as MethodResult[]),
+      consensus: result.consensus ?? { long: 0, short: 0, wait: 0, threshold: 3, decision: 'WAIT' as const, avgConfidenceLong: 0, avgConfidenceShort: 0, agreeing: [], disagreeing: [] },
     }
   } catch {
-    return result // fallback: keep original English on error
+    return {
+      step1: result.step1,
+      step2: result.step2,
+      final: result.final,
+      methods: result.methods ?? ([] as MethodResult[]),
+      consensus: result.consensus ?? { long: 0, short: 0, wait: 0, threshold: 3, decision: 'WAIT' as const, avgConfidenceLong: 0, avgConfidenceShort: 0, agreeing: [], disagreeing: [] },
+    }
   }
 }
 
@@ -742,4 +766,6 @@ export interface FinalResult {
     isFresh: boolean
     verdict: string
   }
+  methods?: MethodResult[]
+  consensus?: ConsensusResult
 }

@@ -10,7 +10,10 @@
     "start": "next start",
     "electron:dev": "electron .",
     "electron:build": "next build && electron-builder build --win --x64",
-    "electron:build:dir": "next build && electron-builder build --win --x64 --dir"
+    "electron:build:dir": "next build && electron-builder build --win --x64 --dir",
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "test:report": "playwright show-report"
   },
   "dependencies": {
     "@neondatabase/serverless": "^0.9.3",
@@ -27,6 +30,7 @@
     "stripe": "^22.0.2"
   },
   "devDependencies": {
+    "@playwright/test": "^1.59.1",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",

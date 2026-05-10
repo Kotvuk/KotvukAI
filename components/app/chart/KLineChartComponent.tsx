@@ -340,6 +340,13 @@ const KLineChartComponent = forwardRef<KLineChartHandle, Props>(
       async loadChart(pair: string, tf: string) {
         if (!chartRef.current) return
         if (pollTimer.current) { clearInterval(pollTimer.current); pollTimer.current = null }
+
+        // Clear previous pair's AI markup to prevent Y-axis range contamination
+        // (e.g. switching from BTC $80k to ADA $0.27 — old lines kept Y-axis at $80k)
+        lastMarkup.current = null
+        try { chartRef.current.removeOverlay({ groupId: 'ai' }) } catch {}
+        try { chartRef.current.removeOverlay({ groupId: 'ai_selected_ob' }) } catch {}
+
         const sym = pair.replace('/', '')
         const interval = TF_MAP[tf] || '1h'
         currentSymRef.current = sym

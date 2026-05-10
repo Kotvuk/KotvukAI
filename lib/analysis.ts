@@ -293,10 +293,19 @@ Reply with a single-line JSON:
   ].filter(Boolean).join('\n')
 
   if (trendDir === 'ranging' && (htf === 'neutral' || htf === 'ranging') || s1.ranging_risk === true) {
-    const waitStep1: Step1Result = { signal: 'WAIT', strength: 3, trend: trendDir, summary: summary1 }
-    const waitStep2: Step2Result = { verdict: 'WAIT', confidence: 45, risk_score: 5, leverage: 1, summary: 'Флэт + нейтральный HTF — нет чёткого направления' }
-    const waitFinal = makeWait(45, 'Флэт без ясного HTF-bias. Ожидаем разрешения структуры.', riskUsd, balance, riskPct, allMethods, consensus)
-    return translateResponse(keys, { step1: waitStep1, step2: waitStep2, final: waitFinal, methods: allMethods, consensus })
+    // If ≥3 independent methods agree on a direction, override the ranging-market early exit
+    // and let the full analysis pipeline run — Steps 2 & 3 will still apply confluence checks
+    const consensusOverride = !strictMode
+      && consensus.decision !== 'WAIT'
+      && (consensus.long >= 3 || consensus.short >= 3)
+
+    if (!consensusOverride) {
+      const waitStep1: Step1Result = { signal: 'WAIT', strength: 3, trend: trendDir, summary: summary1 }
+      const waitStep2: Step2Result = { verdict: 'WAIT', confidence: 45, risk_score: 5, leverage: 1, summary: 'Флэт + нейтральный HTF — нет чёткого направления' }
+      const waitFinal = makeWait(45, 'Флэт без ясного HTF-bias. Ожидаем разрешения структуры.', riskUsd, balance, riskPct, allMethods, consensus)
+      return translateResponse(keys, { step1: waitStep1, step2: waitStep2, final: waitFinal, methods: allMethods, consensus })
+    }
+    // else: 3+ methods agree — continue to full Steps 2 & 3 analysis despite ranging conditions
   }
 
   const strictWarning = strictMode ? `\n⚠️ STRICT MODE (${consecutiveLosses} consecutive losses): require at least 4 confluence factors, confluence_count≥4, else WAIT.\n` : ''

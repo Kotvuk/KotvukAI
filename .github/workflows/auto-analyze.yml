@@ -2,7 +2,9 @@ name: Auto Analysis
 
 on:
   schedule:
-    - cron: '*/5 * * * *'
+    # Every hour — 1 job × ~2 min × 24h × 30 days = ~1440 min/month (under 2000 free-tier limit)
+    # Previous: */5 with 4 parallel jobs = 48 min/hour → quota exhausted in ~41 hours
+    - cron: '0 * * * *'
   workflow_dispatch:
     inputs:
       batch:
@@ -11,46 +13,41 @@ on:
         default: 'all'
 
 jobs:
-  batch-0:
-    name: Analyze pairs 1-5
+  auto-analyze:
+    name: Analyze all pairs + check signals
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'schedule' || github.event.inputs.batch == 'all' || github.event.inputs.batch == '0' }}
     steps:
-      - name: Run analysis batch 0
+      - name: Run all batches and signal check in parallel
         run: |
+          echo "Starting auto-analysis at $(date -u)"
+
+          # Run all 4 endpoints in parallel, wait for all to finish
           curl -sf --max-time 70 \
             "${{ secrets.APP_URL }}/api/analyze/auto?secret=${{ secrets.AUTO_ANALYZE_SECRET }}&batch=0" \
-            | jq '.'
+            -o /tmp/batch0.json &
+          PID0=$!
 
-  batch-1:
-    name: Analyze pairs 6-10
-    runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'schedule' || github.event.inputs.batch == 'all' || github.event.inputs.batch == '1' }}
-    steps:
-      - name: Run analysis batch 1
-        run: |
           curl -sf --max-time 70 \
             "${{ secrets.APP_URL }}/api/analyze/auto?secret=${{ secrets.AUTO_ANALYZE_SECRET }}&batch=1" \
-            | jq '.'
+            -o /tmp/batch1.json &
+          PID1=$!
 
-  batch-2:
-    name: Analyze pairs 11-15
-    runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'schedule' || github.event.inputs.batch == 'all' || github.event.inputs.batch == '2' }}
-    steps:
-      - name: Run analysis batch 2
-        run: |
           curl -sf --max-time 70 \
             "${{ secrets.APP_URL }}/api/analyze/auto?secret=${{ secrets.AUTO_ANALYZE_SECRET }}&batch=2" \
-            | jq '.'
+            -o /tmp/batch2.json &
+          PID2=$!
 
-  check-signals:
-    name: Check signal outcomes
-    runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'schedule' || github.event.inputs.batch == 'all' }}
-    steps:
-      - name: Check TP/SL hits
-        run: |
           curl -sf --max-time 70 \
             "${{ secrets.APP_URL }}/api/signals/auto-check?secret=${{ secrets.AUTO_ANALYZE_SECRET }}" \
-            | jq '.'
+            -o /tmp/signals.json &
+          PID3=$!
+
+          # Wait for all background jobs
+          wait $PID0 $PID1 $PID2 $PID3
+
+          echo "=== Batch 0 ==="; cat /tmp/batch0.json 2>/dev/null || echo "failed"
+          echo "=== Batch 1 ==="; cat /tmp/batch1.json 2>/dev/null || echo "failed"
+          echo "=== Batch 2 ==="; cat /tmp/batch2.json 2>/dev/null || echo "failed"
+          echo "=== Signals ==="; cat /tmp/signals.json 2>/dev/null || echo "failed"
+
+          echo "Done at $(date -u)"

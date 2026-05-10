@@ -8,7 +8,25 @@ import { sendTelegram, sendTelegramToUser } from '@/lib/telegram'
 import { DEFAULT_WATCHLIST } from '@/lib/pairs'
 
 const HTF_MAP: Record<string, string> = {
-  '1h': '1d', '4h': '1d', '15m': '4h',
+  '5m': '1h', '15m': '4h', '1h': '1d', '4h': '1d',
+}
+
+// Fetch markPrices from Binance and sort symbols from most to least expensive.
+// Falls back to original order on timeout or network error.
+async function priceSortedWatchlist(symbols: string[]): Promise<string[]> {
+  try {
+    const ctrl = new AbortController()
+    const timer = setTimeout(() => ctrl.abort(), 5_000)
+    const res = await fetch('https://fapi.binance.com/fapi/v1/premiumIndex', { signal: ctrl.signal })
+    clearTimeout(timer)
+    if (!res.ok) return symbols
+    const data: Array<{ symbol: string; markPrice?: string }> = await res.json()
+    const pm: Record<string, number> = {}
+    for (const d of data) if (d.symbol && d.markPrice) pm[d.symbol] = parseFloat(d.markPrice)
+    return [...symbols].sort((a, b) => (pm[b] ?? -1) - (pm[a] ?? -1))
+  } catch {
+    return symbols
+  }
 }
 
 function toCandles(rows: number[][]): Candle[] {
@@ -159,7 +177,9 @@ export async function GET(req: NextRequest) {
   }
 
   const userWatchlist = await getUserWatchlist(Number(user.id))
-  const watchlist: string[] = userWatchlist?.length ? userWatchlist : DEFAULT_WATCHLIST
+  const rawList: string[] = userWatchlist?.length ? userWatchlist : DEFAULT_WATCHLIST
+  // Sort by price (BTC→ETH→…) and hard-cap at 15 pairs
+  const watchlist = (await priceSortedWatchlist(rawList)).slice(0, 15)
 
   const batchIndex = parseInt(req.nextUrl.searchParams.get('batch') || '0', 10)
   const batchSize  = 5

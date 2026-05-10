@@ -231,6 +231,7 @@ export async function fullAnalysis(
 
   const riskUsd = parseFloat((balance * riskPct / 100).toFixed(2))
   const atrPct  = market.atr14pct ?? 2.0
+  const atrAbs  = market.price * atrPct / 100   // absolute ATR value in $, used in prompt & TP/SL clamp
 
   const recentOutcomes = memorySignals.slice(0, 3).map(s => s.outcome)
   const consecutiveLosses = recentOutcomes.filter(o => o === 'loss').length
@@ -394,8 +395,11 @@ LONG: bullish OB/BB below price + HTF bullish + SSL sweep + FVG/BSL above as tar
 SHORT: bearish OB/BB above price + HTF bearish + BSL sweep + FVG/SSL below as target → OTE 62-79% into OB
 WAIT: no A/A+ POI | R:R < 1:${s2.min_rr || 2} | HTF/LTF conflict | no sweep | price already inside OB
 
-TP = nearest FVG midpoint or liquidity. SL = beyond OB low/high + 0.3% buffer.
-TP/SL must not exceed ±12% from current price $${price}.
+TP = nearest FVG midpoint or liquidity level. SL = beyond OB low/high + 0.3% buffer.
+ATR-14 = ${atrPct}% = $${atrAbs.toFixed(4)} — use it to size TP/SL:
+  SL distance: 1.0–2.0× ATR = $${(atrAbs * 1.0).toFixed(4)}–$${(atrAbs * 2.0).toFixed(4)} from entry.
+  TP distance: min 1.5× SL, ideally 2.5–3× ATR = $${(atrAbs * 2.5).toFixed(4)}–$${(atrAbs * 3.0).toFixed(4)}.
+  TP/SL must stay within ±10% of the ENTRY price (not current price).
 R:R notation: risk:reward = 1:X (where X is the number, e.g. 1:2 means reward is twice the risk).
 
 Reply with ONLY one line of valid JSON (all numeric fields must be numbers, not strings):
@@ -438,31 +442,51 @@ Reply with ONLY one line of valid JSON (all numeric fields must be numbers, not 
     (verdict === 'SHORT' && entryPrice > price * (1 + LIMIT_THRESHOLD))
   ) ? 'limit' : 'market'
 
-  const MAX_DEV = 0.15
-  if (tpPrice < price * (1 - MAX_DEV) || tpPrice > price * (1 + MAX_DEV)) tpPrice = 0
-  if (slPrice < price * (1 - MAX_DEV) || slPrice > price * (1 + MAX_DEV)) slPrice = 0
+  // ATR-based thresholds relative to entryPrice for TP/SL clamping
+  const minSlAbs = atrAbs * 0.5   // SL no closer than 0.5×ATR
+  const maxSlAbs = atrAbs * 3.0   // SL no farther than 3×ATR
+  // Reject AI TP/SL that deviate more than 10% from entryPrice (tight bound relative to entry, not price)
+  const MAX_DEV = 0.10
+  if (!tpPrice || tpPrice < entryPrice * (1 - MAX_DEV) || tpPrice > entryPrice * (1 + MAX_DEV)) tpPrice = 0
+  if (!slPrice || slPrice < entryPrice * (1 - MAX_DEV) || slPrice > entryPrice * (1 + MAX_DEV)) slPrice = 0
 
   const isLongV  = verdict === 'LONG'
   const isShortV = verdict === 'SHORT'
 
   if (isLongV || isShortV) {
+    // Fix swapped TP/SL (AI sometimes returns them inverted)
     if (isLongV  && tpPrice && slPrice && tpPrice < entryPrice && slPrice > entryPrice) [tpPrice, slPrice] = [slPrice, tpPrice]
     if (isShortV && tpPrice && slPrice && tpPrice > entryPrice && slPrice < entryPrice) [tpPrice, slPrice] = [slPrice, tpPrice]
 
+    // ATR-based fallback if AI value is 0 or still pointing the wrong direction
     if (isLongV) {
-      if (!tpPrice || tpPrice <= entryPrice) tpPrice = entryPrice * 1.06
-      if (!slPrice || slPrice >= entryPrice) slPrice = entryPrice * 0.97
+      if (!slPrice || slPrice >= entryPrice) slPrice = parseFloat((entryPrice - atrAbs * 1.2).toFixed(6))
+      if (!tpPrice || tpPrice <= entryPrice) tpPrice = parseFloat((entryPrice + atrAbs * 2.5).toFixed(6))
     } else {
-      if (!tpPrice || tpPrice >= entryPrice) tpPrice = entryPrice * 0.94
-      if (!slPrice || slPrice <= entryPrice) slPrice = entryPrice * 1.03
+      if (!slPrice || slPrice <= entryPrice) slPrice = parseFloat((entryPrice + atrAbs * 1.2).toFixed(6))
+      if (!tpPrice || tpPrice >= entryPrice) tpPrice = parseFloat((entryPrice - atrAbs * 2.5).toFixed(6))
     }
 
-    const tpDist = Math.abs(tpPrice - entryPrice)
+    // Clamp SL to [0.5×ATR, 3×ATR] from entry — prevents too-tight or insane SL
     const slDist = Math.abs(slPrice - entryPrice)
-    if (slDist > 0 && tpDist / slDist < 1.5) {
-      if (isLongV) tpPrice = entryPrice + slDist * 1.5
-      else         tpPrice = entryPrice - slDist * 1.5
+    if (slDist < minSlAbs) {
+      slPrice = isLongV ? entryPrice - minSlAbs : entryPrice + minSlAbs
+    } else if (slDist > maxSlAbs) {
+      slPrice = isLongV ? entryPrice - maxSlAbs : entryPrice + maxSlAbs
     }
+
+    // Enforce minimum R:R 1:1.5 (TP must be at least 1.5× SL distance)
+    const slDistFinal = Math.abs(slPrice - entryPrice)
+    const tpDist      = Math.abs(tpPrice - entryPrice)
+    if (slDistFinal > 0 && tpDist / slDistFinal < 1.5) {
+      if (isLongV) tpPrice = entryPrice + slDistFinal * 1.5
+      else         tpPrice = entryPrice - slDistFinal * 1.5
+    }
+
+    // Round to sensible precision (no more than 6 significant figures)
+    const sigFigs = entryPrice >= 1000 ? 2 : entryPrice >= 1 ? 4 : 6
+    tpPrice = parseFloat(tpPrice.toFixed(sigFigs))
+    slPrice = parseFloat(slPrice.toFixed(sigFigs))
   }
 
   const tp_pct = parseFloat(((tpPrice - entryPrice) / entryPrice * 100).toFixed(2))

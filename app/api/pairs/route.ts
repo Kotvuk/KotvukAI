@@ -5,7 +5,7 @@ const EXCLUDED_SUFFIXES = ['UP', 'DOWN', 'BULL', 'BEAR', '3L', '3S', '2L', '2S',
 
 const TOP_COINS = [
   'BTC','ETH','BNB','SOL','XRP','ADA','DOGE','AVAX','DOT',
-  'MATIC','LTC','BCH','TRX','ETC','XLM','ATOM','LINK','UNI',
+  'POL','LTC','BCH','TRX','ETC','XLM','ATOM','LINK','UNI',
 ]
 
 function toSlash(symbol: string): string {

@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { getUser } from '@/lib/auth-helper'
 import { getPendingTrades, activateTrade, cancelTrade, createNotification } from '@/lib/db'
-import { sendTelegram } from '@/lib/telegram'
+import { sendTelegram, sendTelegramToUser } from '@/lib/telegram'
 
 export async function POST(req: NextRequest) {
   const user = await getUser(req)
@@ -28,6 +28,7 @@ export async function POST(req: NextRequest) {
   let activated = 0
   let cancelled = 0
   const now = Date.now()
+  const tgChatId = String(user.telegram_chat_id || '')
 
   for (const trade of pending) {
     const sym = trade.pair.replace('/', '')
@@ -35,8 +36,9 @@ export async function POST(req: NextRequest) {
     if (trade.expires_at && new Date(trade.expires_at).getTime() < now) {
       const wasCancelled = await cancelTrade(trade.id, user.id)
       if (wasCancelled) {
+        const msg = `🗑️ Лимитный ордер <b>${trade.direction.toUpperCase()} ${trade.pair}</b> отменён — истёк срок (7 дней)`
         await createNotification(user.id, `🗑️ Лимитный ордер ${trade.direction.toUpperCase()} ${trade.pair} отменён (истёк срок)`)
-        await sendTelegram(`🗑️ Лимитный ордер <b>${trade.direction.toUpperCase()} ${trade.pair}</b> отменён — истёк срок (7 дней)`)
+        ;(tgChatId ? sendTelegramToUser(tgChatId, msg) : sendTelegram(msg)).catch(() => {})
         cancelled++
       }
       continue
@@ -53,9 +55,9 @@ export async function POST(req: NextRequest) {
     if (limitHit) {
       const wasActivated = await activateTrade(trade.id, user.id, trade.limit_price)
       if (wasActivated) {
-        const activateMsg = `✅ <b>Лимитный ордер исполнен!</b>\n${trade.direction.toUpperCase()} ${trade.pair} по $${trade.limit_price}`
+        const msg = `✅ <b>Лимитный ордер исполнен!</b>\n${trade.direction.toUpperCase()} ${trade.pair} по $${trade.limit_price}`
         await createNotification(user.id, `✅ Лимитный ордер исполнен! ${trade.direction.toUpperCase()} ${trade.pair} по $${trade.limit_price}`)
-        await sendTelegram(activateMsg)
+        ;(tgChatId ? sendTelegramToUser(tgChatId, msg) : sendTelegram(msg)).catch(() => {})
         activated++
       }
     }

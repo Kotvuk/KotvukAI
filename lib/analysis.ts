@@ -341,10 +341,19 @@ Reply with a single-line JSON:
   const sweepOk = sweepConfirmed || Boolean(s1.sweep_ssl) || Boolean(s1.sweep_bsl)
 
   if (!confluenceOk) {
-    const waitStep1: Step1Result = { signal: 'WAIT', strength: 4, trend: trendDir, summary: summary1 }
-    const waitStep2: Step2Result = { verdict: 'WAIT', confidence: 48, risk_score: 5, leverage: 1, summary: `Only ${confluenceCount} factor(s) out of ${minConfluence} required. ${step2Summary}` }
-    const waitFinal = makeWait(48, `Insufficient confluence (${confluenceCount}/${minConfluence}). ${String(s2.wait_reason || 'Wait for a cleaner setup.')}`, riskUsd, balance, riskPct, allMethods, consensus)
-    return translateResponse(keys, { step1: waitStep1, step2: waitStep2, final: waitFinal, methods: allMethods, consensus })
+    // Allow through if ≥3 independent methods agree on direction —
+    // consensus context is passed to Step 3 so it can make the final call
+    const consensusOverride = !strictMode
+      && consensus.decision !== 'WAIT'
+      && (consensus.long >= 3 || consensus.short >= 3)
+
+    if (!consensusOverride) {
+      const waitStep1: Step1Result = { signal: 'WAIT', strength: 4, trend: trendDir, summary: summary1 }
+      const waitStep2: Step2Result = { verdict: 'WAIT', confidence: 48, risk_score: 5, leverage: 1, summary: `Only ${confluenceCount} factor(s) out of ${minConfluence} required. ${step2Summary}` }
+      const waitFinal = makeWait(48, `Insufficient confluence (${confluenceCount}/${minConfluence}). ${String(s2.wait_reason || 'Wait for a cleaner setup.')}`, riskUsd, balance, riskPct, allMethods, consensus)
+      return translateResponse(keys, { step1: waitStep1, step2: waitStep2, final: waitFinal, methods: allMethods, consensus })
+    }
+    // else: continue to Step 3 — consensus (3×LONG/SHORT) overrides low confluence count
   }
 
   const systemPrompt3 = `You are an institutional SMC trader with 10 years of experience trading Smart Money Concepts. Your goal is high-quality signals with minimum R:R of 1:1.5. You only trade when there is confluence of at least 3 factors. You do not trade in ranging markets. A liquidity sweep is a mandatory condition for entry. Reply only with valid JSON.`

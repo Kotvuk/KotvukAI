@@ -1,12 +1,7 @@
-﻿import { NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { STATIC_PAIRS } from '@/lib/pairs'
 
 const EXCLUDED_SUFFIXES = ['UP', 'DOWN', 'BULL', 'BEAR', '3L', '3S', '2L', '2S', '5L', '5S']
-
-const TOP_COINS = [
-  'BTC','ETH','BNB','SOL','XRP','ADA','DOGE','AVAX','DOT',
-  'POL','LTC','BCH','TRX','ETC','XLM','ATOM','LINK','UNI',
-]
 
 function toSlash(symbol: string): string {
   return symbol.slice(0, -4) + '/USDT'
@@ -24,6 +19,7 @@ export async function GET() {
     const ctrl = new AbortController()
     const timer = setTimeout(() => ctrl.abort(), 10000)
 
+    // premiumIndex returns markPrice — we use it for price-based sorting
     const [futuresRes, spotRes] = await Promise.allSettled([
       fetch('https://fapi.binance.com/fapi/v1/premiumIndex', {
         signal: ctrl.signal,
@@ -36,22 +32,31 @@ export async function GET() {
     ])
     clearTimeout(timer)
 
-    const pairSet = new Set<string>()
+    // symbol → markPrice map for sorting
+    const priceMap: Record<string, number> = {}
+    const pairSet  = new Set<string>()
 
     if (futuresRes.status === 'fulfilled' && futuresRes.value.ok) {
-      const data = await futuresRes.value.json() as Array<{ symbol: string }>
-      for (const { symbol } of data) {
+      const data = await futuresRes.value.json() as Array<{ symbol: string; markPrice?: string }>
+      for (const item of data) {
+        const { symbol, markPrice } = item
         if (symbol.endsWith('USDT') && !isLeverageToken(symbol)) {
-          pairSet.add(toSlash(symbol))
+          const pair = toSlash(symbol)
+          pairSet.add(pair)
+          if (markPrice) priceMap[pair] = parseFloat(markPrice)
         }
       }
     }
 
     if (spotRes.status === 'fulfilled' && spotRes.value.ok) {
-      const data = await spotRes.value.json() as Array<{ symbol: string }>
-      for (const { symbol } of data) {
+      const data = await spotRes.value.json() as Array<{ symbol: string; price?: string }>
+      for (const item of data) {
+        const { symbol, price } = item
         if (symbol.endsWith('USDT') && !isLeverageToken(symbol)) {
-          pairSet.add(toSlash(symbol))
+          const pair = toSlash(symbol)
+          pairSet.add(pair)
+          // only fill price if not already known from futures (futures price is more reliable)
+          if (!priceMap[pair] && price) priceMap[pair] = parseFloat(price)
         }
       }
     }
@@ -60,15 +65,11 @@ export async function GET() {
       return NextResponse.json(STATIC_PAIRS)
     }
 
+    // Sort by price descending (most expensive first) — pairs without price go to the end
     const sorted = Array.from(pairSet).sort((a, b) => {
-      const ac = a.split('/')[0]
-      const bc = b.split('/')[0]
-      const ai = TOP_COINS.indexOf(ac)
-      const bi = TOP_COINS.indexOf(bc)
-      if (ai !== -1 && bi !== -1) return ai - bi
-      if (ai !== -1) return -1
-      if (bi !== -1) return 1
-      return ac.localeCompare(bc)
+      const pa = priceMap[a] ?? -1
+      const pb = priceMap[b] ?? -1
+      return pb - pa
     })
 
     return NextResponse.json(sorted)

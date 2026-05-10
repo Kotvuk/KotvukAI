@@ -32,6 +32,7 @@ export interface User {
   stripe_customer_id?: string | null
   telegram_chat_id?: string | null
   watchlist?: string[] | null
+  auto_analyze_paused?: boolean
   created_at: string
 }
 
@@ -593,6 +594,10 @@ export async function updateUserTelegramChatId(userId: number, chatId: string): 
   await sql`UPDATE users SET telegram_chat_id = ${chatId} WHERE id = ${userId}`
 }
 
+export async function updateAutoAnalyzePaused(userId: number, paused: boolean): Promise<void> {
+  await sql`UPDATE users SET auto_analyze_paused = ${paused} WHERE id = ${userId}`
+}
+
 export async function getUserWatchlist(userId: number): Promise<string[] | null> {
   const rows = await sql`SELECT watchlist FROM users WHERE id = ${userId} LIMIT 1`
   if (!rows[0]) return null
@@ -653,6 +658,7 @@ export async function initDB() {
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_customer_id TEXT`
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS telegram_chat_id TEXT`
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS watchlist JSONB`
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS auto_analyze_paused BOOLEAN DEFAULT FALSE`
   await sql`
     CREATE TABLE IF NOT EXISTS signals (
       id SERIAL PRIMARY KEY,

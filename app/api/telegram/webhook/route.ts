@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
-import { sql, updateUserWatchlist, getUserWatchlist } from '@/lib/db'
+import { sql, updateUserWatchlist, getUserWatchlist, updateAutoAnalyzePaused } from '@/lib/db'
 import { DEFAULT_WATCHLIST } from '@/lib/pairs'
 
 const TG_API = 'https://api.telegram.org'
@@ -51,8 +51,9 @@ export async function POST(req: NextRequest) {
     await reply(chatId, '❌ Администратор не найден в БД. Зарегистрируйтесь на сайте.')
     return NextResponse.json({ ok: true })
   }
-  const user = users[0]
+  const user   = users[0] as Record<string, any>
   const userId = Number(user.id)
+  const isPaused = Boolean(user.auto_analyze_paused)
 
   const userWatchlist = await getUserWatchlist(userId)
   const current: string[] = userWatchlist?.length ? userWatchlist : DEFAULT_WATCHLIST
@@ -66,19 +67,53 @@ export async function POST(req: NextRequest) {
     case '/help': {
       const txt = '🤖 <b>KotvukAI — Авто-Анализ</b>\n\n'
         + 'Команды:\n'
+        + '/status — текущий статус\n'
         + '/pairs — список отслеживаемых пар\n'
         + '/addpair BTCUSDT — добавить пару\n'
         + '/removepair BTCUSDT — убрать пару\n'
         + '/setdefault — сбросить к топ-15\n'
-        + '/status — статус авто-анализа\n\n'
-        + 'Авто-анализ запускается каждые 15 минут по расписанию GitHub Actions.'
+        + '/stop — ⏸ приостановить авто-анализ\n'
+        + '/resume — ▶️ возобновить авто-анализ\n\n'
+        + 'Авто-анализ запускается каждый час по расписанию.\n'
+        + `Статус: ${isPaused ? '⏸ Приостановлен' : '✅ Активен'}`
       await reply(chatId, txt)
       break
     }
 
+    case '/stop': {
+      if (isPaused) {
+        await reply(chatId, 'ℹ️ Авто-анализ уже приостановлен. Используй /resume для запуска.')
+        break
+      }
+      await updateAutoAnalyzePaused(userId, true)
+      await reply(
+        chatId,
+        '⏸ <b>Авто-анализ приостановлен.</b>\n\n'
+        + `Пары (${current.length}) сохранены.\n`
+        + 'Используй /resume чтобы возобновить.',
+      )
+      break
+    }
+
+    case '/resume': {
+      if (!isPaused) {
+        await reply(chatId, 'ℹ️ Авто-анализ уже активен. Используй /stop для паузы.')
+        break
+      }
+      await updateAutoAnalyzePaused(userId, false)
+      await reply(
+        chatId,
+        '▶️ <b>Авто-анализ возобновлён!</b>\n\n'
+        + `Отслеживается ${current.length} пар.\n`
+        + 'Следующий запуск — в начале следующего часа.',
+      )
+      break
+    }
+
     case '/pairs': {
+      const statusIcon = isPaused ? '⏸' : '✅'
       const list = current.map((p, i) => `${i + 1}. ${p}`).join('\n')
-      await reply(chatId, `📊 <b>Отслеживаемые пары (${current.length}):</b>\n\n${list}`)
+      await reply(chatId, `${statusIcon} <b>Отслеживаемые пары (${current.length}):</b>\n\n${list}`)
       break
     }
 
@@ -126,13 +161,18 @@ export async function POST(req: NextRequest) {
     case '/status': {
       const appUrl  = process.env.NEXT_PUBLIC_APP_URL || '(URL не задан)'
       const batches = Math.ceil(current.length / 5)
+      const statusLine = isPaused
+        ? '⏸ <b>ПРИОСТАНОВЛЕН</b> (используй /resume)'
+        : '✅ <b>АКТИВЕН</b> (используй /stop для паузы)'
       await reply(
         chatId,
         `📡 <b>Статус авто-анализа</b>\n\n`
+        + `${statusLine}\n\n`
         + `Пар: ${current.length} (${batches} батч${batches === 1 ? '' : batches < 5 ? 'а' : 'ей'})\n`
-        + `Расписание: каждые 15 минут\n`
+        + `Расписание: каждый час (00 минут)\n`
         + `Сервер: ${appUrl}\n\n`
-        + `Уведомления отправляются при сигнале LONG или SHORT.`,
+        + `Уведомления приходят при сигнале LONG или SHORT.\n`
+        + `TP/SL исходы проверяются каждый час.`,
       )
       break
     }

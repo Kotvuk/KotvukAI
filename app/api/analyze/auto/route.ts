@@ -3,7 +3,7 @@ export const maxDuration = 60
 import { NextRequest, NextResponse } from 'next/server'
 import { fullAnalysis, calcMarketData, type Candle } from '@/lib/analysis'
 import { calcEnhancedSMC } from '@/lib/smc'
-import { sql, saveSignal, createTrade, createNotification, getUserWatchlist } from '@/lib/db'
+import { sql, saveSignal, createTrade, createNotification, getUserWatchlist, getSignalsForPair } from '@/lib/db'
 import { sendTelegram, sendTelegramToUser } from '@/lib/telegram'
 import { DEFAULT_WATCHLIST } from '@/lib/pairs'
 
@@ -74,7 +74,8 @@ async function analyzeOne(
     const userId   = Number(user.id)
     const tfLabel  = interval === '1h' ? '1ч' : interval === '4h' ? '4ч' : interval
 
-    const { step1, step2, final } = await fullAnalysis(sym, tfLabel, market, candles, [], maxLev, balance, riskPct)
+    const memorySignals = await getSignalsForPair(userId, sym, 5)
+    const { step1, step2, final } = await fullAnalysis(sym, tfLabel, market, candles, memorySignals, maxLev, balance, riskPct)
 
     await saveSignal(userId, {
       pair: sym, timeframe: tfLabel,
@@ -152,6 +153,10 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: `User not found: ${adminEmail}` }, { status: 404 })
   }
   const user = users[0] as Record<string, any>
+
+  if (user.auto_analyze_paused) {
+    return NextResponse.json({ ok: true, message: 'Auto-analysis is paused', paused: true })
+  }
 
   const userWatchlist = await getUserWatchlist(Number(user.id))
   const watchlist: string[] = userWatchlist?.length ? userWatchlist : DEFAULT_WATCHLIST

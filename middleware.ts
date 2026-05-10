@@ -17,6 +17,7 @@ export async function middleware(req: NextRequest) {
     !pathname.startsWith('/api/analyze/batch') &&
     !pathname.startsWith('/api/analyze/auto') &&
     !pathname.startsWith('/api/signals/auto-check') &&
+    !pathname.startsWith('/api/profile/') &&
     !pathname.startsWith('/api/telegram/webhook') &&
     !pathname.startsWith('/api/billing/webhook')
 

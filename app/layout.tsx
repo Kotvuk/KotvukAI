@@ -20,7 +20,7 @@ export const metadata: Metadata = {
     default: 'KotvukAI — AI-анализ криптовалют | Сигналы LONG/SHORT бесплатно',
     template: '%s | KotvukAI',
   },
-  description: 'AI-аналитик криптовалют. Автоматические сигналы LONG/SHORT, SMC Order Blocks, Fair Value Gaps, OTE-входы, 4-шаговый анализ. Groq AI.',
+  description: 'AI-аналитик криптовалют. Автоматические сигналы LONG/SHORT, SMC Order Blocks, Fair Value Gaps, OTE-входы, 3-шаговый анализ.',
   keywords: ['AI анализ криптовалют', 'крипто сигналы', 'Smart Money Concepts', 'Order Blocks', 'Fair Value Gap', 'Bitcoin анализ', 'KotvukAI', 'crypto AI', 'SMC trading', 'LONG SHORT сигналы', 'криптовалюта'],
   authors: [{ name: 'KotvukAI', url: SITE_URL }],
   creator: 'KotvukAI',
@@ -72,7 +72,7 @@ const jsonLd = {
   ],
   featureList: [
     '6-метод анализ с консенсусом 3/6 (SMC + индикаторы + Price Action + Wyckoff + Volume Profile + Funding Rate)',
-    'AI-синтез через Groq — финальный сигнал LONG/SHORT/WAIT',
+    'AI-синтез — финальный сигнал LONG/SHORT/WAIT',
     'Smart Money Concepts: Order Blocks, Fair Value Gaps, Liquidity',
     'Break of Structure / Change of Character',
     'OTE-входы 62-79% в зону Order Block',

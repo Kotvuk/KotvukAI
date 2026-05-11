@@ -54,7 +54,7 @@ export default function OgImage() {
 
         {/* Tags bottom */}
         <div style={{ position: 'absolute', bottom: 60, left: 90, display: 'flex', gap: 16 }}>
-          {['Бесплатно', 'SMC + OTE', 'Groq AI'].map(tag => (
+          {['Бесплатно', 'SMC + OTE', 'AI Analysis'].map(tag => (
             <div key={tag} style={{
               padding: '8px 18px',
               border: '1px solid #2c2c2c',

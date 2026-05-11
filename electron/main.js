@@ -89,37 +89,29 @@ function createSplash() {
 function startNextServer() {
   const isPackaged = app.isPackaged
 
-  let nextBin, cwd, args
+  let nextScript, cwd, args
 
   if (isPackaged) {
-    // In packaged app, Next.js standalone server is bundled
-    nextBin = path.join(process.resourcesPath, 'app', 'node_modules', '.bin', 'next')
+    // electron-builder removes node_modules/.bin — use Next.js CLI script directly.
+    // ELECTRON_RUN_AS_NODE=1 makes Electron act as a plain Node.js runtime.
+    nextScript = path.join(process.resourcesPath, 'app', 'node_modules', 'next', 'dist', 'bin', 'next')
     cwd = path.join(process.resourcesPath, 'app')
     args = ['start', '--port', String(PORT)]
   } else {
-    // Dev mode: run next dev
-    nextBin = path.join(__dirname, '..', 'node_modules', '.bin', 'next')
+    // Dev mode: next binary available via node_modules/.bin
+    nextScript = path.join(__dirname, '..', 'node_modules', 'next', 'dist', 'bin', 'next')
     cwd = path.join(__dirname, '..')
     args = ['dev', '--port', String(PORT)]
   }
 
-  // Use node to run next directly — avoids .cmd shell issues on Windows with non-ASCII paths
-  const nodeBin = process.execPath // electron's bundled node
-  const nextScript = path.join(path.dirname(nextBin), '..', 'next', 'dist', 'bin', 'next')
-  const actualNode = process.platform === 'win32'
-    ? path.join(path.dirname(process.execPath), '..', '..', 'node_modules', '.bin', '..', '..', 'node.exe')
-    : 'node'
-
-  // Simplest: just use the .cmd via cmd.exe on Windows
-  let spawnCmd, spawnArgs, spawnOpts
-  if (process.platform === 'win32') {
-    spawnCmd = 'cmd.exe'
-    spawnArgs = ['/d', '/s', '/c', `"${nextBin}.cmd" ${args.join(' ')}`]
-    spawnOpts = { cwd, env: { ...process.env, PORT: String(PORT) }, stdio: ['ignore', 'pipe', 'pipe'], windowsVerbatimArguments: true }
-  } else {
-    spawnCmd = nextBin
-    spawnArgs = args
-    spawnOpts = { cwd, env: { ...process.env, PORT: String(PORT) }, stdio: ['ignore', 'pipe', 'pipe'] }
+  // Spawn Electron itself as a Node.js runtime via ELECTRON_RUN_AS_NODE=1.
+  // This avoids any dependency on cmd.exe, .bin wrappers, or external node.exe.
+  const spawnCmd = process.execPath
+  const spawnArgs = [nextScript, ...args]
+  const spawnOpts = {
+    cwd,
+    env: { ...process.env, ELECTRON_RUN_AS_NODE: '1', PORT: String(PORT) },
+    stdio: ['ignore', 'pipe', 'pipe'],
   }
 
   nextProcess = spawn(spawnCmd, spawnArgs, spawnOpts)

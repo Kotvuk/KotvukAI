@@ -17,7 +17,7 @@ const SettingsPanel= dynamic(() => import('@/components/app/panels/SettingsPanel
 const AiChat           = dynamic(() => import('@/components/app/AiChat'),              { ssr: false })
 const OnboardingModal  = dynamic(() => import('@/components/app/OnboardingModal'),    { ssr: false })
 
-const ADMIN_EMAILS = ['kotvukai@gmail.com']
+const ADMIN_EMAIL = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || '').toLowerCase()
 
 type Panel = 'dash' | 'ai' | 'trades' | 'news' | 'notifs' | 'history' | 'settings'
 
@@ -69,7 +69,7 @@ export default function DashboardPage() {
 
   if (!loading && !user) return null
 
-  const isAdmin = ADMIN_EMAILS.includes((user?.email || '').toLowerCase())
+  const isAdmin = ADMIN_EMAIL && ADMIN_EMAIL === (user?.email || '').toLowerCase()
 
   const navItems: { id: Panel; label: string; icon: React.ReactNode; dot?: boolean }[] = [
     {
@@ -149,7 +149,6 @@ export default function DashboardPage() {
               {item.dot && <span className="nb-dot" />}
             </button>
           ))}
-          {/* Кнопка Админ — только для kotvukai@gmail.com */}
           {isAdmin && (
             <button
               className="nb"
@@ -167,8 +166,6 @@ export default function DashboardPage() {
         <div id="content">
           {active === 'dash'     && <DashPanel />}
 
-          {/* AiPanel: монтируется при первом визите и остаётся в DOM навсегда.
-              Видимость управляется внутри самого AiPanel через style.display */}
           {aiMounted && (
             <AiPanel
               active={active === 'ai'}

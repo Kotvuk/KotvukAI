@@ -7,8 +7,8 @@ export async function GET(req: NextRequest) {
   const user = await getUser(req)
   if (!user) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 })
 
-  const adminEmails = (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim())
-  if (!adminEmails.includes(user.email || '')) {
+  const adminEmails = (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase())
+  if (!adminEmails.includes((user.email || '').toLowerCase())) {
     return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 })
   }
 

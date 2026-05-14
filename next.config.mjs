@@ -10,7 +10,6 @@ const nextConfig = {
   async headers() {
     return [
       {
-        // Cache static assets aggressively
         source: '/favicon.svg',
         headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
       },

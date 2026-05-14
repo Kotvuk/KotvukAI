@@ -19,7 +19,6 @@ export async function GET() {
     const ctrl = new AbortController()
     const timer = setTimeout(() => ctrl.abort(), 10000)
 
-    // premiumIndex returns markPrice — we use it for price-based sorting
     const [futuresRes, spotRes] = await Promise.allSettled([
       fetch('https://fapi.binance.com/fapi/v1/premiumIndex', {
         signal: ctrl.signal,
@@ -32,7 +31,6 @@ export async function GET() {
     ])
     clearTimeout(timer)
 
-    // symbol → markPrice map for sorting
     const priceMap: Record<string, number> = {}
     const pairSet  = new Set<string>()
 
@@ -55,7 +53,6 @@ export async function GET() {
         if (symbol.endsWith('USDT') && !isLeverageToken(symbol)) {
           const pair = toSlash(symbol)
           pairSet.add(pair)
-          // only fill price if not already known from futures (futures price is more reliable)
           if (!priceMap[pair] && price) priceMap[pair] = parseFloat(price)
         }
       }
@@ -65,7 +62,6 @@ export async function GET() {
       return NextResponse.json(STATIC_PAIRS)
     }
 
-    // Sort by price descending (most expensive first) — pairs without price go to the end
     const sorted = Array.from(pairSet).sort((a, b) => {
       const pa = priceMap[a] ?? -1
       const pb = priceMap[b] ?? -1

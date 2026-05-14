@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { getUser } from '@/lib/auth-helper'
-import { getSubscription, updateSubscriptionTier, SUBSCRIPTION_LIMITS } from '@/lib/db'
+import { getSubscription, SUBSCRIPTION_LIMITS } from '@/lib/db'
 
 const SUBSCRIPTION_PLANS = [
   {
@@ -53,15 +53,3 @@ export async function GET(req: NextRequest) {
   })
 }
 
-export async function POST(req: NextRequest) {
-  const user = await getUser(req)
-  if (!user) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 })
-
-  const { tier, expires_at } = await req.json()
-  if (!['free', 'starter', 'pro', 'elite'].includes(tier)) {
-    return NextResponse.json({ ok: false, error: 'Invalid tier' }, { status: 400 })
-  }
-
-  await updateSubscriptionTier(user.id, tier, expires_at ? new Date(expires_at) : undefined)
-  return NextResponse.json({ ok: true, tier })
-}

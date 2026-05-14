@@ -255,7 +255,7 @@ EMA-50/200: ${market.priceVsEma50}/${market.priceVsEma200}.
 Reply with a single-line JSON:
 {"trend":"bullish|bearish|ranging","htf":"bullish|bearish|neutral","phase":"accumulation|distribution|markup|markdown|ranging","choch":true|false,"sweep_ssl":true|false,"sweep_bsl":true|false,"volatility":"low|medium|high","key_level":${price},"bos_confirmed":true|false,"sweep_recent":true|false,"ranging_risk":true|false,"summary":"<2 sentences: structure + what to expect in ${session.split(' ')[0]} session>"}`
 
-  const raw1 = await groqGenerate(keys, quickModel, prompt1, 350, 0.1, undefined, 'low')
+  const raw1 = await groqGenerate(keys, quickModel, prompt1, 350, 0.1)
   let s1: Record<string, unknown> = {}
   try { s1 = extractJSON(raw1) } catch { s1 = { trend: 'ranging', htf: 'neutral', summary: 'No data', ranging_risk: true } }
 
@@ -329,7 +329,7 @@ Minimum 3 factors for LONG/SHORT. Strict mode — minimum 4.
 Reply with a single-line JSON:
 {"poi_type":"OB|BB|FVG|none","poi_dir":"bullish|bearish","poi_quality":"A+|A|B|C","poi_high":0,"poi_low":0,"confluence_score":<0-100>,"confluence_count":<1-9>,"sweep_confirmed":true|false,"fvg_target":true|false,"liq_target":true|false,"entry_zone":"<POI description with price range>","wait_reason":"<WAIT reason>","min_rr":<1.5-5.0>}`
 
-  const raw2 = await groqGenerate(keys, quickModel, prompt2, 450, 0.15, undefined, 'low')
+  const raw2 = await groqGenerate(keys, quickModel, prompt2, 450, 0.15)
   let s2: Record<string, unknown> = {}
   try { s2 = extractJSON(raw2) } catch { s2 = { poi_type: 'none', confluence_score: 0, confluence_count: 0, sweep_confirmed: false } }
 
@@ -405,8 +405,8 @@ R:R notation: risk:reward = 1:X (where X is the number, e.g. 1:2 means reward is
 Reply with ONLY one line of valid JSON (all numeric fields must be numbers, not strings):
 {"v":"LONG|SHORT|WAIT","c":<55-95>,"r":<1-9>,"l":<leverage 1-${maxLeverage}>,"e":<OTE price>,"tp":<TP price>,"sl":<SL price>,"rr":<R:R number, e.g. 1.5>,"min_rr":<${s2.min_rr || 2.0}>,"risk_usd":${riskUsd},"pos_usd":<${riskUsd} / SL_distance% * 100>,"trend":"uptrend|downtrend|sideways","desc":"<5 sentences: structure, POI, entry logic, target, invalidation>","entry_logic":"<specific OTE entry: 62-79% into OB $X-$Y = $Z>","confluence":"<${confluenceCount} specific factors with prices>","invalidation":"<candle close below/above $X>","position_size":"<$${riskUsd} / SL_dist% = $X position with Nx leverage>","exit_why":"<FVG $X-$Y or liquidity $X>","wait_for":"<ONLY for WAIT: wait for $X under condition Y>","i1":"<HTF structure + BOS/CHoCH>","i2":"<POI $X-$Y [quality] + entry $Z>","i3":"<target: FVG/liquidity $X>"}`
 
-  let raw3 = await groqGenerate(keys, mainModel, prompt3, 1200, 0.3, systemPrompt3, 'high')
-  const json = await parseJSON(raw3, keys, mainModel, prompt3, 1200, 0.3, systemPrompt3, 'high')
+  let raw3 = await groqGenerate(keys, mainModel, prompt3, 1200, 0.3, systemPrompt3)
+  const json = await parseJSON(raw3, keys, mainModel, prompt3, 1200, 0.3, systemPrompt3)
 
   const aiRr         = Number(json.rr || 0)
   const minRr        = Number(json.min_rr || s2.min_rr || 2.0)
@@ -607,7 +607,7 @@ Translate the following JSON values to Russian. Rules:
 ${JSON.stringify(toTranslate)}`
 
   try {
-    const raw = await groqGenerate(keys, getGroqFastModel(), prompt, 1500, 0.05, undefined, 'low')
+    const raw = await groqGenerate(keys, getGroqFastModel(), prompt, 1500, 0.05)
     const tr = extractJSON(raw)
     const g = (k: string): string =>
       tr[k] && typeof tr[k] === 'string' ? String(tr[k]) : texts[k]

@@ -11,11 +11,11 @@ export function loadGroqKeys(): string[] {
 }
 
 export function getGroqModel(): string {
-  return process.env.GROQ_MODEL || 'openai/gpt-oss-120b'
+  return process.env.GROQ_MODEL || 'moonshotai/kimi-k2-instruct'
 }
 
 export function getGroqFastModel(): string {
-  return process.env.GROQ_MODEL_FAST || 'openai/gpt-oss-20b'
+  return process.env.GROQ_MODEL_FAST || 'meta-llama/llama-4-scout-17b-16e-instruct'
 }
 
 export async function groqGenerate(

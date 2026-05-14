@@ -482,6 +482,15 @@ export async function saveDrawings(userId: number, pair: string, timeframe: stri
   `
 }
 
+export async function adjustBalance(userId: number, delta: number): Promise<number> {
+  const rows = await sql`
+    UPDATE users SET ai_balance = GREATEST(0, ai_balance + ${delta})
+    WHERE id = ${userId}
+    RETURNING ai_balance::float
+  `
+  return Number(rows[0]?.ai_balance ?? 0)
+}
+
 export async function updateUserSettings(userId: number, data: {
   nickname?: string; email?: string; lang?: string
   ai_max_leverage?: number
@@ -653,7 +662,7 @@ export async function initDB() {
     )
   `
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS ai_max_leverage INTEGER DEFAULT 20`
-  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS ai_balance NUMERIC DEFAULT 1000`
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS ai_balance NUMERIC DEFAULT 10000`
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS ai_risk_per_trade NUMERIC DEFAULT 1.0`
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_customer_id TEXT`
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS telegram_chat_id TEXT`

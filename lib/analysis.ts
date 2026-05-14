@@ -511,7 +511,7 @@ Reply with ONLY one line of valid JSON (all numeric fields must be numbers, not 
     rr: aiRr || parseFloat(rrStr),
     min_rr: minRr,
     risk_usd: riskUsdFinal,
-    pos_usd: posUsd || Math.round(riskUsd / Math.max(0.01, sl_pct / 100)),
+    pos_usd: Math.min(posUsd || Math.round(riskUsd / Math.max(0.01, sl_pct / 100)), Math.round(balance * maxLeverage)),
     ob_used: selectedOB ? (() => {
       const scored = scoreOrderBlock(selectedOB)
       return {

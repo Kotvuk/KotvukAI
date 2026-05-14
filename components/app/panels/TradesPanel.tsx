@@ -4,6 +4,7 @@ import { useLang } from '@/contexts/LangContext'
 import { showToast } from '@/components/ui/Toast'
 import { usePairs } from '@/hooks/usePairs'
 
+
 interface Trade {
   id: number; pair: string; direction: string; order_type: string
   amount: number; entry_price: number | null; tp_price: number | null
@@ -41,11 +42,25 @@ export default function TradesPanel({ defaultAccount = 'user', onTabMounted }: T
   const [loading, setLoading] = useState(false)
   const [livePrices, setLivePrices] = useState<Record<string, number>>({})
   const [editStates, setEditStates] = useState<Record<number, EditState>>({})
+  const [aiBalance, setAiBalance] = useState<number | null>(null)
+  const [balanceModal, setBalanceModal] = useState(false)
+  const [balanceType, setBalanceType] = useState<'add' | 'subtract'>('add')
+  const [balanceInput, setBalanceInput] = useState('')
+  const [balanceSaving, setBalanceSaving] = useState(false)
   const openRef = useRef<Trade[]>([])
 
   useEffect(() => { loadTrades() }, [account])
 
-  useEffect(() => { onTabMounted?.() }, [])
+  useEffect(() => {
+    onTabMounted?.()
+    loadBalance()
+  }, [])
+
+  function loadBalance() {
+    fetch('/api/settings').then(r => r.json()).then(d => {
+      if (d.ok) setAiBalance(Number(d.settings.ai_balance ?? 10000))
+    }).catch(() => {})
+  }
 
   useEffect(() => {
     const raw = localStorage.getItem('kotvuk:trade_prefill')
@@ -95,6 +110,28 @@ export default function TradesPanel({ defaultAccount = 'user', onTabMounted }: T
       setTrades(d.trades || [])
       openRef.current = (d.trades || []).filter((t: Trade) => t.status === 'open')
     }
+    loadBalance()
+  }
+
+  async function handleBalanceAdjust() {
+    const amount = parseFloat(balanceInput)
+    if (!amount || amount <= 0) { showToast(t('enter_amount'), 'err'); return }
+    setBalanceSaving(true)
+    try {
+      const r = await fetch('/api/balance/adjust', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: balanceType, amount }),
+      })
+      const d = await r.json()
+      if (!d.ok) throw new Error(d.error)
+      setAiBalance(d.balance)
+      setBalanceModal(false)
+      setBalanceInput('')
+    } catch (e: unknown) {
+      showToast(e instanceof Error ? e.message : t('error'), 'err')
+    }
+    setBalanceSaving(false)
   }
 
   async function openTrade() {
@@ -172,6 +209,14 @@ export default function TradesPanel({ defaultAccount = 'user', onTabMounted }: T
   const closed  = trades.filter(t => t.status === 'closed' || t.status === 'cancelled')
   const filtered = pairSearch ? allPairs.filter(p => p.toLowerCase().includes(pairSearch.toLowerCase())) : allPairs
 
+  const todayStr = new Date().toDateString()
+  const closedToday = closed.filter(t => t.status === 'closed' && new Date(t.closed_at || t.created_at).toDateString() === todayStr)
+  const pnlToday = closedToday.reduce((s, t) => s + (t.pnl ?? 0), 0)
+  const closedReal = closed.filter(t => t.status === 'closed' && t.pnl !== null)
+  const wins = closedReal.filter(t => (t.pnl ?? 0) > 0).length
+  const winRate = closedReal.length > 0 ? Math.round(wins / closedReal.length * 100) : null
+  const displayBalance = account === 'ai' ? (aiBalance ?? '…') : 10000
+
   const refPrice = parseFloat(entryPrice) || 1
   const amtN = parseFloat(amt) || 0
   const tpN  = parseFloat(tp) || 0
@@ -200,10 +245,28 @@ export default function TradesPanel({ defaultAccount = 'user', onTabMounted }: T
           {account === 'ai' ? t('account_desc_both') : t('virtual_account_desc')}
         </div>
         <div className="kpi-grid" style={{ marginBottom: 12 }}>
-          <div className="kpi" title="Виртуальный баланс — не реальные средства"><div className="kpi-v" style={{ color: '#ffa500' }}>$10,000</div><div className="kpi-l">{t('balance')} <span style={{ fontSize: '.5rem', opacity: .6 }}>(virtual)</span></div></div>
+          <div className="kpi" style={{ position: 'relative' }} title="Виртуальный баланс — не реальные средства">
+            <div className="kpi-v" style={{ color: '#ffa500' }}>${typeof displayBalance === 'number' ? displayBalance.toLocaleString() : displayBalance}</div>
+            <div className="kpi-l" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              {t('balance')} <span style={{ fontSize: '.5rem', opacity: .6 }}>(virtual)</span>
+              <button
+                onClick={() => { setBalanceModal(true); setBalanceInput(''); setBalanceType('add') }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', padding: '0 2px', fontSize: '.7rem', lineHeight: 1 }}
+                title="Изменить баланс"
+              >✏️</button>
+            </div>
+          </div>
           <div className="kpi"><div className="kpi-v">{open.length}</div><div className="kpi-l">{t('positions')}</div></div>
-          <div className="kpi"><div className="kpi-v pnl-p">$0</div><div className="kpi-l">{t('pnl_today')}</div></div>
-          <div className="kpi"><div className="kpi-v">—</div><div className="kpi-l">{t('win_rate')}</div></div>
+          <div className="kpi">
+            <div className={`kpi-v ${pnlToday > 0 ? 'pnl-p' : pnlToday < 0 ? 'pnl-n' : ''}`}>
+              {pnlToday !== 0 ? `${pnlToday > 0 ? '+' : ''}$${Math.abs(pnlToday).toFixed(2)}` : '$0'}
+            </div>
+            <div className="kpi-l">{t('pnl_today')}</div>
+          </div>
+          <div className="kpi">
+            <div className="kpi-v">{winRate !== null ? `${winRate}%` : '—'}</div>
+            <div className="kpi-l">{t('win_rate')}</div>
+          </div>
         </div>
 
         {account === 'ai' && (
@@ -339,7 +402,6 @@ export default function TradesPanel({ defaultAccount = 'user', onTabMounted }: T
                   )}
                 </div>
 
-                {}
                 {es ? (
                   <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 6 }}>
                     <input
@@ -405,6 +467,50 @@ export default function TradesPanel({ defaultAccount = 'user', onTabMounted }: T
           </div>
         </div>
       </div>
+
+      {balanceModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.6)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          onClick={e => { if (e.target === e.currentTarget) setBalanceModal(false) }}>
+          <div style={{ background: 'var(--card)', borderRadius: 12, padding: 24, width: 320, boxShadow: '0 8px 32px rgba(0,0,0,.4)' }}>
+            <div style={{ fontWeight: 700, fontSize: '.85rem', marginBottom: 4 }}>Изменить баланс</div>
+            <div style={{ fontSize: '.63rem', color: 'var(--muted)', marginBottom: 16 }}>
+              Текущий: <span style={{ color: '#ffa500', fontWeight: 700 }}>${aiBalance?.toLocaleString() ?? '…'}</span>
+            </div>
+            <div className="tg" style={{ marginBottom: 14 }}>
+              <button className={`tb ${balanceType === 'add' ? 'a-l' : ''}`} onClick={() => setBalanceType('add')}>+ Пополнить</button>
+              <button className={`tb ${balanceType === 'subtract' ? 'a-s' : ''}`} onClick={() => setBalanceType('subtract')}>− Снять</button>
+            </div>
+            <input
+              type="number"
+              className="fi"
+              style={{ width: '100%', marginBottom: 14 }}
+              placeholder="Сумма ($)"
+              value={balanceInput}
+              onChange={e => setBalanceInput(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') handleBalanceAdjust() }}
+              autoFocus
+            />
+            {balanceInput && parseFloat(balanceInput) > 0 && (
+              <div style={{ fontSize: '.62rem', color: 'var(--muted)', marginBottom: 12 }}>
+                После: <span style={{ color: balanceType === 'add' ? 'var(--long)' : 'var(--short)', fontWeight: 700 }}>
+                  ${((aiBalance ?? 0) + (balanceType === 'add' ? 1 : -1) * parseFloat(balanceInput)).toLocaleString()}
+                </span>
+              </div>
+            )}
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button className="obtn" style={{ flex: 1 }} onClick={() => setBalanceModal(false)}>Отмена</button>
+              <button
+                className={`sb ${balanceType === 'add' ? 'sl' : 'ss'}`}
+                style={{ flex: 2, padding: '8px 0' }}
+                onClick={handleBalanceAdjust}
+                disabled={balanceSaving}
+              >
+                {balanceSaving ? '…' : balanceType === 'add' ? 'Пополнить' : 'Снять'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

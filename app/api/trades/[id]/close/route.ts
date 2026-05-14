@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { getUser } from '@/lib/auth-helper'
-import { closeTrade, cancelTrade, getTradeById } from '@/lib/db'
+import { closeTrade, cancelTrade, getTradeById, adjustBalance } from '@/lib/db'
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   const user = await getUser(req)
@@ -11,7 +11,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const { pnl, pnl_pct, cancel } = body as { pnl?: number; pnl_pct?: number; cancel?: boolean }
 
   if (cancel) {
+    const tradeToCancel = await getTradeById(parseInt(params.id), user.id)
     await cancelTrade(parseInt(params.id), user.id)
+    if (tradeToCancel) await adjustBalance(user.id, Number(tradeToCancel.amount))
     return NextResponse.json({ ok: true })
   }
 
@@ -38,6 +40,11 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     } catch {}
   }
 
+  const tradeToClose = await getTradeById(parseInt(params.id), user.id)
   await closeTrade(parseInt(params.id), user.id, finalPnl, finalPnlPct)
+  if (tradeToClose) {
+    const restored = Number(tradeToClose.amount) + (finalPnl ?? 0)
+    await adjustBalance(user.id, restored)
+  }
   return NextResponse.json({ ok: true, pnl: finalPnl, pnl_pct: finalPnlPct })
 }

@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
       email: user.email,
       lang: user.lang,
       ai_max_leverage: Number(user.ai_max_leverage ?? 20),
-      ai_balance: Number(user.ai_balance ?? 1000),
+      ai_balance: Number(user.ai_balance ?? 10000),
       ai_risk_per_trade: Number(user.ai_risk_per_trade ?? 1.0),
       telegram_chat_id: user.telegram_chat_id ?? null,
     },

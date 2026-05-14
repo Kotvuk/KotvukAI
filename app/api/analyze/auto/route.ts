@@ -3,7 +3,7 @@ export const maxDuration = 60
 import { NextRequest, NextResponse } from 'next/server'
 import { fullAnalysis, calcMarketData, type Candle } from '@/lib/analysis'
 import { calcEnhancedSMC } from '@/lib/smc'
-import { sql, saveSignal, createTrade, createNotification, getUserWatchlist, getSignalsForPair } from '@/lib/db'
+import { sql, saveSignal, createTrade, createNotification, getUserWatchlist, getSignalsForPair, adjustBalance } from '@/lib/db'
 import { sendTelegram, sendTelegramToUser } from '@/lib/telegram'
 import { DEFAULT_WATCHLIST } from '@/lib/pairs'
 
@@ -112,11 +112,23 @@ async function analyzeOne(
     })
 
     if (final.verdict === 'LONG' || final.verdict === 'SHORT') {
+      const existing = await sql`
+        SELECT id FROM trades
+        WHERE user_id = ${userId} AND pair = ${sym}
+          AND direction = ${final.verdict.toLowerCase()}
+          AND status IN ('pending', 'open') AND account_type = 'ai'
+        LIMIT 1
+      `
+      if (existing.length > 0) {
+        return { ok: true, verdict: final.verdict, confidence: final.confidence }
+      }
+
       const slDist = (final.sl_price && final.entry_price)
         ? Math.abs(final.entry_price - final.sl_price) / final.entry_price
         : 0.02
       const riskUsd     = balance * riskPct / 100
-      const tradeAmount = Math.round(final.pos_usd || (riskUsd / Math.max(slDist, 0.001)))
+      const rawAmount   = final.pos_usd || Math.round(riskUsd / Math.max(slDist, 0.001))
+      const tradeAmount = Math.min(Math.round(rawAmount), Math.round(balance * maxLev))
       const isLimit     = final.entry_type === 'limit'
       const expiresAt   = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
 
@@ -134,6 +146,7 @@ async function analyzeOne(
         status:      isLimit ? 'pending' : 'open',
         expires_at:  isLimit ? expiresAt.toISOString() : null,
       })
+      await adjustBalance(userId, -tradeAmount)
 
       const dir = final.verdict === 'LONG' ? '📈' : '📉'
       const entry = final.entry_price?.toFixed(2) ?? '—'

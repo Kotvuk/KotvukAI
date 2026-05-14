@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { getUser } from '@/lib/auth-helper'
-import { getPendingTrades, activateTrade, cancelTrade, createNotification } from '@/lib/db'
+import { getPendingTrades, activateTrade, cancelTrade, createNotification, adjustBalance } from '@/lib/db'
 import { sendTelegram, sendTelegramToUser } from '@/lib/telegram'
 
 export async function POST(req: NextRequest) {
@@ -36,6 +36,7 @@ export async function POST(req: NextRequest) {
     if (trade.expires_at && new Date(trade.expires_at).getTime() < now) {
       const wasCancelled = await cancelTrade(trade.id, user.id)
       if (wasCancelled) {
+        await adjustBalance(user.id, Number(trade.amount))
         const msg = `🗑️ Лимитный ордер <b>${trade.direction.toUpperCase()} ${trade.pair}</b> отменён — истёк срок (7 дней)`
         await createNotification(user.id, `🗑️ Лимитный ордер ${trade.direction.toUpperCase()} ${trade.pair} отменён (истёк срок)`)
         ;(tgChatId ? sendTelegramToUser(tgChatId, msg) : sendTelegram(msg)).catch(() => {})

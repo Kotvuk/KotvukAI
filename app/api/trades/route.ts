@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { getUser } from '@/lib/auth-helper'
-import { getTrades, createTrade } from '@/lib/db'
+import { getTrades, createTrade, adjustBalance } from '@/lib/db'
 
 export async function GET(req: NextRequest) {
   const user = await getUser(req)
@@ -30,5 +30,6 @@ export async function POST(req: NextRequest) {
     } catch {}
   }
   const trade = await createTrade(user.id, { ...body, account_type: body.account_type ?? 'user' })
+  await adjustBalance(user.id, -(Number(body.amount) || 0))
   return NextResponse.json({ ok: true, trade })
 }

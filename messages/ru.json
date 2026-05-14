@@ -393,5 +393,11 @@
   "balance_modal_current": "Текущий:",
   "balance_add_btn": "Пополнить",
   "balance_subtract_btn": "Снять",
-  "balance_cancel_btn": "Отмена"
+  "balance_cancel_btn": "Отмена",
+
+  "verify_email_title": "Проверьте почту",
+  "verify_email_body": "Ссылка для подтверждения отправлена на {email}. Перейдите по ней, чтобы активировать аккаунт.",
+  "verify_email_resend": "Отправить повторно",
+  "verify_email_resent": "Отправлено!",
+  "email_not_verified": "Email не подтверждён. Проверьте входящие."
 }

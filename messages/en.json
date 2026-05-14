@@ -393,5 +393,11 @@
   "balance_modal_current": "Current:",
   "balance_add_btn": "Add funds",
   "balance_subtract_btn": "Withdraw",
-  "balance_cancel_btn": "Cancel"
+  "balance_cancel_btn": "Cancel",
+
+  "verify_email_title": "Check your email",
+  "verify_email_body": "Verification link sent to {email}. Click it to activate your account.",
+  "verify_email_resend": "Resend email",
+  "verify_email_resent": "Sent!",
+  "email_not_verified": "Email not verified. Check your inbox."
 }

@@ -393,5 +393,11 @@
   "balance_modal_current": "Ағымдағы:",
   "balance_add_btn": "Толықтыру",
   "balance_subtract_btn": "Алу",
-  "balance_cancel_btn": "Болдырмау"
+  "balance_cancel_btn": "Болдырмау",
+
+  "verify_email_title": "Поштаңызды тексеріңіз",
+  "verify_email_body": "{email} мекенжайына растау сілтемесі жіберілді. Аккаунтты белсендіру үшін оны басыңыз.",
+  "verify_email_resend": "Қайта жіберу",
+  "verify_email_resent": "Жіберілді!",
+  "email_not_verified": "Email расталмаған. Кіріс қалтаңызды тексеріңіз."
 }

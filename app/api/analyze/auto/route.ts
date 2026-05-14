@@ -109,7 +109,7 @@ async function analyzeOne(
       },
     })
 
-    if (final.verdict === 'LONG' || final.verdict === 'SHORT') {
+    if ((final.verdict === 'LONG' || final.verdict === 'SHORT') && final.confidence >= 60) {
       const existing = await sql`
         SELECT id FROM trades
         WHERE user_id = ${userId} AND pair = ${sym}
@@ -127,6 +127,10 @@ async function analyzeOne(
       const riskUsd     = balance * riskPct / 100
       const rawAmount   = final.pos_usd || Math.round(riskUsd / Math.max(slDist, 0.001))
       const tradeAmount = Math.min(Math.round(rawAmount), Math.round(balance * maxLev))
+
+      if (tradeAmount <= 0 || balance <= 0) {
+        return { ok: true, verdict: final.verdict, confidence: final.confidence }
+      }
       const isLimit     = final.entry_type === 'limit'
       const expiresAt   = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
 

@@ -454,14 +454,15 @@ export async function getAllPendingSignals(): Promise<Signal[]> {
 }
 
 export async function expireOldSignals(): Promise<number> {
-  const result = await sql`
+  const rows = await sql`
     UPDATE signals
     SET outcome = 'loss', actual_pnl_pct = 0
     WHERE outcome IS NULL
       AND final_verdict IN ('LONG', 'SHORT')
       AND created_at < NOW() - INTERVAL '7 days'
+    RETURNING id
   `
-  return Number((result as unknown as { count: number }).count ?? 0)
+  return rows.length
 }
 
 export async function getDrawings(userId: number, pair: string, timeframe: string): Promise<unknown[]> {
@@ -657,7 +658,7 @@ export async function initDB() {
       nickname TEXT,
       lang TEXT DEFAULT 'ru',
       ai_trade_amount NUMERIC DEFAULT 100,
-      ai_max_leverage INTEGER DEFAULT 3,
+      ai_max_leverage INTEGER DEFAULT 20,
       created_at TIMESTAMPTZ DEFAULT NOW()
     )
   `

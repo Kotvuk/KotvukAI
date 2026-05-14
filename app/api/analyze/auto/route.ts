@@ -11,8 +11,6 @@ const HTF_MAP: Record<string, string> = {
   '5m': '1h', '15m': '4h', '1h': '1d', '4h': '1d',
 }
 
-// Fetch markPrices from Binance and sort symbols from most to least expensive.
-// Falls back to original order on timeout or network error.
 async function priceSortedWatchlist(symbols: string[]): Promise<string[]> {
   try {
     const ctrl = new AbortController()
@@ -193,7 +191,6 @@ export async function GET(req: NextRequest) {
   const rawList: string[] = userWatchlist?.length ? userWatchlist : DEFAULT_WATCHLIST
   // Sort by price (BTC→ETH→…) and hard-cap at 15 pairs
   const watchlist = (await priceSortedWatchlist(rawList)).slice(0, 15)
-
   const batchIndex = parseInt(req.nextUrl.searchParams.get('batch') || '0', 10)
   const batchSize  = 5
   const start      = batchIndex * batchSize

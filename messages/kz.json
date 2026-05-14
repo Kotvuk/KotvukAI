@@ -388,5 +388,10 @@
   "tg_how_to": "Chat ID алу: Telegram-да @userinfobot ашыңыз → /start жазыңыз → ID-ді көшіріңіз.",
   "tg_placeholder": "Мысалы: 123456789",
   "tg_connected": "✅ Telegram қосылды",
-  "tg_save_btn": "Қосу"
+  "tg_save_btn": "Қосу",
+  "balance_modal_title": "Балансты өзгерту",
+  "balance_modal_current": "Ағымдағы:",
+  "balance_add_btn": "Толықтыру",
+  "balance_subtract_btn": "Алу",
+  "balance_cancel_btn": "Болдырмау"
 }

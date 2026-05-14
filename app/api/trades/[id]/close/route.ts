@@ -13,7 +13,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (cancel) {
     const tradeToCancel = await getTradeById(parseInt(params.id), user.id)
     await cancelTrade(parseInt(params.id), user.id)
-    if (tradeToCancel) await adjustBalance(user.id, Number(tradeToCancel.amount))
+    if (tradeToCancel && tradeToCancel.account_type === 'ai') {
+      await adjustBalance(user.id, Number(tradeToCancel.amount))
+    }
     return NextResponse.json({ ok: true })
   }
 
@@ -42,7 +44,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
   const tradeToClose = await getTradeById(parseInt(params.id), user.id)
   await closeTrade(parseInt(params.id), user.id, finalPnl, finalPnlPct)
-  if (tradeToClose) {
+  if (tradeToClose && tradeToClose.account_type === 'ai') {
     const restored = Number(tradeToClose.amount) + (finalPnl ?? 0)
     await adjustBalance(user.id, restored)
   }

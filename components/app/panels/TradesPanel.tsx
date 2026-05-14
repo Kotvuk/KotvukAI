@@ -215,7 +215,7 @@ export default function TradesPanel({ defaultAccount = 'user', onTabMounted }: T
   const closedReal = closed.filter(t => t.status === 'closed' && t.pnl !== null)
   const wins = closedReal.filter(t => (t.pnl ?? 0) > 0).length
   const winRate = closedReal.length > 0 ? Math.round(wins / closedReal.length * 100) : null
-  const displayBalance = account === 'ai' ? (aiBalance ?? '…') : 10000
+  const displayBalance = account === 'ai' ? (aiBalance ?? '…') : null
 
   const refPrice = parseFloat(entryPrice) || 1
   const amtN = parseFloat(amt) || 0
@@ -246,14 +246,18 @@ export default function TradesPanel({ defaultAccount = 'user', onTabMounted }: T
         </div>
         <div className="kpi-grid" style={{ marginBottom: 12 }}>
           <div className="kpi" style={{ position: 'relative' }} title="Виртуальный баланс — не реальные средства">
-            <div className="kpi-v" style={{ color: '#ffa500' }}>${typeof displayBalance === 'number' ? displayBalance.toLocaleString() : displayBalance}</div>
+            <div className="kpi-v" style={{ color: '#ffa500' }}>
+              {displayBalance !== null ? `$${typeof displayBalance === 'number' ? displayBalance.toLocaleString() : displayBalance}` : '—'}
+            </div>
             <div className="kpi-l" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
               {t('balance')} <span style={{ fontSize: '.5rem', opacity: .6 }}>(virtual)</span>
-              <button
-                onClick={() => { setBalanceModal(true); setBalanceInput(''); setBalanceType('add') }}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', padding: '0 2px', fontSize: '.7rem', lineHeight: 1 }}
-                title="Изменить баланс"
-              >✏️</button>
+              {account === 'ai' && (
+                <button
+                  onClick={() => { setBalanceModal(true); setBalanceInput(''); setBalanceType('add') }}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', padding: '0 2px', fontSize: '.7rem', lineHeight: 1 }}
+                  title={t('balance_modal_title')}
+                >✏️</button>
+              )}
             </div>
           </div>
           <div className="kpi"><div className="kpi-v">{open.length}</div><div className="kpi-l">{t('positions')}</div></div>
@@ -472,13 +476,13 @@ export default function TradesPanel({ defaultAccount = 'user', onTabMounted }: T
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.6)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           onClick={e => { if (e.target === e.currentTarget) setBalanceModal(false) }}>
           <div style={{ background: 'var(--card)', borderRadius: 12, padding: 24, width: 320, boxShadow: '0 8px 32px rgba(0,0,0,.4)' }}>
-            <div style={{ fontWeight: 700, fontSize: '.85rem', marginBottom: 4 }}>Изменить баланс</div>
+            <div style={{ fontWeight: 700, fontSize: '.85rem', marginBottom: 4 }}>{t('balance_modal_title')}</div>
             <div style={{ fontSize: '.63rem', color: 'var(--muted)', marginBottom: 16 }}>
-              Текущий: <span style={{ color: '#ffa500', fontWeight: 700 }}>${aiBalance?.toLocaleString() ?? '…'}</span>
+              {t('balance_modal_current')} <span style={{ color: '#ffa500', fontWeight: 700 }}>${aiBalance?.toLocaleString() ?? '…'}</span>
             </div>
             <div className="tg" style={{ marginBottom: 14 }}>
-              <button className={`tb ${balanceType === 'add' ? 'a-l' : ''}`} onClick={() => setBalanceType('add')}>+ Пополнить</button>
-              <button className={`tb ${balanceType === 'subtract' ? 'a-s' : ''}`} onClick={() => setBalanceType('subtract')}>− Снять</button>
+              <button className={`tb ${balanceType === 'add' ? 'a-l' : ''}`} onClick={() => setBalanceType('add')}>+ {t('balance_add_btn')}</button>
+              <button className={`tb ${balanceType === 'subtract' ? 'a-s' : ''}`} onClick={() => setBalanceType('subtract')}>− {t('balance_subtract_btn')}</button>
             </div>
             <input
               type="number"
@@ -498,14 +502,14 @@ export default function TradesPanel({ defaultAccount = 'user', onTabMounted }: T
               </div>
             )}
             <div style={{ display: 'flex', gap: 8 }}>
-              <button className="obtn" style={{ flex: 1 }} onClick={() => setBalanceModal(false)}>Отмена</button>
+              <button className="obtn" style={{ flex: 1 }} onClick={() => setBalanceModal(false)}>{t('balance_cancel_btn')}</button>
               <button
                 className={`sb ${balanceType === 'add' ? 'sl' : 'ss'}`}
                 style={{ flex: 2, padding: '8px 0' }}
                 onClick={handleBalanceAdjust}
                 disabled={balanceSaving}
               >
-                {balanceSaving ? '…' : balanceType === 'add' ? 'Пополнить' : 'Снять'}
+                {balanceSaving ? '…' : balanceType === 'add' ? t('balance_add_btn') : t('balance_subtract_btn')}
               </button>
             </div>
           </div>

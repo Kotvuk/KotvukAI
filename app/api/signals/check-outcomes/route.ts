@@ -11,7 +11,9 @@ const TF_MAP: Record<string, string> = {
 
 async function fetchCandlesSince(sym: string, interval: string, sinceMs: number): Promise<{ high: number; low: number; close: number }[]> {
   const url = `https://fapi.binance.com/fapi/v1/klines?symbol=${sym}&interval=${interval}&startTime=${sinceMs}&limit=200`
-  const res = await fetch(url)
+  const ctrl = new AbortController()
+  const t = setTimeout(() => ctrl.abort(), 8000)
+  const res = await fetch(url, { signal: ctrl.signal }).finally(() => clearTimeout(t))
   if (!res.ok) return []
   const raw: number[][] = await res.json()
   return raw.map(c => ({

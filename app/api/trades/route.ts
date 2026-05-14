@@ -30,6 +30,8 @@ export async function POST(req: NextRequest) {
     } catch {}
   }
   const trade = await createTrade(user.id, { ...body, account_type: body.account_type ?? 'user' })
-  await adjustBalance(user.id, -(Number(body.amount) || 0))
+  if ((body.account_type ?? 'user') === 'ai') {
+    await adjustBalance(user.id, -(Number(body.amount) || 0))
+  }
   return NextResponse.json({ ok: true, trade })
 }

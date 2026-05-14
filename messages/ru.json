@@ -388,5 +388,10 @@
   "tg_how_to": "Как получить Chat ID: откройте @userinfobot в Telegram → напишите /start → скопируйте ваш ID.",
   "tg_placeholder": "Например: 123456789",
   "tg_connected": "✅ Telegram подключён",
-  "tg_save_btn": "Подключить"
+  "tg_save_btn": "Подключить",
+  "balance_modal_title": "Изменить баланс",
+  "balance_modal_current": "Текущий:",
+  "balance_add_btn": "Пополнить",
+  "balance_subtract_btn": "Снять",
+  "balance_cancel_btn": "Отмена"
 }

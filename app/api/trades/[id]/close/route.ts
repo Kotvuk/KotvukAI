@@ -43,8 +43,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
 
   const tradeToClose = await getTradeById(parseInt(params.id), user.id)
-  await closeTrade(parseInt(params.id), user.id, finalPnl, finalPnlPct)
-  if (tradeToClose && tradeToClose.account_type === 'ai') {
+  const wasClosed = await closeTrade(parseInt(params.id), user.id, finalPnl, finalPnlPct)
+  if (wasClosed && tradeToClose && tradeToClose.account_type === 'ai') {
     const restored = Number(tradeToClose.amount) + (finalPnl ?? 0)
     await adjustBalance(user.id, restored)
   }

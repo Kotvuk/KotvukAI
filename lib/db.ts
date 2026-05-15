@@ -369,20 +369,22 @@ export async function createTrade(userId: number, data: Partial<Trade>): Promise
   return rows[0] as Trade
 }
 
-export async function updateTrade(id: number, userId: number, data: { tp_price?: number | null; sl_price?: number | null }) {
+export async function updateTrade(id: number, userId: number, data: { tp_price?: number; sl_price?: number }) {
   await sql`
     UPDATE trades SET
-      tp_price = CASE WHEN ${data.tp_price ?? null} IS NOT NULL THEN ${data.tp_price ?? null} ELSE tp_price END,
-      sl_price = CASE WHEN ${data.sl_price ?? null} IS NOT NULL THEN ${data.sl_price ?? null} ELSE sl_price END
-    WHERE id = ${id} AND user_id = ${userId} AND status = 'open'
+      tp_price = COALESCE(${data.tp_price ?? null}, tp_price),
+      sl_price = COALESCE(${data.sl_price ?? null}, sl_price)
+    WHERE id = ${id} AND user_id = ${userId} AND status IN ('open', 'pending')
   `
 }
 
-export async function closeTrade(id: number, userId: number, pnl: number | null, pnlPct: number | null) {
-  await sql`
+export async function closeTrade(id: number, userId: number, pnl: number | null, pnlPct: number | null): Promise<boolean> {
+  const rows = await sql`
     UPDATE trades SET status = 'closed', pnl = ${pnl}, pnl_pct = ${pnlPct}, closed_at = NOW()
-    WHERE id = ${id} AND user_id = ${userId}
+    WHERE id = ${id} AND user_id = ${userId} AND status = 'open'
+    RETURNING id
   `
+  return rows.length > 0
 }
 
 export async function getNotifications(userId: number): Promise<Notification[]> {
@@ -573,6 +575,19 @@ export async function getAllPendingTrades(): Promise<Trade[]> {
     SELECT * FROM trades
     WHERE status = 'pending'
     ORDER BY created_at DESC
+  `
+  return rows as Trade[]
+}
+
+export async function getAllOpenTrades(): Promise<Trade[]> {
+  const rows = await sql`
+    SELECT * FROM trades
+    WHERE status = 'open'
+      AND tp_price IS NOT NULL
+      AND sl_price IS NOT NULL
+      AND entry_price IS NOT NULL
+    ORDER BY created_at ASC
+    LIMIT 500
   `
   return rows as Trade[]
 }

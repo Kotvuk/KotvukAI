@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
 import { NextRequest, NextResponse } from 'next/server'
-import { getAllPendingSignals, getAllPendingTrades, expireOldSignals, setSignalOutcome, activateTrade, cancelTrade, adjustBalance, createNotification, getUserById } from '@/lib/db'
+import { getAllPendingSignals, getAllPendingTrades, getAllOpenTrades, expireOldSignals, setSignalOutcome, activateTrade, cancelTrade, closeTrade, adjustBalance, createNotification, getUserById } from '@/lib/db'
 import { sendTelegram, sendTelegramToUser } from '@/lib/telegram'
 
 async function fetchCandles(sym: string, sinceMs: number): Promise<{ high: number; low: number }[]> {
@@ -57,6 +57,8 @@ export async function GET(req: NextRequest) {
   let signalsUpdated = 0
   let tradesActivated = 0
   let tradesCancelled = 0
+  let tradesClosedTp = 0
+  let tradesClosedSl = 0
 
   if (pending.length) {
     const pairGroups: Record<string, typeof pending> = {}
@@ -172,10 +174,88 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  const openTrades = await getAllOpenTrades()
+
+  if (openTrades.length) {
+    const tradeGroups: Record<string, typeof openTrades> = {}
+    for (const t of openTrades) {
+      const sym = t.pair.replace('/', '')
+      if (!tradeGroups[sym]) tradeGroups[sym] = []
+      tradeGroups[sym].push(t)
+    }
+
+    const hourMs = 3_600_000
+
+    for (const sym of Object.keys(tradeGroups)) {
+      const group = tradeGroups[sym]
+      const oldestMs = Math.min(...group.map(t => new Date(t.created_at).getTime()))
+      const candles  = await fetchCandles(sym, oldestMs)
+      if (!candles.length) continue
+
+      for (const trade of group) {
+        const tp    = trade.tp_price!
+        const sl    = trade.sl_price!
+        const entry = trade.entry_price!
+        const isLong = trade.direction === 'long'
+
+        const tradeStartMs = new Date(trade.created_at).getTime()
+        const startIdx     = Math.max(0, Math.floor((tradeStartMs - oldestMs) / hourMs))
+        const slice        = candles.slice(startIdx)
+        if (!slice.length) continue
+
+        let hitTp = false
+        let hitSl = false
+
+        for (const c of slice) {
+          if (hitTp || hitSl) break
+          if (isLong) {
+            if (c.high >= tp) { hitTp = true; break }
+            if (c.low  <= sl) { hitSl = true; break }
+          } else {
+            if (c.low  <= tp) { hitTp = true; break }
+            if (c.high >= sl) { hitSl = true; break }
+          }
+        }
+
+        if (!hitTp && !hitSl) continue
+
+        const hitPrice = hitTp ? tp : sl
+        const diff     = isLong ? hitPrice - entry : entry - hitPrice
+        const pnlPct   = parseFloat(((diff / entry) * trade.leverage * 100).toFixed(2))
+        const pnlUsd   = parseFloat(((trade.amount * pnlPct) / 100).toFixed(2))
+
+        const wasClosed = await closeTrade(trade.id, trade.user_id, pnlUsd, pnlPct)
+        if (!wasClosed) continue
+
+        if (trade.account_type === 'ai') {
+          await adjustBalance(trade.user_id, trade.amount + pnlUsd)
+        }
+
+        const emoji  = hitTp ? '✅' : '❌'
+        const pnlStr = pnlPct >= 0 ? `+${pnlPct}%` : `${pnlPct}%`
+        const usdStr = pnlUsd >= 0 ? `+$${pnlUsd.toFixed(2)}` : `-$${Math.abs(pnlUsd).toFixed(2)}`
+        const msg    = `${emoji} <b>AUTO ${trade.direction.toUpperCase()} ${trade.pair}</b>\n`
+          + `${hitTp ? 'TP достигнут' : 'SL пробит'} — <b>${pnlStr}</b> (${usdStr})`
+
+        const tgChatId = await getTgChatId(trade.user_id)
+        await Promise.allSettled([
+          tgChatId ? sendTelegramToUser(tgChatId, msg) : sendTelegram(msg),
+          createNotification(trade.user_id, `${emoji} AUTO ${trade.direction.toUpperCase()} ${trade.pair} — ${hitTp ? 'TP' : 'SL'} (${pnlStr})`),
+        ])
+
+        if (hitTp) tradesClosedTp++
+        else       tradesClosedSl++
+      }
+    }
+  }
+
   return NextResponse.json({
     ok: true,
     expired,
     signals: { checked: pending.length, updated: signalsUpdated },
-    trades:  { checked: pendingTrades.length, activated: tradesActivated, cancelled: tradesCancelled },
+    trades:  {
+      checked: pendingTrades.length, activated: tradesActivated, cancelled: tradesCancelled,
+      open: openTrades.length, closedTp: tradesClosedTp, closedSl: tradesClosedSl,
+    },
   })
 }

@@ -51,6 +51,7 @@ jobs:
           HOUR=$((10#$(date -u +%H)))
           LIST="5m"
           [ $((MIN % 15)) -eq 0 ] && LIST="$LIST 15m"
+          [ $((MIN % 30)) -eq 0 ] && LIST="$LIST 30m"
           [ "$MIN" -eq 0 ]        && LIST="$LIST 1h"
           [ "$MIN" -eq 0 ] && [ $((HOUR % 4)) -eq 0 ] && LIST="$LIST 4h"
 

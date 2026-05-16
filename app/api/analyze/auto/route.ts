@@ -8,7 +8,7 @@ import { sendTelegram, sendTelegramToUser } from '@/lib/telegram'
 import { DEFAULT_WATCHLIST } from '@/lib/pairs'
 
 const HTF_MAP: Record<string, string> = {
-  '5m': '1h', '15m': '4h', '1h': '1d', '4h': '1d',
+  '5m': '1h', '15m': '4h', '30m': '4h', '1h': '1d', '4h': '1d',
 }
 
 async function priceSortedWatchlist(symbols: string[]): Promise<string[]> {
@@ -88,7 +88,7 @@ async function analyzeOne(
     const riskPct  = Number(user.ai_risk_per_trade ?? 1.0)
     const maxLev   = Number(user.ai_max_leverage ?? 20)
     const userId   = Number(user.id)
-    const tfLabel  = interval === '1h' ? '1ч' : interval === '4h' ? '4ч' : interval === '15m' ? '15м' : interval === '5m' ? '5м' : interval
+    const tfLabel  = ({ '5m': '5м', '15m': '15м', '30m': '30м', '1h': '1ч', '4h': '4ч' } as Record<string, string>)[interval] ?? interval
 
     const memorySignals = await getSignalsForPair(userId, sym, 5)
     const { step1, step2, final } = await fullAnalysis(sym, tfLabel, market, candles, memorySignals, maxLev, balance, riskPct)

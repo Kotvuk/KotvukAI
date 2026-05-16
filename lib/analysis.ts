@@ -475,12 +475,11 @@ Reply with ONLY one line of valid JSON (all numeric fields must be numbers, not 
       slPrice = isLongV ? entryPrice - maxSlAbs : entryPrice + maxSlAbs
     }
 
-    // Enforce minimum R:R 1:1.5 (TP must be at least 1.5× SL distance)
     const slDistFinal = Math.abs(slPrice - entryPrice)
     const tpDist      = Math.abs(tpPrice - entryPrice)
-    if (slDistFinal > 0 && tpDist / slDistFinal < 1.5) {
-      if (isLongV) tpPrice = entryPrice + slDistFinal * 1.5
-      else         tpPrice = entryPrice - slDistFinal * 1.5
+    if (slDistFinal > 0 && tpDist / slDistFinal < 2.0) {
+      if (isLongV) tpPrice = entryPrice + slDistFinal * 2.0
+      else         tpPrice = entryPrice - slDistFinal * 2.0
     }
 
     // Round to sensible precision (no more than 6 significant figures)

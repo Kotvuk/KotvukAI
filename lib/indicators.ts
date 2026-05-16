@@ -10,34 +10,34 @@ export interface MethodResult {
 
 function ema(closes: number[], period: number): number {
   if (closes.length < period) return closes[closes.length - 1]
-  const k = 2 / (period + 1)
-  let e = closes.slice(0, period).reduce((a, b) => a + b, 0) / period
-  for (let i = period; i < closes.length; i++) e = closes[i] * k + e * (1 - k)
-  return e
+  const smoothing = 2 / (period + 1)
+  let emaVal = closes.slice(0, period).reduce((a, b) => a + b, 0) / period
+  for (let i = period; i < closes.length; i++) emaVal = closes[i] * smoothing + emaVal * (1 - smoothing)
+  return emaVal
 }
 
 function rsi(closes: number[], period = 14): number {
   if (closes.length < period + 1) return 50
   let gains = 0, losses = 0
   for (let i = 1; i <= period; i++) {
-    const d = closes[i] - closes[i - 1]
-    if (d > 0) gains += d; else losses -= d
+    const delta = closes[i] - closes[i - 1]
+    if (delta > 0) gains += delta; else losses -= delta
   }
-  let ag = gains / period, al = losses / period
+  let avgGain = gains / period, avgLoss = losses / period
   for (let i = period + 1; i < closes.length; i++) {
-    const d = closes[i] - closes[i - 1]
-    ag = (ag * (period - 1) + Math.max(d, 0)) / period
-    al = (al * (period - 1) + Math.max(-d, 0)) / period
+    const delta = closes[i] - closes[i - 1]
+    avgGain = (avgGain * (period - 1) + Math.max(delta, 0)) / period
+    avgLoss = (avgLoss * (period - 1) + Math.max(-delta, 0)) / period
   }
-  if (al === 0) return 100
-  return 100 - 100 / (1 + ag / al)
+  if (avgLoss === 0) return 100
+  return 100 - 100 / (1 + avgGain / avgLoss)
 }
 
 function bollingerBands(closes: number[], period = 20, mult = 2) {
-  const sl = closes.slice(-period)
-  if (sl.length < period) return null
-  const mid = sl.reduce((a, b) => a + b, 0) / period
-  const std = Math.sqrt(sl.reduce((a, b) => a + (b - mid) ** 2, 0) / period)
+  const band = closes.slice(-period)
+  if (band.length < period) return null
+  const mid = band.reduce((a, b) => a + b, 0) / period
+  const std = Math.sqrt(band.reduce((a, b) => a + (b - mid) ** 2, 0) / period)
   return { upper: mid + mult * std, lower: mid - mult * std, mid, std, width: (4 * std / mid) * 100 }
 }
 
@@ -47,10 +47,10 @@ function stochRSI(closes: number[], period = 14): number {
   if (closes.length < period * 2) return 50
   const rsiArr: number[] = []
   for (let i = period; i <= closes.length; i++) rsiArr.push(rsi(closes.slice(0, i), period))
-  const window = rsiArr.slice(-period)
-  const mn = Math.min(...window), mx = Math.max(...window)
-  if (mx === mn) return 50
-  return ((rsiArr[rsiArr.length - 1] - mn) / (mx - mn)) * 100
+  const rsiSlice = rsiArr.slice(-period)
+  const minRsi = Math.min(...rsiSlice), maxRsi = Math.max(...rsiSlice)
+  if (maxRsi === minRsi) return 50
+  return ((rsiArr[rsiArr.length - 1] - minRsi) / (maxRsi - minRsi)) * 100
 }
 
 export function analyzeIndicators(candles: Candle[]): MethodResult {
@@ -390,30 +390,30 @@ export function analyzeFunding(fundingRate: number | null): MethodResult {
     }
   }
 
-  const fr = fundingRate
-  const factors: string[] = [`Funding Rate: ${fr.toFixed(4)}%`]
+  const rate = fundingRate
+  const factors: string[] = [`Funding Rate: ${rate.toFixed(4)}%`]
   let signal: 'LONG' | 'SHORT' | 'WAIT' = 'WAIT'
   let confidence = 35
 
-  if (fr > 0.1) {
+  if (rate > 0.1) {
     factors.push('EXTREME long overheating — high probability of downward squeeze')
     factors.push('Market makers will hunt long stops')
     signal = 'SHORT'; confidence = 72
-  } else if (fr > 0.05) {
+  } else if (rate > 0.05) {
     factors.push('Longs overheated — bearish pressure through expensive funding')
     signal = 'SHORT'; confidence = 60
-  } else if (fr > 0.02) {
+  } else if (rate > 0.02) {
     factors.push('Weak bullish imbalance — moderate bearish bias')
     signal = 'SHORT'; confidence = 45
-  } else if (fr < -0.05) {
+  } else if (rate < -0.05) {
     factors.push('EXTREME short overheating — high probability of upward squeeze')
     factors.push('Shorts paying longs — upward squeeze likely')
     signal = 'LONG'; confidence = 72
-  } else if (fr < -0.01) {
+  } else if (rate < -0.01) {
     factors.push('Shorts overheated — bullish pressure through expensive funding')
     signal = 'LONG'; confidence = 60
   } else {
-    factors.push(`Neutral funding (${fr.toFixed(4)}%) — no imbalance`)
+    factors.push(`Neutral funding (${rate.toFixed(4)}%) — no imbalance`)
     signal = 'WAIT'; confidence = 40
   }
 
@@ -422,7 +422,7 @@ export function analyzeFunding(fundingRate: number | null): MethodResult {
     signal,
     confidence,
     factors,
-    summary: `Funding ${fr.toFixed(4)}% → ${signal === 'LONG' ? 'squeeze up' : signal === 'SHORT' ? 'squeeze down' : 'neutral'}`,
+    summary: `Funding ${rate.toFixed(4)}% → ${signal === 'LONG' ? 'squeeze up' : signal === 'SHORT' ? 'squeeze down' : 'neutral'}`,
   }
 }
 

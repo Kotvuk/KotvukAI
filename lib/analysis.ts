@@ -293,11 +293,11 @@ Reply with a single-line JSON:
     consensus.agreeing.length ? `Agreeing: ${consensus.agreeing.join(', ')}` : '',
   ].filter(Boolean).join('\n')
 
-  if (trendDir === 'ranging' && (htf === 'neutral' || htf === 'ranging') || s1.ranging_risk === true) {
-    const consensusOverride = !strictMode
-      && consensus.decision !== 'WAIT'
-      && (consensus.long >= 3 || consensus.short >= 3)
+  const consensusOverride = !strictMode
+    && consensus.decision !== 'WAIT'
+    && (consensus.long >= 3 || consensus.short >= 3)
 
+  if (trendDir === 'ranging' && (htf === 'neutral' || htf === 'ranging') || s1.ranging_risk === true) {
     if (!consensusOverride) {
       const waitStep1: Step1Result = { signal: 'WAIT', strength: 3, trend: trendDir, summary: summary1 }
       const waitStep2: Step2Result = { verdict: 'WAIT', confidence: 45, risk_score: 5, leverage: 1, summary: 'Флэт + нейтральный HTF — нет чёткого направления' }
@@ -339,10 +339,6 @@ Reply with a single-line JSON:
   const sweepOk = sweepConfirmed || Boolean(s1.sweep_ssl) || Boolean(s1.sweep_bsl)
 
   if (!confluenceOk) {
-    const consensusOverride = !strictMode
-      && consensus.decision !== 'WAIT'
-      && (consensus.long >= 3 || consensus.short >= 3)
-
     if (!consensusOverride) {
       const waitStep1: Step1Result = { signal: 'WAIT', strength: 4, trend: trendDir, summary: summary1 }
       const waitStep2: Step2Result = { verdict: 'WAIT', confidence: 48, risk_score: 5, leverage: 1, summary: `Only ${confluenceCount} factor(s) out of ${minConfluence} required. ${step2Summary}` }

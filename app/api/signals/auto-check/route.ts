@@ -35,6 +35,34 @@ async function fetchPrices(symbols: string[]): Promise<Record<string, number>> {
   }
 }
 
+const HOUR_MS = 3_600_000
+
+function groupBySymbol<T extends { pair: string }>(items: T[]): Record<string, T[]> {
+  const result: Record<string, T[]> = {}
+  for (const item of items) {
+    const sym = item.pair.replace('/', '')
+    if (!result[sym]) result[sym] = []
+    result[sym].push(item)
+  }
+  return result
+}
+
+function scanTpSl(
+  slice: { high: number; low: number }[],
+  tp: number, sl: number, isLong: boolean,
+): 'tp' | 'sl' | null {
+  for (const c of slice) {
+    if (isLong) {
+      if (c.high >= tp) return 'tp'
+      if (c.low  <= sl) return 'sl'
+    } else {
+      if (c.low  <= tp) return 'tp'
+      if (c.high >= sl) return 'sl'
+    }
+  }
+  return null
+}
+
 export async function GET(req: NextRequest) {
   const secret = req.nextUrl.searchParams.get('secret')
   if (!secret || secret !== process.env.AUTO_ANALYZE_SECRET) {
@@ -61,26 +89,19 @@ export async function GET(req: NextRequest) {
   let tradesClosedSl = 0
 
   if (pending.length) {
-    const pairGroups: Record<string, typeof pending> = {}
-    for (const sig of pending) {
-      const key = sig.pair.replace('/', '')
-      if (!pairGroups[key]) pairGroups[key] = []
-      pairGroups[key].push(sig)
-    }
+    const bySymbol = groupBySymbol(pending)
 
-    for (const sym of Object.keys(pairGroups)) {
-      const signals = pairGroups[sym]
+    for (const sym of Object.keys(bySymbol)) {
+      const signals  = bySymbol[sym]
       const oldestMs = Math.min(...signals.map(s => new Date(s.created_at).getTime()))
       const candles  = await fetchCandles(sym, oldestMs)
       if (!candles.length) continue
-
-      const hourMs = 3_600_000
 
       for (const signal of signals) {
         if (!signal.final_tp || !signal.final_sl || !signal.final_entry || !signal.final_verdict) continue
 
         const sigStartMs = new Date(signal.created_at).getTime()
-        const startIdx   = Math.max(0, Math.floor((sigStartMs - oldestMs) / hourMs))
+        const startIdx   = Math.max(0, Math.floor((sigStartMs - oldestMs) / HOUR_MS))
         const slice      = candles.slice(startIdx)
         if (!slice.length) continue
 
@@ -90,24 +111,11 @@ export async function GET(req: NextRequest) {
         const entry    = signal.final_entry
         const leverage = signal.final_leverage ?? 1
 
-        let hitTp = false
-        let hitSl = false
+        const hit = scanTpSl(slice, tp, sl, isLong)
+        if (!hit) continue
 
-        for (const c of slice) {
-          if (hitTp || hitSl) break
-          if (isLong) {
-            if (c.high >= tp) { hitTp = true; break }
-            if (c.low  <= sl) { hitSl = true; break }
-          } else {
-            if (c.low  <= tp) { hitTp = true; break }
-            if (c.high >= sl) { hitSl = true; break }
-          }
-        }
-
-        if (!hitTp && !hitSl) continue
-
-        const outcome: 'win' | 'loss' = hitTp ? 'win' : 'loss'
-        const hitPrice = hitTp ? tp : sl
+        const outcome: 'win' | 'loss' = hit === 'tp' ? 'win' : 'loss'
+        const hitPrice = hit === 'tp' ? tp : sl
         const diff     = isLong ? hitPrice - entry : entry - hitPrice
         const pnlPct   = parseFloat(((diff / entry) * leverage * 100).toFixed(2))
 
@@ -124,7 +132,7 @@ export async function GET(req: NextRequest) {
 
   if (pendingTrades.length) {
     const symbols = Array.from(new Set(pendingTrades.map(t => t.pair.replace('/', ''))))
-    const priceMap = await fetchPrices(symbols)
+    const prices = await fetchPrices(symbols)
     const now = Date.now()
 
     for (const trade of pendingTrades) {
@@ -146,7 +154,7 @@ export async function GET(req: NextRequest) {
       }
 
       if (!trade.limit_price) continue
-      const currentPrice = priceMap[sym]
+      const currentPrice = prices[sym]
       if (!currentPrice) continue
 
       const limitHit = trade.direction === 'long'
@@ -171,49 +179,29 @@ export async function GET(req: NextRequest) {
   const openTrades = await getAllOpenTrades()
 
   if (openTrades.length) {
-    const tradeGroups: Record<string, typeof openTrades> = {}
-    for (const t of openTrades) {
-      const sym = t.pair.replace('/', '')
-      if (!tradeGroups[sym]) tradeGroups[sym] = []
-      tradeGroups[sym].push(t)
-    }
+    const bySymbol = groupBySymbol(openTrades)
 
-    const hourMs = 3_600_000
-
-    for (const sym of Object.keys(tradeGroups)) {
-      const group = tradeGroups[sym]
+    for (const sym of Object.keys(bySymbol)) {
+      const group    = bySymbol[sym]
       const oldestMs = Math.min(...group.map(t => new Date(t.created_at).getTime()))
       const candles  = await fetchCandles(sym, oldestMs)
       if (!candles.length) continue
 
       for (const trade of group) {
-        const tp    = trade.tp_price!
-        const sl    = trade.sl_price!
-        const entry = trade.entry_price!
+        const tp     = trade.tp_price!
+        const sl     = trade.sl_price!
+        const entry  = trade.entry_price!
         const isLong = trade.direction === 'long'
 
         const tradeStartMs = new Date(trade.created_at).getTime()
-        const startIdx     = Math.max(0, Math.floor((tradeStartMs - oldestMs) / hourMs))
+        const startIdx     = Math.max(0, Math.floor((tradeStartMs - oldestMs) / HOUR_MS))
         const slice        = candles.slice(startIdx)
         if (!slice.length) continue
 
-        let hitTp = false
-        let hitSl = false
+        const hit = scanTpSl(slice, tp, sl, isLong)
+        if (!hit) continue
 
-        for (const c of slice) {
-          if (hitTp || hitSl) break
-          if (isLong) {
-            if (c.high >= tp) { hitTp = true; break }
-            if (c.low  <= sl) { hitSl = true; break }
-          } else {
-            if (c.low  <= tp) { hitTp = true; break }
-            if (c.high >= sl) { hitSl = true; break }
-          }
-        }
-
-        if (!hitTp && !hitSl) continue
-
-        const hitPrice = hitTp ? tp : sl
+        const hitPrice = hit === 'tp' ? tp : sl
         const diff     = isLong ? hitPrice - entry : entry - hitPrice
         const pnlPct   = parseFloat(((diff / entry) * trade.leverage * 100).toFixed(2))
         const pnlUsd   = parseFloat(((trade.amount * pnlPct) / 100).toFixed(2))
@@ -225,23 +213,23 @@ export async function GET(req: NextRequest) {
           await adjustBalance(trade.user_id, trade.amount + pnlUsd)
         }
 
-        const emoji   = hitTp ? '✅' : '❌'
+        const emoji   = hit === 'tp' ? '✅' : '❌'
         const pnlStr  = pnlPct >= 0 ? `+${pnlPct}%` : `${pnlPct}%`
         const usdStr  = pnlUsd >= 0 ? `+$${pnlUsd.toFixed(2)}` : `-$${Math.abs(pnlUsd).toFixed(2)}`
-        const hitPriceStr = (hitTp ? tp : sl).toFixed(entry >= 100 ? 2 : 4)
+        const hitPriceStr = hitPrice.toFixed(entry >= 100 ? 2 : 4)
         const entryStr    = entry.toFixed(entry >= 100 ? 2 : 4)
         const msg    = `${emoji} <b>AUTO ${trade.direction.toUpperCase()} ${trade.pair}</b> × ${trade.leverage}x\n`
-          + `Вход: $${entryStr} → ${hitTp ? 'TP' : 'SL'}: $${hitPriceStr}\n`
+          + `Вход: $${entryStr} → ${hit === 'tp' ? 'TP' : 'SL'}: $${hitPriceStr}\n`
           + `Результат: <b>${pnlStr}</b> (${usdStr})`
 
         const tgChatId = await getTgChatId(trade.user_id)
         await Promise.allSettled([
           tgChatId ? sendTelegramToUser(tgChatId, msg) : Promise.resolve(),
-          createNotification(trade.user_id, `${emoji} AUTO ${trade.direction.toUpperCase()} ${trade.pair} — ${hitTp ? 'TP' : 'SL'} (${pnlStr})`),
+          createNotification(trade.user_id, `${emoji} AUTO ${trade.direction.toUpperCase()} ${trade.pair} — ${hit === 'tp' ? 'TP' : 'SL'} (${pnlStr})`),
         ])
 
-        if (hitTp) tradesClosedTp++
-        else       tradesClosedSl++
+        if (hit === 'tp') tradesClosedTp++
+        else              tradesClosedSl++
       }
     }
   }

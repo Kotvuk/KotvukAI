@@ -1,24 +1,6 @@
 import { neon, type NeonQueryFunction } from '@neondatabase/serverless'
 
-let _sql: NeonQueryFunction<false, false> | null = null
-
-function getSQL(): NeonQueryFunction<false, false> {
-  if (!_sql) {
-    if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL is not set')
-    _sql = neon(process.env.DATABASE_URL)
-  }
-  return _sql
-}
-
-export const sql: NeonQueryFunction<false, false> = new Proxy(function () {} as unknown as NeonQueryFunction<false, false>, {
-  apply(_t, _this, args) {
-    return (getSQL() as unknown as (...a: unknown[]) => unknown)(...args)
-  },
-  get(_t, prop) {
-    const s = getSQL() as unknown as Record<string | symbol, unknown>
-    return s[prop]
-  },
-})
+export const sql: NeonQueryFunction<false, false> = neon(process.env.DATABASE_URL!)
 
 export interface User {
   id: number

@@ -38,7 +38,6 @@ export default function OnboardingModal() {
         background: 'var(--bg2)', border: '1px solid var(--line2)', borderRadius: 10,
         maxWidth: 420, width: '100%', padding: '28px 28px 22px', position: 'relative',
       }}>
-        {/* Progress dots */}
         <div style={{ display: 'flex', gap: 6, justifyContent: 'center', marginBottom: 22 }}>
           {STEPS.map((_, i) => (
             <div key={i} style={{

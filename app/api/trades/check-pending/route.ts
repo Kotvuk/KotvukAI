@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
       const data: { symbol: string; price: string }[] = await res.json()
       for (const d of data) priceMap[d.symbol] = parseFloat(d.price)
     }
-  } catch { /* продолжить без цен — только отмена истёкших */ }
+  } catch {}
 
   let activated = 0
   let cancelled = 0
@@ -46,8 +46,8 @@ export async function POST(req: NextRequest) {
     if (!currentPrice) continue
 
     const limitHit = trade.direction === 'long'
-      ? currentPrice <= trade.limit_price   // Long: цена упала до нашего лимита
-      : currentPrice >= trade.limit_price   // Short: цена выросла до нашего лимита
+      ? currentPrice <= trade.limit_price
+      : currentPrice >= trade.limit_price
 
     if (limitHit) {
       const wasActivated = await activateTrade(trade.id, user.id, trade.limit_price)

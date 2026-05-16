@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
         const d = await r.json() as { price: string }
         prices[pair] = parseFloat(d.price)
       }
-    } catch { /* ignore */ }
+    } catch {}
   }))
 
   const triggered = await checkAndTriggerAlerts(user.id, prices)

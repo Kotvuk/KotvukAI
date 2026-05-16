@@ -19,7 +19,6 @@ export default function OgImage() {
           position: 'relative',
         }}
       >
-        {/* Grid background lines */}
         <div style={{
           position: 'absolute', inset: 0,
           backgroundImage: 'linear-gradient(#1a1a1a 1px, transparent 1px), linear-gradient(90deg, #1a1a1a 1px, transparent 1px)',
@@ -28,10 +27,8 @@ export default function OgImage() {
           display: 'flex',
         }} />
 
-        {/* Cyan accent bar */}
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4, background: '#00d4ff', display: 'flex' }} />
 
-        {/* Logo */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 48 }}>
           <svg width="36" height="36" viewBox="0 0 32 32">
             <polygon points="16,2 30,12 25,30 7,30 2,12" fill="#00d4ff" />
@@ -41,18 +38,15 @@ export default function OgImage() {
           </span>
         </div>
 
-        {/* Headline */}
         <div style={{ fontSize: 72, fontWeight: 900, color: '#ffffff', lineHeight: 1.0, letterSpacing: '-2px', marginBottom: 28, display: 'flex', flexDirection: 'column' }}>
           <span>AI-анализ</span>
           <span style={{ color: '#00d4ff' }}>криптовалют</span>
         </div>
 
-        {/* Description */}
         <div style={{ fontSize: 26, color: '#555555', lineHeight: 1.6, maxWidth: 700, display: 'flex' }}>
           Сигналы LONG/SHORT · SMC Order Blocks · Fair Value Gaps · Fibonacci · Торговый журнал
         </div>
 
-        {/* Tags bottom */}
         <div style={{ position: 'absolute', bottom: 60, left: 90, display: 'flex', gap: 16 }}>
           {['Бесплатно', 'SMC + OTE', 'AI Analysis'].map(tag => (
             <div key={tag} style={{
@@ -65,7 +59,6 @@ export default function OgImage() {
           ))}
         </div>
 
-        {/* URL */}
         <div style={{ position: 'absolute', bottom: 64, right: 90, fontSize: 20, color: '#333', display: 'flex' }}>
           kotvukai.vercel.app
         </div>

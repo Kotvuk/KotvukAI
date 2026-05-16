@@ -4,12 +4,12 @@ import { getUser } from '@/lib/auth-helper'
 import { sql } from '@/lib/db'
 
 export interface ConfidenceBucket {
-  bucket: number      // нижняя граница: 50, 60, 70, 80, 90
-  label: string       // '50–59%', '60–69%', ...
-  total: number       // всего сигналов с outcome в этом диапазоне
+  bucket: number
+  label: string
+  total: number
   wins: number
   losses: number
-  win_rate: number | null  // 0-100
+  win_rate: number | null
   avg_pnl: number | null
 }
 

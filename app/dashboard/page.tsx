@@ -58,7 +58,7 @@ export default function DashboardPage() {
           const unread = (data.notifications || []).filter((n: { read: boolean }) => !n.read).length
           setNotifCount(unread)
         }
-      } catch { /* silent */ }
+      } catch {}
     }
     const initTimer = setTimeout(() => {
       runChecks()

@@ -45,7 +45,6 @@ export default function AiResultPanel({ aiData, pair, tf, smcProb, onNavigate, o
 
   return (
     <>
-      {/* Verdict */}
       <div className={`verdict ${V}`} style={{ marginTop: 10 }}>
         <div className={`vsig ${V}`}>{String(a.verdict)}</div>
         <div className="vmeta">
@@ -74,7 +73,6 @@ export default function AiResultPanel({ aiData, pair, tf, smcProb, onNavigate, o
         </div>
       </div>
 
-      {/* Pipeline */}
       <div className="pipe">
         {[
           { key: 'step1', label: t('step1_technical'), sig: (p.step1 as Record<string,unknown>)?.signal,  val: `${(p.step1 as Record<string,unknown>)?.strength}/10`, sum: (p.step1 as Record<string,unknown>)?.summary },
@@ -91,7 +89,6 @@ export default function AiResultPanel({ aiData, pair, tf, smcProb, onNavigate, o
         ))}
       </div>
 
-      {/* Multi-method analysis */}
       {Array.isArray(aiData.methods) && (aiData.methods as unknown[]).length > 0 && (() => {
         type MR = { method: string; signal: string; confidence: number; summary: string }
         type CR = { long: number; short: number; wait: number; decision: string; agreeing: string[]; threshold: number }
@@ -129,14 +126,12 @@ export default function AiResultPanel({ aiData, pair, tf, smcProb, onNavigate, o
         )
       })()}
 
-      {/* Levels */}
       <div className="levels">
         <div className="lv"><div className="lv-l">{t('entry')}</div><div className="lv-v lv-entry">${Number(a.entry_price || 0).toLocaleString()}</div><div className="lv-p">{a.entry_type === 'market' ? 'market' : 'limit'}</div></div>
         <div className="lv"><div className="lv-l">{t('take_profit')}</div><div className="lv-v lv-tp">${Number(a.tp_price || 0).toLocaleString()}</div><div className="lv-p">+{String(a.tp_pct || '—')}%</div></div>
         <div className="lv"><div className="lv-l">{t('stop_loss')}</div><div className="lv-v lv-sl">${Number(a.sl_price || 0).toLocaleString()}</div><div className="lv-p">-{String(a.sl_pct || '—')}%</div></div>
       </div>
 
-      {/* Risk management */}
       {aiData.risk_management && (() => {
         const rm = aiData.risk_management as Record<string, unknown>
         return (
@@ -157,7 +152,6 @@ export default function AiResultPanel({ aiData, pair, tf, smcProb, onNavigate, o
         )
       })()}
 
-      {/* OB Quality Card */}
       {a.ob_used && (() => {
         const ob = a.ob_used as Record<string, unknown>
         const score = Number(ob.score ?? 0)
@@ -187,7 +181,6 @@ export default function AiResultPanel({ aiData, pair, tf, smcProb, onNavigate, o
         )
       })()}
 
-      {/* Open position button */}
       {(String(a.verdict) === 'LONG' || String(a.verdict) === 'SHORT') && onNavigate && (
         <button
           onClick={() => {
@@ -211,7 +204,6 @@ export default function AiResultPanel({ aiData, pair, tf, smcProb, onNavigate, o
         </button>
       )}
 
-      {/* WAIT block */}
       {String(a.verdict) === 'WAIT' && a.wait_for && (
         <div style={{ margin: '10px 0', padding: '12px 14px', background: 'rgba(255,165,0,0.08)', borderRadius: 6, border: '1px solid rgba(255,165,0,0.25)' }}>
           <div style={{ fontSize: '.6rem', color: '#ffa500', fontWeight: 700, marginBottom: 4 }}>{t('wait_signal_lbl')}</div>
@@ -221,7 +213,6 @@ export default function AiResultPanel({ aiData, pair, tf, smcProb, onNavigate, o
 
       <div className="desc">{smcWrap(String(a.full_description || '—'))}</div>
 
-      {/* Instructions */}
       <div className="instr"><span className="ik" style={{ background: '#f0a500' }}>{t('entry_badge_lbl')}</span><span>{String(a.entry_instruction || '—')}</span></div>
       {a.entry_type === 'limit' && a.entry_limit && (
         <div className="instr" style={{ background: 'rgba(240,165,0,0.08)', borderLeft: '2px solid #f0a500' }}>
@@ -252,7 +243,6 @@ export default function AiResultPanel({ aiData, pair, tf, smcProb, onNavigate, o
         <span>{String(a.exit_instruction || '—')}</span>
       </div>
 
-      {/* Insights */}
       <div className="sec">{t('insights')}</div>
       <div className="ins-grid">
         {((a.insights as { icon: string; tag: string; text: string }[]) || []).map((ins, i) => (
@@ -263,7 +253,6 @@ export default function AiResultPanel({ aiData, pair, tf, smcProb, onNavigate, o
         ))}
       </div>
 
-      {/* Why signal */}
       <div className="tbox" style={{ marginBottom: 10 }}>
         <div className="thead"><span className="thead-t">{t('why_signal')}</span></div>
         <div style={{ padding: '9px 12px', fontSize: '.67rem', color: 'var(--muted)', lineHeight: 1.65 }}>
@@ -271,7 +260,6 @@ export default function AiResultPanel({ aiData, pair, tf, smcProb, onNavigate, o
         </div>
       </div>
 
-      {/* SMC Probability */}
       {smcProb && (
         <div className="tbox" style={{ marginBottom: 20 }}>
           <div className="thead">
@@ -351,7 +339,6 @@ export default function AiResultPanel({ aiData, pair, tf, smcProb, onNavigate, o
         </div>
       )}
 
-      {/* Historical setups button */}
       {onShowHistorical && (
         <div style={{ marginBottom: 20, display: 'flex', justifyContent: 'center' }}>
           <button

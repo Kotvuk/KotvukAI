@@ -66,8 +66,8 @@ export interface Trade {
   sl_price: number | null
   leverage: number
   status: 'open' | 'closed' | 'pending' | 'cancelled'
-  limit_price: number | null   // цена триггера для pending ордеров
-  expires_at: string | null    // авто-отмена через 7 дней
+  limit_price: number | null
+  expires_at: string | null
   account_type: 'user' | 'ai'
   pnl: number | null
   pnl_pct: number | null
@@ -80,7 +80,7 @@ export interface Subscription {
   user_id: number
   tier: 'free' | 'starter' | 'pro' | 'elite'
   analyses_today: number
-  last_reset_date: string   // DATE
+  last_reset_date: string
   expires_at: string | null
   created_at: string
 }

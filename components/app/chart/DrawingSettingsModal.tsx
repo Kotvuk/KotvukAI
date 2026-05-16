@@ -204,7 +204,6 @@ export default function DrawingSettingsModal({ info, onClose, onSave, onDelete }
         width: 300, maxHeight: '90vh', overflowY: 'auto',
         boxShadow: '0 8px 40px rgba(0,0,0,0.6)',
       }}>
-        {/* Header */}
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           padding: '12px 16px', borderBottom: '1px solid var(--line2)',
@@ -215,7 +214,6 @@ export default function DrawingSettingsModal({ info, onClose, onSave, onDelete }
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '1rem' }}>✕</button>
         </div>
 
-        {/* Body */}
         <div style={{ padding: 16 }}>
           {isRect ? (
             <RectStyleEditor
@@ -250,7 +248,6 @@ export default function DrawingSettingsModal({ info, onClose, onSave, onDelete }
           )}
         </div>
 
-        {/* Footer */}
         <div style={{
           display: 'flex', gap: 8, padding: '12px 16px',
           borderTop: '1px solid var(--line2)', justifyContent: 'space-between',

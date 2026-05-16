@@ -195,7 +195,6 @@ export async function GET(req: NextRequest) {
 
   const userWatchlist = await getUserWatchlist(Number(user.id))
   const rawList: string[] = userWatchlist?.length ? userWatchlist : DEFAULT_WATCHLIST
-  // Sort by price (BTC→ETH→…) and hard-cap at 15 pairs
   const watchlist = (await priceSortedWatchlist(rawList)).slice(0, 15)
   const batchIndex = parseInt(req.nextUrl.searchParams.get('batch') || '0', 10)
   const batchSize  = 5

@@ -59,7 +59,7 @@ export async function GET(req: NextRequest) {
         if (Array.isArray(frData) && frData[0]?.fundingRate) {
           fundingRate = parseFloat(frData[0].fundingRate)
         }
-      } catch { /* ignore */ }
+      } catch {}
     }
 
     const market = calcMarketData(candles, fundingRate)

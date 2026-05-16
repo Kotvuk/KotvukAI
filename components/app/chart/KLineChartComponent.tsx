@@ -341,8 +341,6 @@ const KLineChartComponent = forwardRef<KLineChartHandle, Props>(
         if (!chartRef.current) return
         if (pollTimer.current) { clearInterval(pollTimer.current); pollTimer.current = null }
 
-        // Clear previous pair's AI markup to prevent Y-axis range contamination
-        // (e.g. switching from BTC $80k to ADA $0.27 — old lines kept Y-axis at $80k)
         lastMarkup.current = null
         try { chartRef.current.removeOverlay({ groupId: 'ai' }) } catch {}
         try { chartRef.current.removeOverlay({ groupId: 'ai_selected_ob' }) } catch {}
@@ -709,7 +707,7 @@ const KLineChartComponent = forwardRef<KLineChartHandle, Props>(
               name: d.name, points: d.points as { timestamp: number; value: number }[],
               extendData: d.extendData, styles: d.styles,
             })
-          } catch { /* skip invalid overlay */ }
+          } catch {}
         }
       },
     }))

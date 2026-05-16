@@ -20,13 +20,13 @@ async function parseJSON(
   systemPrompt?: string,
   reasoningEffort?: 'low' | 'medium' | 'high',
 ): Promise<Record<string, unknown>> {
-  try { return extractJSON(raw) } catch { /* retry */ }
+  try { return extractJSON(raw) } catch {}
 
   const retryPrompt = `/no_think
 Previous response contained invalid JSON. Return ONLY clean valid JSON without markdown, without explanation.
 Task was: ${originalPrompt.slice(0, 200)}...`
   const retryRaw = await groqGenerate(keys, model, retryPrompt, maxTokens, temperature, systemPrompt, reasoningEffort)
-  try { return extractJSON(retryRaw) } catch { /* second retry */ }
+  try { return extractJSON(retryRaw) } catch {}
 
   const simplePrompt = `/no_think
 Return ONLY one line of valid JSON (no markdown, no explanation): {"v":"WAIT","c":50,"r":5}`
@@ -231,7 +231,7 @@ export async function fullAnalysis(
 
   const riskUsd = parseFloat((balance * riskPct / 100).toFixed(2))
   const atrPct  = market.atr14pct ?? 2.0
-  const atrAbs  = market.price * atrPct / 100   // absolute ATR value in $, used in prompt & TP/SL clamp
+  const atrAbs  = market.price * atrPct / 100
 
   const recentOutcomes = memorySignals.slice(0, 3).map(s => s.outcome)
   const consecutiveLosses = recentOutcomes.filter(o => o === 'loss').length
@@ -294,8 +294,6 @@ Reply with a single-line JSON:
   ].filter(Boolean).join('\n')
 
   if (trendDir === 'ranging' && (htf === 'neutral' || htf === 'ranging') || s1.ranging_risk === true) {
-    // If ≥3 independent methods agree on a direction, override the ranging-market early exit
-    // and let the full analysis pipeline run — Steps 2 & 3 will still apply confluence checks
     const consensusOverride = !strictMode
       && consensus.decision !== 'WAIT'
       && (consensus.long >= 3 || consensus.short >= 3)
@@ -306,7 +304,6 @@ Reply with a single-line JSON:
       const waitFinal = makeWait(45, 'Флэт без ясного HTF-bias. Ожидаем разрешения структуры.', riskUsd, balance, riskPct, allMethods, consensus)
       return translateResponse(keys, { step1: waitStep1, step2: waitStep2, final: waitFinal, methods: allMethods, consensus })
     }
-    // else: 3+ methods agree — continue to full Steps 2 & 3 analysis despite ranging conditions
   }
 
   const strictWarning = strictMode ? `\n⚠️ STRICT MODE (${consecutiveLosses} consecutive losses): require at least 4 confluence factors, confluence_count≥4, else WAIT.\n` : ''
@@ -342,8 +339,6 @@ Reply with a single-line JSON:
   const sweepOk = sweepConfirmed || Boolean(s1.sweep_ssl) || Boolean(s1.sweep_bsl)
 
   if (!confluenceOk) {
-    // Allow through if ≥3 independent methods agree on direction —
-    // consensus context is passed to Step 3 so it can make the final call
     const consensusOverride = !strictMode
       && consensus.decision !== 'WAIT'
       && (consensus.long >= 3 || consensus.short >= 3)
@@ -354,7 +349,6 @@ Reply with a single-line JSON:
       const waitFinal = makeWait(48, `Insufficient confluence (${confluenceCount}/${minConfluence}). ${String(s2.wait_reason || 'Wait for a cleaner setup.')}`, riskUsd, balance, riskPct, allMethods, consensus)
       return translateResponse(keys, { step1: waitStep1, step2: waitStep2, final: waitFinal, methods: allMethods, consensus })
     }
-    // else: continue to Step 3 — consensus (3×LONG/SHORT) overrides low confluence count
   }
 
   const systemPrompt3 = `You are an institutional SMC trader with 10 years of experience trading Smart Money Concepts. Your goal is high-quality signals with minimum R:R of 1:1.5. You only trade when there is confluence of at least 3 factors. You do not trade in ranging markets. A liquidity sweep is a mandatory condition for entry. Reply only with valid JSON.`
@@ -442,10 +436,8 @@ Reply with ONLY one line of valid JSON (all numeric fields must be numbers, not 
     (verdict === 'SHORT' && entryPrice > price * (1 + LIMIT_THRESHOLD))
   ) ? 'limit' : 'market'
 
-  // ATR-based thresholds relative to entryPrice for TP/SL clamping
-  const minSlAbs = atrAbs * 0.5   // SL no closer than 0.5×ATR
-  const maxSlAbs = atrAbs * 3.0   // SL no farther than 3×ATR
-  // Reject AI TP/SL that deviate more than 10% from entryPrice (tight bound relative to entry, not price)
+  const minSlAbs = atrAbs * 0.5
+  const maxSlAbs = atrAbs * 3.0
   const MAX_DEV = 0.10
   if (!tpPrice || tpPrice < entryPrice * (1 - MAX_DEV) || tpPrice > entryPrice * (1 + MAX_DEV)) tpPrice = 0
   if (!slPrice || slPrice < entryPrice * (1 - MAX_DEV) || slPrice > entryPrice * (1 + MAX_DEV)) slPrice = 0
@@ -454,11 +446,9 @@ Reply with ONLY one line of valid JSON (all numeric fields must be numbers, not 
   const isShortV = verdict === 'SHORT'
 
   if (isLongV || isShortV) {
-    // Fix swapped TP/SL (AI sometimes returns them inverted)
     if (isLongV  && tpPrice && slPrice && tpPrice < entryPrice && slPrice > entryPrice) [tpPrice, slPrice] = [slPrice, tpPrice]
     if (isShortV && tpPrice && slPrice && tpPrice > entryPrice && slPrice < entryPrice) [tpPrice, slPrice] = [slPrice, tpPrice]
 
-    // ATR-based fallback if AI value is 0 or still pointing the wrong direction
     if (isLongV) {
       if (!slPrice || slPrice >= entryPrice) slPrice = parseFloat((entryPrice - atrAbs * 1.2).toFixed(6))
       if (!tpPrice || tpPrice <= entryPrice) tpPrice = parseFloat((entryPrice + atrAbs * 2.5).toFixed(6))
@@ -467,7 +457,6 @@ Reply with ONLY one line of valid JSON (all numeric fields must be numbers, not 
       if (!tpPrice || tpPrice >= entryPrice) tpPrice = parseFloat((entryPrice - atrAbs * 2.5).toFixed(6))
     }
 
-    // Clamp SL to [0.5×ATR, 3×ATR] from entry — prevents too-tight or insane SL
     const slDist = Math.abs(slPrice - entryPrice)
     if (slDist < minSlAbs) {
       slPrice = isLongV ? entryPrice - minSlAbs : entryPrice + minSlAbs
@@ -482,7 +471,6 @@ Reply with ONLY one line of valid JSON (all numeric fields must be numbers, not 
       else         tpPrice = entryPrice - slDistFinal * 2.0
     }
 
-    // Round to sensible precision (no more than 6 significant figures)
     const sigFigs = entryPrice >= 1000 ? 2 : entryPrice >= 1 ? 4 : 6
     tpPrice = parseFloat(tpPrice.toFixed(sigFigs))
     slPrice = parseFloat(slPrice.toFixed(sigFigs))

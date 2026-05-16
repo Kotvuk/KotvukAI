@@ -651,10 +651,6 @@ function calcProbability(inp: ProbInput): ProbabilityResult {
   }
 }
 
-/**
- * Оценка надёжности Order Block: 0-100.
- * Чем выше — тем выше вероятность отработки зоны.
- */
 export function scoreOrderBlock(ob: OrderBlock): {
   score: number
   factors: Record<string, number>

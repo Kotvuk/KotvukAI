@@ -344,7 +344,7 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ pair: p, timeframe: t, drawings }),
       })
-    } catch { /* silent */ }
+    } catch {}
   }, [getValidToken])
 
   const loadDrawings = useCallback(async (p: string, t: string) => {
@@ -358,7 +358,7 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
       if (data.ok && data.drawings?.length) {
         setTimeout(() => chartRef.current?.restoreUserDrawings(data.drawings), 800)
       }
-    } catch { /* silent */ }
+    } catch {}
   }, [getValidToken])
 
   useEffect(() => {
@@ -456,7 +456,7 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
       await fetch(`/api/alerts/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } })
       setAlerts(prev => prev.filter(a => a.id !== id))
       showToast('Алерт удалён', 'ok')
-    } catch { /* ignore */ }
+    } catch {}
   }
 
   async function runBacktest() {

@@ -21,7 +21,6 @@ export default function PrivacyPage() {
   return (
     <div style={s}>
       <div style={container}>
-        {/* Back */}
         <Link href="/" style={{ fontSize: '.65rem', color: '#444', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6, marginBottom: 40 }}>
           ← На главную
         </Link>

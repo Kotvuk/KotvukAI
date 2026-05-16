@@ -109,7 +109,6 @@ export default function AdminPage() {
     <div style={{ minHeight: '100vh', background: '#0d0d0d', color: '#e5e5e5', fontFamily: 'monospace', padding: 24 }}>
       <div style={{ maxWidth: 1300, margin: '0 auto' }}>
 
-        {/* Заголовок */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 32 }}>
           <div style={{ fontSize: 24, fontWeight: 700, color: '#0a84ff' }}>⚡ KotvukAI Admin</div>
           <button onClick={() => loadUsers()}
@@ -122,7 +121,6 @@ export default function AdminPage() {
           </button>
         </div>
 
-        {/* Карточки тарифов */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 28 }}>
           {TIERS.map(tier => {
             const count = users.filter(u => (u.tier || 'free') === tier).length
@@ -141,7 +139,6 @@ export default function AdminPage() {
           })}
         </div>
 
-        {/* Общая статистика */}
         {stats && (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 10, marginBottom: 28 }}>
             {[
@@ -157,7 +154,6 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* Поиск */}
         <input
           value={search} onChange={e => setSearch(e.target.value)}
           placeholder="Поиск по email, нику или ID..."
@@ -165,7 +161,6 @@ export default function AdminPage() {
             padding: '10px 14px', borderRadius: 8, fontSize: 13, marginBottom: 12, boxSizing: 'border-box' }}
         />
 
-        {/* Таблица */}
         <div style={{ background: '#111', border: '1px solid #222', borderRadius: 10, overflow: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, minWidth: 900 }}>
             <thead>
@@ -183,18 +178,14 @@ export default function AdminPage() {
                 const expired = isExpired(u.expires_at)
                 return (
                   <tr key={u.id} style={{ borderBottom: '1px solid #1a1a1a', background: i % 2 === 0 ? 'transparent' : '#0a0a0a' }}>
-                    {/* ID */}
                     <td style={{ padding: '10px 12px', color: '#444' }}>{u.id}</td>
 
-                    {/* Email */}
                     <td style={{ padding: '10px 12px', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {u.email || '—'}
                     </td>
 
-                    {/* Ник */}
                     <td style={{ padding: '10px 12px', color: '#888' }}>{u.nickname || '—'}</td>
 
-                    {/* Тариф */}
                     <td style={{ padding: '10px 12px' }}>
                       <span style={{ background: color + '22', color, border: `1px solid ${color}44`,
                         padding: '2px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600, textTransform: 'uppercase' }}>
@@ -205,7 +196,6 @@ export default function AdminPage() {
                       )}
                     </td>
 
-                    {/* Анализов сегодня */}
                     <td style={{ padding: '10px 12px' }}>
                       <span style={{ color: (u.analyses_today ?? 0) >= limit ? '#ff453a' : '#888' }}>
                         {u.analyses_today ?? 0}
@@ -213,12 +203,10 @@ export default function AdminPage() {
                       <span style={{ color: '#444' }}>/{limit}</span>
                     </td>
 
-                    {/* Дата истечения */}
                     <td style={{ padding: '10px 12px', color: expired ? '#ff453a' : '#555', whiteSpace: 'nowrap' }}>
                       {u.expires_at ? new Date(u.expires_at).toLocaleDateString('ru-RU') : '∞'}
                     </td>
 
-                    {/* Смена тарифа + дата */}
                     <td style={{ padding: '8px 12px' }}>
                       <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
                         <select
@@ -245,12 +233,10 @@ export default function AdminPage() {
                       </div>
                     </td>
 
-                    {/* Регистрация */}
                     <td style={{ padding: '10px 12px', color: '#444', whiteSpace: 'nowrap' }}>
                       {u.created_at ? new Date(u.created_at).toLocaleDateString('ru-RU') : '—'}
                     </td>
 
-                    {/* Удалить */}
                     <td style={{ padding: '10px 12px' }}>
                       {confirmDel === u.id ? (
                         <div style={{ display: 'flex', gap: 4 }}>

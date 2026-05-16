@@ -26,7 +26,6 @@ export async function POST(req: NextRequest) {
   const user = await getUser(req)
   if (!user) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 })
 
-  // Expire signals older than 7 days (same as auto-check cron)
   await expireOldSignals()
 
   const pendingSignals = await getPendingSignals(user.id)

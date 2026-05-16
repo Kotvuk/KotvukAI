@@ -143,11 +143,9 @@ export default function SettingsPanel() {
     <div className="panel active" id="panel-settings">
       <div style={{ maxWidth: 500, margin: '0 auto' }}>
 
-        {/* ── Подписка ── */}
         <div className="sb2">
           <div className="st">{t('subscription_title')}</div>
 
-          {/* Текущий план */}
           {sub && (
             <div className="sub-bar" style={{ marginBottom: 16 }}>
               <div className="sub-bar-info">
@@ -168,7 +166,6 @@ export default function SettingsPanel() {
             </div>
           )}
 
-          {/* Карточки тарифов */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 12 }}>
             {([
               { tier: 'starter', price: '$9', analyses: 10,  color: '#0a84ff', features: [`10 ${t('analyses_today_lbl')}`, 'SMC signals', t('nav_history')] },
@@ -215,7 +212,6 @@ export default function SettingsPanel() {
             })}
           </div>
 
-          {/* Управление подпиской */}
           {sub && sub.tier !== 'free' && (
             <button
               onClick={openPortal}
@@ -231,7 +227,6 @@ export default function SettingsPanel() {
           )}
         </div>
 
-        {/* ── AI Трейдинг ── */}
         <div className="sb2">
           <div className="st">{t('ai_trading_title')}</div>
           <p style={{ fontSize: '.6rem', color: 'var(--dim)', marginBottom: 10 }}>
@@ -290,7 +285,6 @@ export default function SettingsPanel() {
           </p>
         </div>
 
-        {/* ── Профиль ── */}
         <div className="sb2">
           <div className="st">{t('profile')}</div>
           <div className="fg">
@@ -301,7 +295,6 @@ export default function SettingsPanel() {
           </div>
         </div>
 
-        {/* ── Безопасность ── */}
         <div className="sb2">
           <div className="st">{t('security')}</div>
           <div className="fg">
@@ -312,7 +305,6 @@ export default function SettingsPanel() {
           </div>
         </div>
 
-        {/* ── Язык ── */}
         <div className="sb2">
           <div className="st">{t('language')}</div>
           <div className="tg" style={{ maxWidth: 200 }}>
@@ -327,7 +319,6 @@ export default function SettingsPanel() {
           </p>
         </div>
 
-        {/* ── Telegram ── */}
         <div className="sb2">
           <div className="st">{t('tg_section_title')}</div>
           <p style={{ fontSize: '.6rem', color: 'var(--dim)', marginBottom: 10 }}>
@@ -370,7 +361,6 @@ export default function SettingsPanel() {
           </div>
         </div>
 
-        {/* ── Export ── */}
         <div className="sb2">
           <div className="st">{t('export_data_title')}</div>
           <div style={{ display: 'flex', gap: 8 }}>

@@ -103,7 +103,7 @@ export async function POST(req: NextRequest) {
         if (htfRes.value.length > 0) {
           htfBias = calcEnhancedSMC(toCandles(htfRes.value), null).htfBias
         }
-      } catch { /* ignore */ }
+      } catch {}
     }
 
     let fundingRate: number | null = null
@@ -193,7 +193,7 @@ export async function POST(req: NextRequest) {
           const tgChatId = String(user.telegram_chat_id || '')
           ;(tgChatId ? sendTelegramToUser(tgChatId, msg) : sendTelegram(msg)).catch(() => {})
         }
-      } catch { /* не критично */ }
+      } catch {}
     }
 
     return NextResponse.json({

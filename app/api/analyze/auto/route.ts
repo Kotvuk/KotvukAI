@@ -150,19 +150,20 @@ async function analyzeOne(
       })
       await adjustBalance(userId, -tradeAmount)
 
-      const dir = final.verdict === 'LONG' ? '📈' : '📉'
-      const entry = final.entry_price?.toFixed(2) ?? '—'
-      const tp    = final.tp_price?.toFixed(2) ?? '—'
-      const sl    = final.sl_price?.toFixed(2) ?? '—'
+      const dir   = final.verdict === 'LONG' ? '📈' : '📉'
+      const prec  = (final.entry_price ?? 0) >= 100 ? 2 : 4
+      const entry = final.entry_price ? final.entry_price.toFixed(prec) : '—'
+      const tp    = final.tp_price    ? final.tp_price.toFixed(prec)    : '—'
+      const sl    = final.sl_price    ? final.sl_price.toFixed(prec)    : '—'
+      const rr    = final.rr && isFinite(final.rr) ? final.rr.toFixed(1) : '?'
       const msg   = `${dir} <b>AUTO ${final.verdict}</b> ${sym} ${tfLabel}\n`
         + `Уверенность: <b>${final.confidence}%</b>\n`
         + `Вход: $${entry} | TP: $${tp} | SL: $${sl}\n`
-        + `Плечо: ${final.leverage}x | R:R: ${final.rr}`
+        + `Плечо: ${final.leverage}x | R:R: 1:${rr}`
 
       const tgChatId = String(user.telegram_chat_id || '')
-      const notifyTg = interval === '1h' || interval === '4h'
       await Promise.allSettled([
-        notifyTg ? (tgChatId ? sendTelegramToUser(tgChatId, msg) : sendTelegram(msg)) : Promise.resolve(),
+        tgChatId ? sendTelegramToUser(tgChatId, msg) : sendTelegram(msg),
         createNotification(userId, `🤖 AUTO ${final.verdict} ${sym} — уверенность ${final.confidence}%`),
       ])
     }

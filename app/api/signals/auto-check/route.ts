@@ -115,13 +115,7 @@ export async function GET(req: NextRequest) {
 
         const emoji  = outcome === 'win' ? '✅' : '❌'
         const pnlStr = pnlPct >= 0 ? `+${pnlPct}%` : `${pnlPct}%`
-        const tgMsg  = `${emoji} <b>${signal.final_verdict} ${signal.pair}</b> [${signal.timeframe}]\n`
-          + `${outcome === 'win' ? 'TP достигнут' : 'SL пробит'} — <b>${pnlStr}</b>`
-        const tgChatId = await getTgChatId(signal.user_id)
-        await Promise.allSettled([
-          tgChatId ? sendTelegramToUser(tgChatId, tgMsg) : sendTelegram(tgMsg),
-          createNotification(signal.user_id, `${emoji} ${signal.final_verdict} ${signal.pair} ${signal.timeframe} — ${outcome === 'win' ? 'TP' : 'SL'} (${pnlStr})`),
-        ])
+        await createNotification(signal.user_id, `${emoji} ${signal.final_verdict} ${signal.pair} ${signal.timeframe} — ${outcome === 'win' ? 'TP' : 'SL'} (${pnlStr})`)
 
         signalsUpdated++
       }
@@ -231,11 +225,14 @@ export async function GET(req: NextRequest) {
           await adjustBalance(trade.user_id, trade.amount + pnlUsd)
         }
 
-        const emoji  = hitTp ? '✅' : '❌'
-        const pnlStr = pnlPct >= 0 ? `+${pnlPct}%` : `${pnlPct}%`
-        const usdStr = pnlUsd >= 0 ? `+$${pnlUsd.toFixed(2)}` : `-$${Math.abs(pnlUsd).toFixed(2)}`
-        const msg    = `${emoji} <b>AUTO ${trade.direction.toUpperCase()} ${trade.pair}</b>\n`
-          + `${hitTp ? 'TP достигнут' : 'SL пробит'} — <b>${pnlStr}</b> (${usdStr})`
+        const emoji   = hitTp ? '✅' : '❌'
+        const pnlStr  = pnlPct >= 0 ? `+${pnlPct}%` : `${pnlPct}%`
+        const usdStr  = pnlUsd >= 0 ? `+$${pnlUsd.toFixed(2)}` : `-$${Math.abs(pnlUsd).toFixed(2)}`
+        const hitPriceStr = (hitTp ? tp : sl).toFixed(entry >= 100 ? 2 : 4)
+        const entryStr    = entry.toFixed(entry >= 100 ? 2 : 4)
+        const msg    = `${emoji} <b>AUTO ${trade.direction.toUpperCase()} ${trade.pair}</b> × ${trade.leverage}x\n`
+          + `Вход: $${entryStr} → ${hitTp ? 'TP' : 'SL'}: $${hitPriceStr}\n`
+          + `Результат: <b>${pnlStr}</b> (${usdStr})`
 
         const tgChatId = await getTgChatId(trade.user_id)
         await Promise.allSettled([

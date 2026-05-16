@@ -78,14 +78,13 @@ jobs:
             done
           done
 
-          # Signal / outcome check (always runs alongside analysis)
+          # Wait for analysis to finish before checking outcomes
+          wait "${PIDS[@]}"
+
+          # Signal / outcome check runs AFTER analysis to avoid race conditions
           curl -sf --max-time 70 \
             "${APP_URL}/api/signals/auto-check?secret=${SECRET}" \
-            -o /tmp/signals.json &
-          PIDS+=($!)
-
-          # Wait for every background job to finish
-          wait "${PIDS[@]}"
+            -o /tmp/signals.json
 
           # Print results
           for TF in $TF_LIST; do

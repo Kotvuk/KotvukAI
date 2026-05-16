@@ -456,15 +456,21 @@ export async function getAllPendingSignals(): Promise<Signal[]> {
 }
 
 export async function expireOldSignals(): Promise<number> {
-  const rows = await sql`
-    UPDATE signals
-    SET outcome = 'loss', actual_pnl_pct = 0
-    WHERE outcome IS NULL
-      AND final_verdict IN ('LONG', 'SHORT')
-      AND created_at < NOW() - INTERVAL '7 days'
-    RETURNING id
-  `
-  return rows.length
+  const [r1, r2] = await Promise.all([
+    sql`
+      UPDATE signals SET outcome = 'loss', actual_pnl_pct = 0
+      WHERE outcome IS NULL
+        AND final_verdict IN ('LONG', 'SHORT')
+        AND created_at < NOW() - INTERVAL '7 days'
+      RETURNING id
+    `,
+    sql`
+      DELETE FROM signals
+      WHERE final_verdict = 'WAIT'
+        AND created_at < NOW() - INTERVAL '24 hours'
+    `,
+  ])
+  return r1.length
 }
 
 export async function getDrawings(userId: number, pair: string, timeframe: string): Promise<unknown[]> {

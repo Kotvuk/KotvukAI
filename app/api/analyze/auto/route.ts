@@ -88,7 +88,7 @@ async function analyzeOne(
     const riskPct  = Number(user.ai_risk_per_trade ?? 1.0)
     const maxLev   = Number(user.ai_max_leverage ?? 20)
     const userId   = Number(user.id)
-    const tfLabel  = interval === '1h' ? '1ч' : interval === '4h' ? '4ч' : interval
+    const tfLabel  = interval === '1h' ? '1ч' : interval === '4h' ? '4ч' : interval === '15m' ? '15м' : interval === '5m' ? '5м' : interval
 
     const memorySignals = await getSignalsForPair(userId, sym, 5)
     const { step1, step2, final } = await fullAnalysis(sym, tfLabel, market, candles, memorySignals, maxLev, balance, riskPct)

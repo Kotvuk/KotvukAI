@@ -160,8 +160,9 @@ async function analyzeOne(
         + `Плечо: ${final.leverage}x | R:R: ${final.rr}`
 
       const tgChatId = String(user.telegram_chat_id || '')
+      const notifyTg = interval === '1h' || interval === '4h'
       await Promise.allSettled([
-        tgChatId ? sendTelegramToUser(tgChatId, msg) : sendTelegram(msg),
+        notifyTg ? (tgChatId ? sendTelegramToUser(tgChatId, msg) : sendTelegram(msg)) : Promise.resolve(),
         createNotification(userId, `🤖 AUTO ${final.verdict} ${sym} — уверенность ${final.confidence}%`),
       ])
     }

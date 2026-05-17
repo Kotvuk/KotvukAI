@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
+import { fmtAlmaty } from '@/lib/fmt'
 
 interface Signal {
   id: number; pair: string; timeframe: string
@@ -125,7 +126,7 @@ export default function HistoricalSetupsModal({ currentPair, currentTf, currentV
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
                     <span className={`tag tag-${vc(s.final_verdict)}`} style={{ fontSize: '.55rem' }}>{s.final_verdict}</span>
                     <span style={{ fontSize: '.6rem', color: 'var(--text)' }}>{s.pair} · {s.timeframe}</span>
-                    <span style={{ fontSize: '.58rem', color: 'var(--dim)' }}>{new Date(s.created_at).toLocaleDateString('ru')}</span>
+                    <span style={{ fontSize: '.58rem', color: 'var(--dim)' }}>{fmtAlmaty(s.created_at)}</span>
                   </div>
                   <div style={{ display: 'flex', gap: 10 }}>
                     <span style={{ fontSize: '.58rem', color: 'var(--muted)' }}>Вход ${parseFloat(String(s.final_entry || 0)).toLocaleString()}</span>

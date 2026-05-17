@@ -232,7 +232,8 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
     }
     function onClearZones(e: Event) {
       const d = (e as CustomEvent).detail
-      if (d.target === 'all' || d.target === 'markup') chartRef.current?.clearDrawings()
+      if (d.target === 'all' || d.target === 'markup') chartRef.current?.clearMarkup()
+      if (d.target === 'all') chartRef.current?.clearDrawings()
       if (d.target === 'all' || d.target === 'ob' || d.target === 'fvg' || d.target === 'liquidity') chartRef.current?.clearSMC()
       showToast(t('cleared'), 'ok')
     }
@@ -506,7 +507,7 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
         const m = data.market
 
         if (a.verdict === 'WAIT') {
-          chartRef.current?.clearDrawings()
+          chartRef.current?.clearMarkup()
         } else {
           chartRef.current?.drawMarkup({ ...a, supports: m.supports, resistances: m.resistances })
         }

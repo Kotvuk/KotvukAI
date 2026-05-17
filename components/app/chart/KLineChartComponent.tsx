@@ -144,6 +144,7 @@ export interface KLineChartHandle {
   getYForPrice: (price: number) => number | null
   setDrawing: (type: string) => void
   clearDrawings: () => void
+  clearMarkup: () => void
   updateOverlay: (id: string, updates: { extendData?: unknown; styles?: unknown }) => void
   removeOverlayById: (id: string) => void
   drawMarkup: (a: {
@@ -455,6 +456,17 @@ const KLineChartComponent = forwardRef<KLineChartHandle, Props>(
       },
 
       clearDrawings() {
+        if (!chartRef.current) return
+        const systemGroups = new Set(['ai', 'smc_ob', 'smc_fvg', 'smc_liq', 'smc_bb', 'smc_bos', 'smc_trendlines', 'smc_pd', 'ai_selected_ob'])
+        const all: any[] = chartRef.current.getOverlaysByPaneId?.('candle_pane') ?? []
+        for (const o of all) {
+          if (!systemGroups.has(o.groupId ?? '')) {
+            try { chartRef.current.removeOverlay({ id: o.id }) } catch {}
+          }
+        }
+      },
+
+      clearMarkup() {
         if (!chartRef.current) return
         chartRef.current.removeOverlay({ groupId: 'ai' })
         chartRef.current.removeOverlay({ groupId: 'ai_selected_ob' })

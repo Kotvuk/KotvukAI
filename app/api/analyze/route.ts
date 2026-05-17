@@ -150,15 +150,14 @@ export async function POST(req: NextRequest) {
         `
         if (existing.length === 0) {
           const expiresAt     = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-          const maxLeverage   = Number(user.ai_max_leverage ?? 20)
-          const tradeLeverage = Math.min(analysis.leverage ?? 2, maxLeverage)
+          const tradeLeverage = Math.min(analysis.leverage ?? 2, userMaxLev)
 
           const slDist = (analysis.sl_price && analysis.entry_price)
             ? Math.abs(analysis.entry_price - analysis.sl_price) / analysis.entry_price
             : 0.02
           const riskUsd     = balance * riskPct / 100
           const rawAmount   = analysis.pos_usd || Math.round(riskUsd / Math.max(slDist, 0.001))
-          const tradeAmount = Math.min(Math.round(rawAmount), Math.round(balance * maxLeverage))
+          const tradeAmount = Math.min(Math.round(rawAmount), Math.round(balance * userMaxLev))
 
           const isLimit = analysis.entry_type === 'limit'
           const limitPx = analysis.entry_price ?? null

@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useLang } from '@/contexts/LangContext'
+import { fmtAlmaty } from '@/lib/fmt'
 
 interface Signal {
   id: number; pair: string; timeframe: string
@@ -148,13 +149,7 @@ export default function DashPanel() {
                 <tbody>
                   {botLog.map(s => (
                     <tr key={s.id}>
-                      <td style={{ whiteSpace: 'nowrap' }}>
-                        {new Date(s.created_at).toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' })}
-                        {' '}
-                        <span style={{ color: 'var(--dim)', fontSize: '.55rem' }}>
-                          {new Date(s.created_at).toLocaleDateString('ru', { day: '2-digit', month: '2-digit' })}
-                        </span>
-                      </td>
+                      <td style={{ whiteSpace: 'nowrap' }}>{fmtAlmaty(s.created_at)}</td>
                       <td>{s.pair}</td>
                       <td>{s.timeframe}</td>
                       <td><span className={`tag tag-${vc(s.final_verdict)}`}>{s.final_verdict || '—'}</span></td>

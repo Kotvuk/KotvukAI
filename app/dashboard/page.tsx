@@ -27,7 +27,6 @@ export default function DashboardPage() {
   const router = useRouter()
   const [active, setActive] = useState<Panel>('dash')
   const [notifCount, setNotifCount] = useState(0)
-  const [tradeTabAi, setTradeTabAi] = useState(false)
   const chatContextFnRef = useRef<(() => Record<string, unknown>) | null>(null)
   const getChatContext = useCallback(() => chatContextFnRef.current?.() || {}, [])
 
@@ -126,7 +125,6 @@ export default function DashboardPage() {
   }
 
   const handleNavigate = (panel: Panel) => {
-    if (panel === 'trades') setTradeTabAi(true)
     setActive(panel)
   }
 
@@ -175,10 +173,7 @@ export default function DashboardPage() {
           )}
 
           {active === 'trades'   && (
-            <TradesPanel
-              defaultAccount={tradeTabAi ? 'ai' : 'user'}
-              onTabMounted={() => setTradeTabAi(false)}
-            />
+            <TradesPanel defaultAccount='ai' />
           )}
           {active === 'news'     && <NewsPanel />}
           {active === 'notifs'   && <NotifsPanel onCount={setNotifCount} />}

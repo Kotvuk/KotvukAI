@@ -3,6 +3,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useLang } from '@/contexts/LangContext'
 import { showToast } from '@/components/ui/Toast'
 import { usePairs } from '@/hooks/usePairs'
+import { fmtAlmaty } from '@/lib/fmt'
 
 
 interface Trade {
@@ -461,7 +462,7 @@ export default function TradesPanel({ defaultAccount = 'user', onTabMounted }: T
                           ? (Number(tr.pnl_pct) > 0 ? <span className="pnl-p">+{tr.pnl_pct}%</span> : <span className="pnl-n">{tr.pnl_pct}%</span>)
                           : '—'}
                     </td>
-                    <td>{new Date(tr.closed_at || tr.created_at).toLocaleDateString('ru')}</td>
+                    <td>{fmtAlmaty(tr.closed_at || tr.created_at)}</td>
                   </tr>
                 )) : (
                   <tr><td colSpan={4} style={{ textAlign: 'center', color: 'var(--dim)', padding: 14, fontSize: '.63rem' }}>{t('no_trades')}</td></tr>

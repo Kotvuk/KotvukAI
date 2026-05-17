@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useLang } from '@/contexts/LangContext'
 import { showToast } from '@/components/ui/Toast'
+import { fmtAlmaty } from '@/lib/fmt'
 
 interface Signal {
   id: number; pair: string; timeframe: string; final_verdict: string | null
@@ -407,7 +408,7 @@ export default function HistoryPanel() {
                 <tbody>
                   {filteredSignals.length ? filteredSignals.map(s => (
                     <tr key={s.id}>
-                      <td>{new Date(s.created_at).toLocaleDateString('ru')}</td>
+                      <td>{fmtAlmaty(s.created_at)}</td>
                       <td>{s.pair}</td>
                       <td>{s.timeframe}</td>
                       <td><span className={`tag tag-${vc(s.final_verdict)}`}>{s.final_verdict || '—'}</span></td>
@@ -476,7 +477,7 @@ export default function HistoryPanel() {
                     borderLeft: reviewSignal?.id === s.id ? '2px solid var(--short)' : '2px solid transparent',
                   }}
                 >
-                  <span style={{ fontSize: '.6rem', color: 'var(--dim)' }}>{new Date(s.created_at).toLocaleDateString('ru')}</span>
+                  <span style={{ fontSize: '.6rem', color: 'var(--dim)' }}>{fmtAlmaty(s.created_at)}</span>
                   <span style={{ fontSize: '.63rem' }}>{s.pair}</span>
                   <span style={{ fontSize: '.6rem', color: 'var(--muted)' }}>{s.timeframe}</span>
                   <span className={`tag tag-${vc(s.final_verdict)}`} style={{ fontSize: '.55rem' }}>{s.final_verdict}</span>

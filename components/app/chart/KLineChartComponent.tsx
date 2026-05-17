@@ -333,7 +333,7 @@ const KLineChartComponent = forwardRef<KLineChartHandle, Props>(
           },
         })
         onReadyRef.current?.()
-      } catch (e) { console.error('klinecharts init error:', e) }
+      } catch { }
     }
 
     useImperativeHandle(ref, () => ({
@@ -394,7 +394,7 @@ const KLineChartComponent = forwardRef<KLineChartHandle, Props>(
               onOHLCRef.current?.(pcandle)
             } catch {}
           }, 1000)
-        } catch (e) { console.error('chart fetch error:', e) }
+        } catch { }
       },
 
       getCandles() {
@@ -690,7 +690,7 @@ const KLineChartComponent = forwardRef<KLineChartHandle, Props>(
         if (!chartRef.current) return []
         try {
           const allOverlays: any[] = chartRef.current.getOverlaysByPaneId?.('candle_pane') ?? []
-          const systemGroups = new Set(['ai', 'smc_ob', 'smc_fvg', 'smc_liq', 'smc_bb', 'smc_bos', 'smc_tl'])
+          const systemGroups = new Set(['ai', 'smc_ob', 'smc_fvg', 'smc_liq', 'smc_bb', 'smc_bos', 'smc_trendlines', 'smc_pd', 'ai_selected_ob'])
           return allOverlays
             .filter((o: { groupId?: string }) => !systemGroups.has(o.groupId ?? ''))
             .map((o: { name: string; points: unknown[]; extendData: unknown; styles: unknown }) => ({

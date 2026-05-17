@@ -101,7 +101,7 @@ export async function POST(req: NextRequest) {
         }),
         signal: AbortSignal.timeout(30_000),
       })
-      if (res.status === 429) continue
+      if (res.status === 429 || res.status === 401) continue
       if (!res.ok) throw new Error(`Groq error: ${res.status}`)
       const data = await res.json()
       raw = data.choices?.[0]?.message?.content || ''
@@ -119,9 +119,7 @@ export async function POST(req: NextRequest) {
       text: String(json.text || 'Готово!'),
       action: json.action || null,
     })
-  } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : 'AI error'
-    console.error('chat:', msg)
+  } catch {
     return NextResponse.json({ ok: true, text: 'Ошибка AI. Проверьте GROQ_API_KEY.', action: null })
   }
 }

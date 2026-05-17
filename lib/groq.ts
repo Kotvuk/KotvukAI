@@ -50,8 +50,8 @@ export async function groqGenerate(
       const data = await res.json()
       return data.choices?.[0]?.message?.content ?? ''
     }
-    if (res.status === 429) {
-      lastError = `ключ ${i + 1}/${shuffled.length} rate limited`
+    if (res.status === 429 || res.status === 401) {
+      lastError = `ключ ${i + 1}/${shuffled.length} ${res.status === 401 ? 'unauthorized' : 'rate limited'}`
       continue
     }
     throw new Error(`Groq error: ${res.status} ${await res.text()}`)

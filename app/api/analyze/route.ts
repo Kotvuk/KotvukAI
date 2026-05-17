@@ -186,9 +186,10 @@ export async function POST(req: NextRequest) {
           }
 
           const dir = analysis.verdict === 'LONG' ? '📈' : '📉'
+          const prec = (analysis.entry_price ?? 0) >= 100 ? 2 : 4
           const msg = `${dir} <b>${analysis.verdict}</b> ${sym} ${timeframe}\n`
             + `Уверенность: <b>${analysis.confidence}%</b>\n`
-            + `Вход: $${(analysis.entry_price ?? 0).toFixed(2)} | TP: $${(analysis.tp_price ?? 0).toFixed(2)} | SL: $${(analysis.sl_price ?? 0).toFixed(2)}\n`
+            + `Вход: $${(analysis.entry_price ?? 0).toFixed(prec)} | TP: $${(analysis.tp_price ?? 0).toFixed(prec)} | SL: $${(analysis.sl_price ?? 0).toFixed(prec)}\n`
             + `Плечо: ${analysis.leverage}x | R:R: ${analysis.rr ?? '?'}`
           const tgChatId = String(user.telegram_chat_id || '')
           ;(tgChatId ? sendTelegramToUser(tgChatId, msg) : sendTelegram(msg)).catch(() => {})
@@ -222,7 +223,6 @@ export async function POST(req: NextRequest) {
       },
     })
   } catch (e: unknown) {
-    console.error('analyze:', e)
     return NextResponse.json({ ok: false, error: e instanceof Error ? e.message : 'AI error' }, { status: 500 })
   }
 }

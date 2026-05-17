@@ -12,8 +12,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
   if (cancel) {
     const tradeToCancel = await getTradeById(parseInt(params.id), user.id)
-    await cancelTrade(parseInt(params.id), user.id)
-    if (tradeToCancel && tradeToCancel.account_type === 'ai') {
+    const wasCancelled = await cancelTrade(parseInt(params.id), user.id)
+    if (wasCancelled && tradeToCancel && tradeToCancel.account_type === 'ai') {
       await adjustBalance(user.id, Number(tradeToCancel.amount))
     }
     return NextResponse.json({ ok: true })

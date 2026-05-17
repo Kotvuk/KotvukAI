@@ -20,8 +20,7 @@ export async function POST(req: NextRequest) {
     })
 
     return NextResponse.json({ ok: true, url: session.url })
-  } catch (e) {
-    console.error('billing/portal:', e)
+  } catch {
     return NextResponse.json({ ok: false, error: 'Server error' }, { status: 500 })
   }
 }

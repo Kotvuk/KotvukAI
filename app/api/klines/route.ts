@@ -23,13 +23,13 @@ export async function GET(req: NextRequest) {
 
     const data = await r.json()
 
-    const formattedData = data.map((d: any[]) => [
+    const formattedData = (data as unknown[][]).map(d => [
       d[0],
-      parseFloat(d[1]),
-      parseFloat(d[2]),
-      parseFloat(d[3]),
-      parseFloat(d[4]),
-      parseFloat(d[5]),
+      parseFloat(String(d[1])),
+      parseFloat(String(d[2])),
+      parseFloat(String(d[3])),
+      parseFloat(String(d[4])),
+      parseFloat(String(d[5])),
     ])
 
     const res = NextResponse.json(formattedData)
@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
       : 'public, max-age=15, stale-while-revalidate=5'
     )
     return res
-  } catch (e: any) {
-    return NextResponse.json({ ok: false, error: e.message || 'fetch error' }, { status: 500 })
+  } catch (e: unknown) {
+    return NextResponse.json({ ok: false, error: e instanceof Error ? e.message : 'fetch error' }, { status: 500 })
   }
 }

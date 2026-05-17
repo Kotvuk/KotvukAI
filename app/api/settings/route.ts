@@ -32,7 +32,8 @@ export async function POST(req: NextRequest) {
   await updateUserSettings(user.id, { nickname, email, lang, ai_max_leverage: leverage, ai_balance: balance, ai_risk_per_trade: riskPct })
 
   if (telegram_chat_id !== undefined) {
-    const chatId = String(telegram_chat_id || '').replace(/\D/g, '')
+    const raw = String(telegram_chat_id || '').trim()
+    const chatId = /^-?\d+$/.test(raw) ? raw : raw.replace(/\D/g, '')
     await updateUserTelegramChatId(user.id, chatId)
   }
 

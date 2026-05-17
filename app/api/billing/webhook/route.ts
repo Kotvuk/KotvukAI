@@ -15,8 +15,7 @@ export async function POST(req: NextRequest) {
   let event: Stripe.Event
   try {
     event = stripe.webhooks.constructEvent(body, sig, process.env.STRIPE_WEBHOOK_SECRET)
-  } catch (e) {
-    console.error('Webhook signature error:', e)
+  } catch {
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
   }
 
@@ -34,13 +33,10 @@ export async function POST(req: NextRequest) {
         break
       }
       case 'invoice.payment_failed': {
-        const invoice = event.data.object as Stripe.Invoice
-        console.warn('Payment failed for customer:', invoice.customer)
         break
       }
     }
-  } catch (e) {
-    console.error('Webhook handler error:', e)
+  } catch {
     return NextResponse.json({ error: 'Handler error' }, { status: 500 })
   }
 
@@ -52,10 +48,7 @@ async function handleSubscriptionChange(
   action: 'activate' | 'cancel'
 ) {
   const userId = sub.metadata?.user_id
-  if (!userId) {
-    console.warn('Webhook: no user_id in subscription metadata')
-    return
-  }
+  if (!userId) return
 
   if (action === 'cancel') {
     await updateSubscriptionTier(Number(userId), 'free')

@@ -1,7 +1,12 @@
 export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
-import { sql, updateUserWatchlist, getUserWatchlist, updateAutoAnalyzePaused } from '@/lib/db'
+import { sql, updateUserWatchlist, getUserWatchlist, updateAutoAnalyzePaused, type User } from '@/lib/db'
 import { DEFAULT_WATCHLIST } from '@/lib/pairs'
+
+interface TgMessage {
+  text?: string
+  chat?: { id?: string | number }
+}
 
 const TG_API = 'https://api.telegram.org'
 
@@ -31,7 +36,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: 'Invalid JSON' })
   }
 
-  const message = (body?.message || body?.edited_message) as Record<string, any> | undefined
+  const message = (body?.message || body?.edited_message) as TgMessage | undefined
   if (!message?.text) return NextResponse.json({ ok: true })
 
   const chatId  = String(message.chat?.id)
@@ -51,7 +56,7 @@ export async function POST(req: NextRequest) {
     await reply(chatId, '❌ Администратор не найден в БД. Зарегистрируйтесь на сайте.')
     return NextResponse.json({ ok: true })
   }
-  const user   = users[0] as Record<string, any>
+  const user   = users[0] as User
   const userId = Number(user.id)
   const isPaused = Boolean(user.auto_analyze_paused)
 
@@ -106,7 +111,7 @@ export async function POST(req: NextRequest) {
         chatId,
         '▶️ <b>Авто-анализ возобновлён!</b>\n\n'
         + `Отслеживается ${current.length} пар.\n`
-        + 'Следующий запуск — в начале следующего часа.',
+        + 'Следующий запуск — через несколько минут (каждые 5 минут).',
       )
       break
     }

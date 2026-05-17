@@ -17,9 +17,11 @@ export async function POST(req: NextRequest) {
   const user = await getUser(req)
   if (!user) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 })
   const body = await req.json()
-  if (!body.pair || !body.direction || !body.amount) {
+  const amount = Number(body.amount)
+  if (!body.pair || !body.direction || !amount || amount <= 0) {
     return NextResponse.json({ ok: false, error: 'pair, direction, amount required' }, { status: 400 })
   }
+  body.amount = amount
 
   if (body.order_type === 'market' && !body.entry_price) {
     try {

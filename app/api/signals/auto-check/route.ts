@@ -188,9 +188,10 @@ export async function GET(req: NextRequest) {
       if (!candles.length) continue
 
       for (const trade of group) {
-        const tp     = trade.tp_price!
-        const sl     = trade.sl_price!
-        const entry  = trade.entry_price!
+        if (!trade.tp_price || !trade.sl_price || !trade.entry_price) continue
+        const tp     = trade.tp_price
+        const sl     = trade.sl_price
+        const entry  = trade.entry_price
         const isLong = trade.direction === 'long'
 
         const tradeStartMs = new Date(trade.created_at).getTime()

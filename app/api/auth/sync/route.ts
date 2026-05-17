@@ -15,8 +15,7 @@ export async function POST(req: NextRequest) {
     const user = await upsertUser(decoded.uid, decoded.email)
 
     return NextResponse.json({ ok: true, user: { id: user.id, email: user.email, nickname: user.nickname, lang: user.lang } })
-  } catch (e: unknown) {
-    console.error('auth/sync:', e)
+  } catch {
     return NextResponse.json({ ok: false, error: 'Server error' }, { status: 500 })
   }
 }

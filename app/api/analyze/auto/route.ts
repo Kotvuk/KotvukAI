@@ -3,7 +3,7 @@ export const maxDuration = 60
 import { NextRequest, NextResponse } from 'next/server'
 import { fullAnalysis, calcMarketData, type Candle } from '@/lib/analysis'
 import { calcEnhancedSMC } from '@/lib/smc'
-import { sql, saveSignal, createTrade, createNotification, getUserWatchlist, getSignalsForPair, adjustBalance } from '@/lib/db'
+import { sql, saveSignal, createTrade, createNotification, getUserWatchlist, getSignalsForPair, adjustBalance, type User } from '@/lib/db'
 import { sendTelegram, sendTelegramToUser } from '@/lib/telegram'
 import { DEFAULT_WATCHLIST } from '@/lib/pairs'
 
@@ -40,7 +40,7 @@ function toCandles(rows: number[][]): Candle[] {
 
 async function analyzeOne(
   sym: string,
-  user: Record<string, any>,
+  user: User,
   interval = '1h',
 ): Promise<{ ok: boolean; verdict?: string; confidence?: number; error?: string }> {
   const htfInterval = HTF_MAP[interval] || '1d'
@@ -90,11 +90,12 @@ async function analyzeOne(
     const userId   = Number(user.id)
     const tfLabel  = ({ '5m': '5м', '15m': '15м', '30m': '30м', '1h': '1ч', '4h': '4ч' } as Record<string, string>)[interval] ?? interval
 
-    const memorySignals = await getSignalsForPair(userId, sym, 5)
-    const { step1, step2, final } = await fullAnalysis(sym, tfLabel, market, candles, memorySignals, maxLev, balance, riskPct)
+    const pairFmt = sym.endsWith('USDT') ? sym.slice(0, -4) + '/USDT' : sym
+    const memorySignals = await getSignalsForPair(userId, pairFmt, 5)
+    const { step1, step2, final } = await fullAnalysis(pairFmt, tfLabel, market, candles, memorySignals, maxLev, balance, riskPct)
 
     await saveSignal(userId, {
-      pair: sym, timeframe: tfLabel,
+      pair: pairFmt, timeframe: tfLabel,
       final_verdict:    final.verdict,
       final_confidence: final.confidence,
       final_entry:      final.entry_price || null,
@@ -112,7 +113,7 @@ async function analyzeOne(
     if ((final.verdict === 'LONG' || final.verdict === 'SHORT') && final.confidence >= 60) {
       const existing = await sql`
         SELECT id FROM trades
-        WHERE user_id = ${userId} AND pair = ${sym}
+        WHERE user_id = ${userId} AND pair = ${pairFmt}
           AND direction = ${final.verdict.toLowerCase()}
           AND status IN ('pending', 'open') AND account_type = 'ai'
         LIMIT 1
@@ -135,7 +136,7 @@ async function analyzeOne(
       const expiresAt   = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
 
       await createTrade(userId, {
-        pair:        sym,
+        pair:        pairFmt,
         direction:   final.verdict.toLowerCase() as 'long' | 'short',
         order_type:  isLimit ? 'limit' : 'market',
         amount:      tradeAmount,
@@ -156,7 +157,7 @@ async function analyzeOne(
       const tp    = final.tp_price    ? final.tp_price.toFixed(prec)    : '—'
       const sl    = final.sl_price    ? final.sl_price.toFixed(prec)    : '—'
       const rr    = final.rr && isFinite(final.rr) ? final.rr.toFixed(1) : '?'
-      const msg   = `${dir} <b>AUTO ${final.verdict}</b> ${sym} ${tfLabel}\n`
+      const msg   = `${dir} <b>AUTO ${final.verdict}</b> ${pairFmt} ${tfLabel}\n`
         + `Уверенность: <b>${final.confidence}%</b>\n`
         + `Вход: $${entry} | TP: $${tp} | SL: $${sl}\n`
         + `Плечо: ${final.leverage}x | R:R: 1:${rr}`
@@ -164,7 +165,7 @@ async function analyzeOne(
       const tgChatId = String(user.telegram_chat_id || '')
       await Promise.allSettled([
         tgChatId ? sendTelegramToUser(tgChatId, msg) : sendTelegram(msg),
-        createNotification(userId, `🤖 AUTO ${final.verdict} ${sym} — уверенность ${final.confidence}%`),
+        createNotification(userId, `🤖 AUTO ${final.verdict} ${pairFmt} — уверенность ${final.confidence}%`),
       ])
     }
 
@@ -187,7 +188,7 @@ export async function GET(req: NextRequest) {
   if (!users.length) {
     return NextResponse.json({ error: `User not found: ${adminEmail}` }, { status: 404 })
   }
-  const user = users[0] as Record<string, any>
+  const user = users[0] as User
 
   if (user.auto_analyze_paused) {
     return NextResponse.json({ ok: true, message: 'Auto-analysis is paused', paused: true })

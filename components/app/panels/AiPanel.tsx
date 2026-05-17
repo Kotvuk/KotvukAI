@@ -419,8 +419,7 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
           } else {
             showToast(d.error || 'Ошибка SMC', 'err')
           }
-        } catch (e) {
-          console.error('SMC error:', e)
+        } catch {
           showToast('Ошибка загрузки SMC', 'err')
         }
         setSmcLoading(false)

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 const analyzeLastCall = new Map<string, number>()
-const ANALYZE_COOLDOWN_MS = 10_000 // 10 секунд между запросами
+const ANALYZE_COOLDOWN_MS = 10_000
 
 export async function middleware(req: NextRequest) {
   const token = req.cookies.get('fb_token')?.value
@@ -30,7 +30,7 @@ export async function middleware(req: NextRequest) {
 
   if (pathname === '/api/analyze' && token && req.method === 'POST') {
     const now = Date.now()
-    const last = analyzeLastCall.get(token.slice(-16)) // последние 16 символов как ключ
+    const last = analyzeLastCall.get(token.slice(-16))
     if (last && now - last < ANALYZE_COOLDOWN_MS) {
       const retryAfter = Math.ceil((ANALYZE_COOLDOWN_MS - (now - last)) / 1000)
       return NextResponse.json(

@@ -121,9 +121,20 @@ export async function GET(req: NextRequest) {
 
         await setSignalOutcome(signal.id, outcome, pnlPct, signal.user_id)
 
-        const emoji  = outcome === 'win' ? '✅' : '❌'
-        const pnlStr = pnlPct >= 0 ? `+${pnlPct}%` : `${pnlPct}%`
-        await createNotification(signal.user_id, `${emoji} ${signal.final_verdict} ${signal.pair} ${signal.timeframe} — ${outcome === 'win' ? 'TP' : 'SL'} (${pnlStr})`)
+        const emoji    = outcome === 'win' ? '✅' : '❌'
+        const pnlStr   = pnlPct >= 0 ? `+${pnlPct}%` : `${pnlPct}%`
+        const prec     = entry >= 100 ? 2 : 4
+        const entryStr = entry.toFixed(prec)
+        const hitStr   = hitPrice.toFixed(prec)
+        const label    = hit === 'tp' ? 'TP' : 'SL'
+        const tgMsg    = `${emoji} <b>${signal.final_verdict} ${signal.pair}</b> ${signal.timeframe}\n`
+          + `Вход: $${entryStr} → ${label}: $${hitStr}\n`
+          + `Результат: <b>${pnlStr}</b>`
+        const tgChatId = await getTgChatId(signal.user_id)
+        await Promise.allSettled([
+          tgChatId ? sendTelegramToUser(tgChatId, tgMsg) : Promise.resolve(),
+          createNotification(signal.user_id, `${emoji} ${signal.final_verdict} ${signal.pair} ${signal.timeframe} — ${label} (${pnlStr})`),
+        ])
 
         signalsUpdated++
       }

@@ -3,7 +3,7 @@ export const maxDuration = 60
 import { NextRequest, NextResponse } from 'next/server'
 import { fullAnalysis, calcMarketData, type Candle } from '@/lib/analysis'
 import { calcEnhancedSMC } from '@/lib/smc'
-import { sql, saveSignal, createTrade, createNotification } from '@/lib/db'
+import { sql, saveSignal, createTrade, createNotification, type User } from '@/lib/db'
 
 
 const HTF_MAP: Record<string, string> = {
@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
 
   const users = await sql`SELECT * FROM users WHERE email = ${adminEmail} LIMIT 1`
   if (!users.length) return NextResponse.json({ error: `User not found: ${adminEmail}` }, { status: 404 })
-  const user = users[0]
+  const user = users[0] as User
 
   const url      = new URL(req.url)
   const sym      = (url.searchParams.get('pair') || 'BTCUSDT').toUpperCase()

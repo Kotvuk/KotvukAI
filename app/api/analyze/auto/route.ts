@@ -122,6 +122,19 @@ async function analyzeOne(
         return { ok: true, verdict: final.verdict, confidence: final.confidence }
       }
 
+      const recentSl = await sql`
+        SELECT id FROM trades
+        WHERE user_id = ${userId} AND pair = ${pairFmt}
+          AND direction = ${final.verdict.toLowerCase()}
+          AND status = 'closed' AND account_type = 'ai'
+          AND pnl_pct < 0
+          AND closed_at > NOW() - INTERVAL '4 hours'
+        LIMIT 1
+      `
+      if (recentSl.length > 0) {
+        return { ok: true, verdict: final.verdict, confidence: final.confidence }
+      }
+
       const slDist = (final.sl_price && final.entry_price)
         ? Math.abs(final.entry_price - final.sl_price) / final.entry_price
         : 0.02

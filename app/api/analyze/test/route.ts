@@ -18,7 +18,11 @@ export async function GET(req: NextRequest) {
   const sym  = (url.searchParams.get('pair') || 'BTCUSDT').toUpperCase()
   const interval = url.searchParams.get('tf') || '1h'
   const htfInterval = HTF_MAP[interval] || '1d'
-  const tfLabel = interval.replace('m', '�').replace('h', '�').replace('d', '�')
+  const TF_LABELS: Record<string, string> = {
+    '1m': '1м', '5m': '5м', '15m': '15м', '30m': '30м',
+    '1h': '1ч', '4h': '4ч', '1d': '1д',
+  }
+  const tfLabel = TF_LABELS[interval] ?? interval
 
   try {
     const [binanceRes, htfRes, frRes] = await Promise.allSettled([

@@ -365,6 +365,7 @@ const KLineChartComponent = forwardRef<KLineChartHandle, Props>(
           }))
           if (!chartRef.current) return
           chartRef.current.applyNewData(candlesRef.current)
+          try { chartRef.current.setStyles({ yAxis: { type: 'normal' } }) } catch {}
           try { chartRef.current.setBarSpace(4) } catch {}
           try { chartRef.current.scrollToRealTime() } catch {}
           const last = candlesRef.current[candlesRef.current.length - 1]
@@ -455,8 +456,9 @@ const KLineChartComponent = forwardRef<KLineChartHandle, Props>(
 
       clearDrawings() {
         if (!chartRef.current) return
-        chartRef.current.removeOverlay()
-        if (lastMarkup.current) drawMarkupInternal(lastMarkup.current)
+        chartRef.current.removeOverlay({ groupId: 'ai' })
+        chartRef.current.removeOverlay({ groupId: 'ai_selected_ob' })
+        lastMarkup.current = null
       },
 
       drawMarkup(a) {

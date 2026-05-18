@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
     if (trade.expires_at && new Date(trade.expires_at).getTime() < now) {
       const wasCancelled = await cancelTrade(trade.id, user.id)
       if (wasCancelled) {
-        await adjustBalance(user.id, Number(trade.amount))
+        if (trade.account_type === 'ai') await adjustBalance(user.id, Number(trade.amount))
         await createNotification(user.id, `🗑️ Limit order ${trade.direction.toUpperCase()} ${trade.pair} cancelled (expired)`)
         cancelled++
       }

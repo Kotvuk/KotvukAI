@@ -3,7 +3,7 @@ export const maxDuration = 60
 import { NextRequest, NextResponse } from 'next/server'
 import { fullAnalysis, calcMarketData, type Candle } from '@/lib/analysis'
 import { calcEnhancedSMC } from '@/lib/smc'
-import { sql, saveSignal, createTrade, createNotification, type User } from '@/lib/db'
+import { sql, saveSignal, createTrade, createNotification, adjustBalance, type User } from '@/lib/db'
 
 
 const HTF_MAP: Record<string, string> = {
@@ -125,6 +125,7 @@ export async function GET(req: NextRequest) {
         status:      isLimit ? 'pending' : 'open',
         expires_at:  isLimit ? expiresAt.toISOString() : null,
       })
+      if (tradeAmount > 0) await adjustBalance(user.id, -tradeAmount)
 
       return NextResponse.json({
         ok: true, saved: true, pair: sym, tf: interval, elapsed: parseFloat(elapsed),

@@ -127,7 +127,7 @@ export async function triggerLevelAlert(id: number, userId: number, pair: string
     UPDATE level_alerts SET is_triggered = TRUE, triggered_at = NOW()
     WHERE id = ${id} AND user_id = ${userId}
   `
-  const msg = `🔔 Цена вошла в зону: ${label || pair}`
+  const msg = `🔔 Price entered zone: ${label || pair}`
   await sql`INSERT INTO notifications (user_id, message) VALUES (${userId}, ${msg})`
 }
 

@@ -52,7 +52,7 @@ async function fetchKlines(sym: string, interval: string, limit: number): Promis
     }
   }
 
-  throw new Error(`Не удалось получить свечи: ${lastError}`)
+  throw new Error(`Failed to fetch candles: ${lastError}`)
 }
 
 export async function POST(req: NextRequest) {
@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
   if (!quota.allowed) {
     return NextResponse.json({
       ok: false,
-      error: `Дневной лимит анализов исчерпан (${SUBSCRIPTION_LIMITS[quota.tier]}/${quota.tier}). Обновите тариф.`,
+      error_code: 'quota_exceeded',
       quota,
     }, { status: 429 })
   }
@@ -137,7 +137,7 @@ export async function POST(req: NextRequest) {
       raw_response: { analysis, market, pipeline: { step1, step2 } },
     })
 
-    await createNotification(user.id, `📊 ${analysis.verdict} ${pair} ${timeframe} — уверенность ${analysis.confidence}%`)
+    await createNotification(user.id, `📊 ${analysis.verdict} ${pair} ${timeframe} — confidence ${analysis.confidence}%`)
 
     if (analysis.verdict === 'LONG' || analysis.verdict === 'SHORT') {
       try {
@@ -180,16 +180,16 @@ export async function POST(req: NextRequest) {
 
           if (isLimit && limitPx) {
             await createNotification(user.id,
-              `⏳ Лимитный ордер ${analysis.verdict} ${pair} ожидает входа на $${limitPx.toFixed(2)} (истекает через 7 дней)`
+              `⏳ Limit order ${analysis.verdict} ${pair} waiting @ $${limitPx.toFixed(2)} (expires in 7 days)`
             )
           }
 
           const dir = analysis.verdict === 'LONG' ? '📈' : '📉'
           const prec = (analysis.entry_price ?? 0) >= 100 ? 2 : 4
           const msg = `${dir} <b>${analysis.verdict}</b> ${sym} ${timeframe}\n`
-            + `Уверенность: <b>${analysis.confidence}%</b>\n`
-            + `Вход: $${(analysis.entry_price ?? 0).toFixed(prec)} | TP: $${(analysis.tp_price ?? 0).toFixed(prec)} | SL: $${(analysis.sl_price ?? 0).toFixed(prec)}\n`
-            + `Плечо: ${analysis.leverage}x | R:R: ${analysis.rr ?? '?'}`
+            + `Confidence: <b>${analysis.confidence}%</b>\n`
+            + `Entry: $${(analysis.entry_price ?? 0).toFixed(prec)} | TP: $${(analysis.tp_price ?? 0).toFixed(prec)} | SL: $${(analysis.sl_price ?? 0).toFixed(prec)}\n`
+            + `Leverage: ${analysis.leverage}x | R:R: ${analysis.rr ?? '?'}`
           const tgChatId = String(user.telegram_chat_id || '')
           ;(tgChatId ? sendTelegramToUser(tgChatId, msg) : sendTelegram(msg)).catch(() => {})
         }

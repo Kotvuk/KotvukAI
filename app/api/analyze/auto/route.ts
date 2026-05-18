@@ -171,14 +171,14 @@ async function analyzeOne(
       const sl    = final.sl_price    ? final.sl_price.toFixed(prec)    : '—'
       const rr    = final.rr && isFinite(final.rr) ? final.rr.toFixed(1) : '?'
       const msg   = `${dir} <b>AUTO ${final.verdict}</b> ${pairFmt} ${tfLabel}\n`
-        + `Уверенность: <b>${final.confidence}%</b>\n`
-        + `Вход: $${entry} | TP: $${tp} | SL: $${sl}\n`
-        + `Плечо: ${final.leverage}x | R:R: 1:${rr}`
+        + `Confidence: <b>${final.confidence}%</b>\n`
+        + `Entry: $${entry} | TP: $${tp} | SL: $${sl}\n`
+        + `Leverage: ${final.leverage}x | R:R: 1:${rr}`
 
       const tgChatId = String(user.telegram_chat_id || '')
       await Promise.allSettled([
         tgChatId ? sendTelegramToUser(tgChatId, msg) : sendTelegram(msg),
-        createNotification(userId, `🤖 AUTO ${final.verdict} ${pairFmt} — уверенность ${final.confidence}%`),
+        createNotification(userId, `🤖 AUTO ${final.verdict} ${pairFmt} — confidence ${final.confidence}%`),
       ])
     }
 

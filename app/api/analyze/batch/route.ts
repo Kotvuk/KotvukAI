@@ -99,7 +99,7 @@ export async function GET(req: NextRequest) {
     })
 
     await createNotification(user.id,
-      `📊 [BATCH] ${final.verdict} ${sym} ${tfLabel} — уверенность ${final.confidence}%`
+      `📊 [BATCH] ${final.verdict} ${sym} ${tfLabel} — confidence ${final.confidence}%`
     )
 
     if (final.verdict === 'LONG' || final.verdict === 'SHORT') {

@@ -35,6 +35,15 @@ interface Props {
 export default function AiResultPanel({ aiData, pair, tf, smcProb, onNavigate, onShowHistorical }: Props) {
   const { t } = useLang()
 
+  const insTagMap: Record<string, string> = {
+    STRUCTURE: t('ins_structure_lbl'),
+    ZONE:      t('ins_zone_lbl'),
+    LIQUIDITY: t('ins_liquidity_lbl'),
+    WAITING:   t('ins_waiting_lbl'),
+    BALANCE:   t('ins_balance_lbl'),
+    CONDITION: t('ins_condition_lbl'),
+  }
+
   const a = aiData.analysis as Record<string, unknown>
   const m = aiData.market  as Record<string, unknown>
   const p = aiData.pipeline as Record<string, unknown>
@@ -247,7 +256,7 @@ export default function AiResultPanel({ aiData, pair, tf, smcProb, onNavigate, o
       <div className="ins-grid">
         {((a.insights as { icon: string; tag: string; text: string }[]) || []).map((ins, i) => (
           <div className="ins" key={i}>
-            <div className="ins-top"><span className="ins-icon">{ins.icon}</span><span className="ins-tag">{ins.tag}</span></div>
+            <div className="ins-top"><span className="ins-icon">{ins.icon}</span><span className="ins-tag">{insTagMap[ins.tag] || ins.tag}</span></div>
             <div className="ins-txt">{smcWrap(ins.text)}</div>
           </div>
         ))}

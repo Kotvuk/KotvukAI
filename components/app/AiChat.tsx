@@ -76,6 +76,12 @@ export default function AiChat({ onNavigate, getContext }: Props) {
       return
     }
 
+    if (type === 'trigger_analysis') {
+      onNavigate?.('ai')
+      setTimeout(() => window.dispatchEvent(new CustomEvent('kotvuk:trigger_analysis', { detail: action })), 300)
+      return
+    }
+
     window.dispatchEvent(new CustomEvent(`kotvuk:${type}`, { detail: action }))
   }
 

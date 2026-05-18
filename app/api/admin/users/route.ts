@@ -1,4 +1,4 @@
-﻿export const dynamic = 'force-dynamic'
+export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { getUser } from '@/lib/auth-helper'
 import { getAllUsersWithSubscriptions, getAdminStats, updateSubscriptionTier, deleteUserById } from '@/lib/db'

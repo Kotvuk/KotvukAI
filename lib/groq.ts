@@ -27,7 +27,7 @@ export async function groqGenerate(
   systemPrompt?: string,
   reasoningEffort?: 'low' | 'medium' | 'high',
 ): Promise<string> {
-  if (keys.length === 0) throw new Error('Нет ни одного GROQ_API_KEY. Добавьте GROQ_API_KEY_1 в переменные окружения.')
+  if (keys.length === 0) throw new Error('No GROQ_API_KEY found. Add GROQ_API_KEY_1 to environment variables.')
 
   const shuffled = [...keys].sort(() => Math.random() - 0.5)
   let lastError = ''
@@ -51,10 +51,10 @@ export async function groqGenerate(
       return data.choices?.[0]?.message?.content ?? ''
     }
     if (res.status === 429 || res.status === 401) {
-      lastError = `ключ ${i + 1}/${shuffled.length} ${res.status === 401 ? 'unauthorized' : 'rate limited'}`
+      lastError = `key ${i + 1}/${shuffled.length} ${res.status === 401 ? 'unauthorized' : 'rate limited'}`
       continue
     }
     throw new Error(`Groq error: ${res.status} ${await res.text()}`)
   }
-  throw new Error(`Все ${shuffled.length} ключей исчерпали лимит. (${lastError})`)
+  throw new Error(`All ${shuffled.length} keys exhausted. (${lastError})`)
 }

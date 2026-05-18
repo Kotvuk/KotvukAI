@@ -246,7 +246,7 @@ export default function TradesPanel({ defaultAccount = 'user', onTabMounted }: T
           {account === 'ai' ? t('account_desc_both') : t('virtual_account_desc')}
         </div>
         <div className="kpi-grid" style={{ marginBottom: 12 }}>
-          <div className="kpi" style={{ position: 'relative' }} title="Виртуальный баланс — не реальные средства">
+          <div className="kpi" style={{ position: 'relative' }} title={t('virtual_balance_hint')}>
             <div className="kpi-v" style={{ color: '#ffa500' }}>
               {displayBalance !== null ? `$${typeof displayBalance === 'number' ? displayBalance.toLocaleString() : displayBalance}` : '—'}
             </div>
@@ -489,7 +489,7 @@ export default function TradesPanel({ defaultAccount = 'user', onTabMounted }: T
               type="number"
               className="fi"
               style={{ width: '100%', marginBottom: 14 }}
-              placeholder="Сумма ($)"
+              placeholder={t('amount_placeholder')}
               value={balanceInput}
               onChange={e => setBalanceInput(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') handleBalanceAdjust() }}
@@ -497,7 +497,7 @@ export default function TradesPanel({ defaultAccount = 'user', onTabMounted }: T
             />
             {balanceInput && parseFloat(balanceInput) > 0 && (
               <div style={{ fontSize: '.62rem', color: 'var(--muted)', marginBottom: 12 }}>
-                После: <span style={{ color: balanceType === 'add' ? 'var(--long)' : 'var(--short)', fontWeight: 700 }}>
+                {t('after_label')} <span style={{ color: balanceType === 'add' ? 'var(--long)' : 'var(--short)', fontWeight: 700 }}>
                   ${((aiBalance ?? 0) + (balanceType === 'add' ? 1 : -1) * parseFloat(balanceInput)).toLocaleString()}
                 </span>
               </div>

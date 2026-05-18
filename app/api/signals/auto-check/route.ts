@@ -128,8 +128,8 @@ export async function GET(req: NextRequest) {
         const hitStr   = hitPrice.toFixed(prec)
         const label    = hit === 'tp' ? 'TP' : 'SL'
         const tgMsg    = `${emoji} <b>${signal.final_verdict} ${signal.pair}</b> ${signal.timeframe}\n`
-          + `Вход: $${entryStr} → ${label}: $${hitStr}\n`
-          + `Результат: <b>${pnlStr}</b>`
+          + `Entry: $${entryStr} → ${label}: $${hitStr}\n`
+          + `Result: <b>${pnlStr}</b>`
         const tgChatId = await getTgChatId(signal.user_id)
         await Promise.allSettled([
           tgChatId ? sendTelegramToUser(tgChatId, tgMsg) : Promise.resolve(),
@@ -153,11 +153,11 @@ export async function GET(req: NextRequest) {
         const wasCancelled = await cancelTrade(trade.id, trade.user_id)
         if (wasCancelled) {
           await adjustBalance(trade.user_id, Number(trade.amount))
-          const msg = `🗑️ Лимитный ордер <b>${trade.direction.toUpperCase()} ${trade.pair}</b> отменён — истёк срок (7 дней)`
+          const msg = `🗑️ Limit order <b>${trade.direction.toUpperCase()} ${trade.pair}</b> cancelled — expired (7 days)`
           const tgChatId = await getTgChatId(trade.user_id)
           await Promise.allSettled([
             tgChatId ? sendTelegramToUser(tgChatId, msg) : Promise.resolve(),
-            createNotification(trade.user_id, `🗑️ Лимитный ордер ${trade.direction.toUpperCase()} ${trade.pair} отменён (истёк срок)`),
+            createNotification(trade.user_id, `🗑️ Limit order ${trade.direction.toUpperCase()} ${trade.pair} cancelled (expired)`),
           ])
           tradesCancelled++
         }
@@ -175,11 +175,11 @@ export async function GET(req: NextRequest) {
       if (limitHit) {
         const wasActivated = await activateTrade(trade.id, trade.user_id, trade.limit_price)
         if (wasActivated) {
-          const msg = `✅ <b>Лимитный ордер исполнен!</b>\n${trade.direction.toUpperCase()} ${trade.pair} по $${trade.limit_price}`
+          const msg = `✅ <b>Limit order executed!</b>\n${trade.direction.toUpperCase()} ${trade.pair} @ $${trade.limit_price}`
           const tgChatId = await getTgChatId(trade.user_id)
           await Promise.allSettled([
             tgChatId ? sendTelegramToUser(tgChatId, msg) : Promise.resolve(),
-            createNotification(trade.user_id, `✅ Лимитный ордер исполнен! ${trade.direction.toUpperCase()} ${trade.pair} по $${trade.limit_price}`),
+            createNotification(trade.user_id, `✅ Limit order executed! ${trade.direction.toUpperCase()} ${trade.pair} @ $${trade.limit_price}`),
           ])
           tradesActivated++
         }
@@ -231,8 +231,8 @@ export async function GET(req: NextRequest) {
         const hitPriceStr = hitPrice.toFixed(entry >= 100 ? 2 : 4)
         const entryStr    = entry.toFixed(entry >= 100 ? 2 : 4)
         const msg    = `${emoji} <b>AUTO ${trade.direction.toUpperCase()} ${trade.pair}</b> × ${trade.leverage}x\n`
-          + `Вход: $${entryStr} → ${hit === 'tp' ? 'TP' : 'SL'}: $${hitPriceStr}\n`
-          + `Результат: <b>${pnlStr}</b> (${usdStr})`
+          + `Entry: $${entryStr} → ${hit === 'tp' ? 'TP' : 'SL'}: $${hitPriceStr}\n`
+          + `Result: <b>${pnlStr}</b> (${usdStr})`
 
         const tgChatId = await getTgChatId(trade.user_id)
         await Promise.allSettled([

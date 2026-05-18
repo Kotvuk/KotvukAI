@@ -64,8 +64,8 @@ export default function AiPanelToolbar({
       {quota !== null && (
         <div style={{ fontSize: '.58rem', color: quota.remaining <= 0 ? 'var(--short)' : quota.remaining <= 2 ? '#ffa500' : 'var(--dim)', marginTop: 4, textAlign: 'center' }}>
           {quota.remaining <= 0
-            ? `⛔ Лимит исчерпан — обновите тариф`
-            : `осталось ${quota.remaining} / ${quota.limit} анализов`}
+            ? t('quota_exhausted_lbl')
+            : t('quota_remaining_lbl').replace('{remaining}', String(quota.remaining)).replace('{limit}', String(quota.limit))}
         </div>
       )}
     </div>

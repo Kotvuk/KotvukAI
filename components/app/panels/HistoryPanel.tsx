@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import { useLang } from '@/contexts/LangContext'
 import { showToast } from '@/components/ui/Toast'
 import { fmtAlmaty } from '@/lib/fmt'
@@ -17,15 +17,6 @@ function vc(v: string | null) {
   return u === 'LONG' ? 'long' : u === 'SHORT' ? 'short' : 'wait'
 }
 
-const ERROR_CATEGORIES = [
-  { id: 'fomo',     label: 'FOMO вход', desc: 'Вход без подтверждения, погоня за движением' },
-  { id: 'htf_bias', label: 'Против HTF', desc: 'Сделка против старшего таймфрейма' },
-  { id: 'no_ob',    label: 'Нет OB/FVG', desc: 'Вход не у зоны поддержки/сопротивления' },
-  { id: 'early',    label: 'Ранний вход', desc: 'Вошли до подтверждения пробоя/ретеста' },
-  { id: 'risk',     label: 'Риск-менеджмент', desc: 'Слишком большой риск или маленький R:R' },
-  { id: 'session',  label: 'Неверная сессия', desc: 'Торговля в неактивные часы' },
-  { id: 'other',    label: 'Прочее', desc: '' },
-]
 
 function QuizDiagram({ idx }: { idx: number }) {
   const C = { bull: '#00e676', bear: '#ff3d57', cyan: '#00d4ff', zone: 'rgba(0,212,255,0.18)', dim: '#333', txt: '#555' }
@@ -214,6 +205,17 @@ const QUIZ_SCENARIOS = [
 
 export default function HistoryPanel() {
   const { t } = useLang()
+
+  const errorCategories = useMemo(() => [
+    { id: 'fomo',     label: t('err_fomo_lbl'),     desc: t('err_fomo_desc'),     rec: t('rec_fomo_lbl') },
+    { id: 'htf_bias', label: t('err_htf_bias_lbl'), desc: t('err_htf_bias_desc'), rec: t('rec_htf_bias_lbl') },
+    { id: 'no_ob',    label: t('err_no_ob_lbl'),    desc: t('err_no_ob_desc'),    rec: t('rec_no_ob_lbl') },
+    { id: 'early',    label: t('err_early_lbl'),    desc: t('err_early_desc'),    rec: t('rec_early_lbl') },
+    { id: 'risk',     label: t('err_risk_lbl'),     desc: t('err_risk_desc'),     rec: t('rec_risk_lbl') },
+    { id: 'session',  label: t('err_session_lbl'),  desc: t('err_session_desc'),  rec: t('rec_session_lbl') },
+    { id: 'other',    label: t('err_other_lbl'),    desc: '',                      rec: t('rec_other_lbl') },
+  ], [t])
+
   const [tab, setTab] = useState<'history' | 'review' | 'quiz'>('history')
   const [signals, setSignals] = useState<Signal[]>([])
   const [loading, setLoading] = useState(false)
@@ -277,10 +279,10 @@ export default function HistoryPanel() {
   }, [load])
 
   async function clearHistory() {
-    if (!confirm('Очистить всю историю сигналов?')) return
+    if (!confirm(t('hist_clear_confirm'))) return
     await fetch('/api/signals', { method: 'DELETE' })
     setSignals([])
-    showToast('История очищена')
+    showToast(t('hist_cleared_toast'))
   }
 
   async function setOutcome(id: number, outcome: string) {
@@ -327,9 +329,9 @@ export default function HistoryPanel() {
   const losses = signals.filter(s => s.outcome === 'loss')
 
   const TABS = [
-    { id: 'history', label: 'История' },
-    { id: 'review',  label: 'Разбор ошибок' },
-    { id: 'quiz',    label: 'Квиз' },
+    { id: 'history', label: t('hist_tab_history') },
+    { id: 'review',  label: t('hist_tab_review') },
+    { id: 'quiz',    label: t('hist_tab_quiz') },
   ] as const
 
   return (
@@ -365,7 +367,7 @@ export default function HistoryPanel() {
                 onChange={e => setFilterPair(e.target.value)}
                 style={{ fontSize: '.62rem', padding: '3px 8px', background: 'var(--bg3)', border: '1px solid var(--line2)', borderRadius: 4, color: 'var(--text)', cursor: 'pointer' }}
               >
-                <option value="all">Все пары</option>
+                <option value="all">{t('hist_all_pairs')}</option>
                 {uniquePairs.map(p => <option key={p} value={p}>{p}</option>)}
               </select>
               <select
@@ -373,7 +375,7 @@ export default function HistoryPanel() {
                 onChange={e => setFilterTf(e.target.value)}
                 style={{ fontSize: '.62rem', padding: '3px 8px', background: 'var(--bg3)', border: '1px solid var(--line2)', borderRadius: 4, color: 'var(--text)', cursor: 'pointer' }}
               >
-                <option value="all">Все TF</option>
+                <option value="all">{t('hist_all_tf')}</option>
                 {uniqueTfs.map(tf => <option key={tf} value={tf}>{tf}</option>)}
               </select>
               <select
@@ -381,16 +383,16 @@ export default function HistoryPanel() {
                 onChange={e => setFilterOutcome(e.target.value)}
                 style={{ fontSize: '.62rem', padding: '3px 8px', background: 'var(--bg3)', border: '1px solid var(--line2)', borderRadius: 4, color: 'var(--text)', cursor: 'pointer' }}
               >
-                <option value="all">Все</option>
+                <option value="all">{t('hist_all')}</option>
                 <option value="win">Win</option>
                 <option value="loss">Loss</option>
-                <option value="pending">Ожидают</option>
+                <option value="pending">{t('hist_pending')}</option>
               </select>
               <span style={{ fontSize: '.6rem', color: 'var(--dim)', marginLeft: 2 }}>
                 {filteredSignals.length} / {signals.length}
               </span>
               <button onClick={clearHistory} style={{ marginLeft: 'auto', fontSize: '.62rem', padding: '4px 10px', background: 'var(--card2)', border: '1px solid var(--line2)', borderRadius: 4, color: 'var(--muted)', cursor: 'pointer' }}>
-                Очистить историю
+                {t('hist_clear_btn')}
               </button>
             </div>
           )}
@@ -427,7 +429,7 @@ export default function HistoryPanel() {
                       </td>
                     </tr>
                   )) : (
-                    <tr><td colSpan={12} style={{ textAlign: 'center', color: 'var(--dim)', padding: 18, fontSize: '.63rem' }}>{filterPair !== 'all' || filterTf !== 'all' || filterOutcome !== 'all' ? 'Нет сигналов по фильтру' : t('no_history')}</td></tr>
+                    <tr><td colSpan={12} style={{ textAlign: 'center', color: 'var(--dim)', padding: 18, fontSize: '.63rem' }}>{filterPair !== 'all' || filterTf !== 'all' || filterOutcome !== 'all' ? t('hist_no_filter') : t('no_history')}</td></tr>
                   )}
                 </tbody>
               </table>
@@ -455,16 +457,16 @@ export default function HistoryPanel() {
       {tab === 'review' && (
         <div>
           <div style={{ fontSize: '.65rem', color: 'var(--muted)', marginBottom: 10 }}>
-            Выберите убыточную сделку для разбора, укажите тип ошибки и запишите урок.
+            {t('review_intro_lbl')}
           </div>
 
           {}
           <div className="tbox" style={{ marginBottom: 12 }}>
-            <div className="thead"><span className="thead-t">УБЫТОЧНЫЕ СДЕЛКИ ({losses.length})</span></div>
+            <div className="thead"><span className="thead-t">{t('loss_trades_title_lbl').replace('{count}', String(losses.length))}</span></div>
             <div style={{ padding: '6px 0', maxHeight: 180, overflowY: 'auto' }}>
               {losses.length === 0 && (
                 <div style={{ textAlign: 'center', padding: 14, color: 'var(--dim)', fontSize: '.63rem' }}>
-                  Нет убыточных сделок с отметкой "loss"
+                  {t('no_loss_trades_lbl')}
                 </div>
               )}
               {losses.map(s => (
@@ -493,16 +495,16 @@ export default function HistoryPanel() {
           {reviewSignal && (
             <div className="tbox">
               <div className="thead">
-                <span className="thead-t">РАЗБОР: {reviewSignal.pair} · {reviewSignal.timeframe}</span>
+                <span className="thead-t">{t('trade_review_prefix_lbl')}: {reviewSignal.pair} · {reviewSignal.timeframe}</span>
               </div>
               <div style={{ padding: '12px' }}>
                 {}
                 <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
                   {[
-                    { l: 'Сигнал', v: reviewSignal.final_verdict || '—' },
-                    { l: 'Уверен.', v: `${reviewSignal.final_confidence || 0}%` },
-                    { l: 'Риск', v: `${reviewSignal.final_risk_score || 0}/10` },
-                    { l: 'Плечо', v: `${reviewSignal.final_leverage || 1}×` },
+                    { l: t('signal'), v: reviewSignal.final_verdict || '—' },
+                    { l: t('conf'), v: `${reviewSignal.final_confidence || 0}%` },
+                    { l: t('risk'), v: `${reviewSignal.final_risk_score || 0}/10` },
+                    { l: t('leverage'), v: `${reviewSignal.final_leverage || 1}×` },
                   ].map(({ l, v }) => (
                     <div key={l} style={{ flex: 1, background: 'var(--bg3)', borderRadius: 3, padding: '5px 7px', textAlign: 'center' }}>
                       <div style={{ fontSize: '.53rem', color: 'var(--muted)', marginBottom: 2 }}>{l}</div>
@@ -512,9 +514,9 @@ export default function HistoryPanel() {
                 </div>
 
                 {}
-                <div style={{ fontSize: '.58rem', color: 'var(--muted)', marginBottom: 6, textTransform: 'uppercase' }}>Категория ошибки</div>
+                <div style={{ fontSize: '.58rem', color: 'var(--muted)', marginBottom: 6, textTransform: 'uppercase' }}>{t('error_cat_title_lbl')}</div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 12 }}>
-                  {ERROR_CATEGORIES.map(ec => (
+                  {errorCategories.map(ec => (
                     <button
                       key={ec.id}
                       onClick={() => setReviewCat(ec.id)}
@@ -532,17 +534,17 @@ export default function HistoryPanel() {
                 {}
                 {reviewCat && (
                   <div style={{ background: 'rgba(255,61,87,0.08)', border: '1px solid rgba(255,61,87,0.2)', borderRadius: 3, padding: '7px 10px', marginBottom: 10, fontSize: '.62rem', color: 'var(--muted)' }}>
-                    <strong style={{ color: 'var(--short)' }}>{ERROR_CATEGORIES.find(e => e.id === reviewCat)?.label}:</strong>{' '}
-                    {ERROR_CATEGORIES.find(e => e.id === reviewCat)?.desc}
+                    <strong style={{ color: 'var(--short)' }}>{errorCategories.find(e => e.id === reviewCat)?.label}:</strong>{' '}
+                    {errorCategories.find(e => e.id === reviewCat)?.desc}
                   </div>
                 )}
 
                 {}
-                <div style={{ fontSize: '.58rem', color: 'var(--muted)', marginBottom: 5, textTransform: 'uppercase' }}>Урок (что исправить)</div>
+                <div style={{ fontSize: '.58rem', color: 'var(--muted)', marginBottom: 5, textTransform: 'uppercase' }}>{t('lesson_title_lbl')}</div>
                 <textarea
                   value={reviewNote}
                   onChange={e => setReviewNote(e.target.value)}
-                  placeholder="Запишите, что нужно изменить в следующий раз..."
+                  placeholder={t('lesson_placeholder_lbl')}
                   style={{
                     width: '100%', minHeight: 70, background: 'var(--bg3)', border: '1px solid var(--line2)',
                     borderRadius: 3, padding: '7px 10px', fontSize: '.63rem', color: 'var(--text)',
@@ -553,24 +555,18 @@ export default function HistoryPanel() {
                 {}
                 {reviewCat && (
                   <div style={{ background: 'rgba(0,200,118,0.07)', border: '1px solid rgba(0,230,118,0.2)', borderRadius: 3, padding: '8px 10px', marginTop: 8 }}>
-                    <div style={{ fontSize: '.58rem', color: 'var(--long)', fontWeight: 600, marginBottom: 4 }}>РЕКОМЕНДАЦИЯ</div>
+                    <div style={{ fontSize: '.58rem', color: 'var(--long)', fontWeight: 600, marginBottom: 4 }}>{t('recommendation_title_lbl')}</div>
                     <div style={{ fontSize: '.62rem', color: 'var(--muted)', lineHeight: 1.5 }}>
-                      {reviewCat === 'fomo' && 'Ждать ретест зоны OB/FVG перед входом. Использовать лимитный ордер.'}
-                      {reviewCat === 'htf_bias' && 'Перед каждым входом проверять HTF bias на 4H и 1D. Торговать только в направлении HTF.'}
-                      {reviewCat === 'no_ob' && 'Входить только у подтверждённых OB A+/A или незаполненных FVG.'}
-                      {reviewCat === 'early' && 'Ждать закрытия свечи с подтверждением (BOS или ретест). Не входить при открытой свече.'}
-                      {reviewCat === 'risk' && 'Максимум 1-2% риска на сделку. R:R должен быть минимум 1:1.5 перед входом.'}
-                      {reviewCat === 'session' && 'Торговать только в активные часы: Лондон (7-16 UTC) и NY (13-21 UTC). Избегать азиатскую сессию для волатильных активов.'}
-                      {reviewCat === 'other' && 'Зафиксируйте конкретную ошибку в поле выше и создайте правило для её избежания.'}
+                      {errorCategories.find(e => e.id === reviewCat)?.rec}
                     </div>
                   </div>
                 )}
 
                 <button
-                  onClick={() => { if (reviewCat || reviewNote) { showToast('Разбор сохранён', 'ok'); setReviewSaved(true) } }}
+                  onClick={() => { if (reviewCat || reviewNote) { showToast(t('review_save_toast'), 'ok'); setReviewSaved(true) } }}
                   style={{ marginTop: 10, padding: '6px 16px', background: reviewSaved ? 'var(--bg3)' : 'var(--cyan)', border: 'none', borderRadius: 3, cursor: 'pointer', fontSize: '.62rem', fontWeight: 600, color: reviewSaved ? 'var(--muted)' : '#000' }}
                 >
-                  {reviewSaved ? 'Сохранено ✓' : 'Сохранить разбор'}
+                  {reviewSaved ? t('review_saved_btn') : t('review_save_btn')}
                 </button>
               </div>
             </div>
@@ -584,9 +580,9 @@ export default function HistoryPanel() {
           {!qFinished ? (
             <div className="tbox">
               <div className="thead">
-                <span className="thead-t">SMC КВИЗ</span>
+                <span className="thead-t">{t('smc_quiz_title_lbl')}</span>
                 <span style={{ fontSize: '.58rem', color: 'var(--muted)', marginLeft: 8 }}>
-                  {qIdx + 1}/{QUIZ_SCENARIOS.length} · {qScore} правильно
+                  {qIdx + 1}/{QUIZ_SCENARIOS.length} · {t('correct_count_lbl').replace('{count}', String(qScore))}
                 </span>
               </div>
               <div style={{ padding: '14px 14px 12px' }}>
@@ -634,7 +630,7 @@ export default function HistoryPanel() {
                 {qAnswered !== null && (
                   <div style={{ marginTop: 10, background: 'var(--bg3)', borderRadius: 4, padding: '10px 12px' }}>
                     <div style={{ fontSize: '.58rem', fontWeight: 600, marginBottom: 4, color: qAnswered === QUIZ_SCENARIOS[qIdx].ans ? 'var(--long)' : 'var(--short)' }}>
-                      {qAnswered === QUIZ_SCENARIOS[qIdx].ans ? '✓ ПРАВИЛЬНО' : '✗ НЕПРАВИЛЬНО'}
+                      {qAnswered === QUIZ_SCENARIOS[qIdx].ans ? t('quiz_correct') : t('quiz_wrong')}
                     </div>
                     <div style={{ fontSize: '.63rem', color: 'var(--muted)', lineHeight: 1.55 }}>
                       {QUIZ_SCENARIOS[qIdx].exp}
@@ -643,7 +639,7 @@ export default function HistoryPanel() {
                       onClick={nextQuestion}
                       style={{ marginTop: 10, padding: '6px 16px', background: 'var(--cyan)', border: 'none', borderRadius: 3, cursor: 'pointer', fontSize: '.62rem', fontWeight: 600, color: '#000' }}
                     >
-                      {qIdx + 1 < QUIZ_SCENARIOS.length ? 'Далее →' : 'Результат'}
+                      {qIdx + 1 < QUIZ_SCENARIOS.length ? t('quiz_next') : t('quiz_result_btn')}
                     </button>
                   </div>
                 )}
@@ -652,24 +648,24 @@ export default function HistoryPanel() {
           ) : (
             
             <div className="tbox">
-              <div className="thead"><span className="thead-t">РЕЗУЛЬТАТ КВИЗА</span></div>
+              <div className="thead"><span className="thead-t">{t('quiz_results_title_lbl')}</span></div>
               <div style={{ padding: '20px 14px', textAlign: 'center' }}>
                 <div style={{ fontSize: '2.2rem', fontWeight: 700, color: qScore >= 6 ? 'var(--long)' : qScore >= 4 ? 'var(--wait)' : 'var(--short)' }}>
                   {qScore}/{QUIZ_SCENARIOS.length}
                 </div>
                 <div style={{ fontSize: '.7rem', color: 'var(--muted)', marginBottom: 16 }}>
-                  {qScore >= 7 ? 'Отлично! Вы хорошо знаете Smart Money Concepts.' : qScore >= 5 ? 'Хорошо! Повторите слабые места.' : 'Нужна практика. Изучите концепции SMC.'}
+                  {qScore >= 7 ? t('quiz_excellent_lbl') : qScore >= 5 ? t('quiz_good_lbl') : t('quiz_poor_lbl')}
                 </div>
                 {}
                 {qHistory.filter(h => !h.correct).length > 0 && (
                   <div style={{ textAlign: 'left', marginBottom: 14 }}>
-                    <div style={{ fontSize: '.6rem', color: 'var(--muted)', marginBottom: 8 }}>ОШИБКИ:</div>
+                    <div style={{ fontSize: '.6rem', color: 'var(--muted)', marginBottom: 8 }}>{t('quiz_errors_lbl')}</div>
                     {qHistory.map((h, i) => !h.correct ? (
                       <div key={i} style={{ marginBottom: 8, padding: '7px 10px', background: 'rgba(255,61,87,0.08)', borderRadius: 3 }}>
                         <div style={{ fontSize: '.62rem', color: 'var(--text)', marginBottom: 3 }}>{QUIZ_SCENARIOS[i].q.slice(0, 70)}...</div>
                         <div style={{ fontSize: '.6rem', color: 'var(--muted)' }}>
-                          Ваш ответ: <span style={{ color: 'var(--short)' }}>{QUIZ_SCENARIOS[i].opts[h.chosen]}</span>
-                          {' · '}Правильно: <span style={{ color: 'var(--long)' }}>{QUIZ_SCENARIOS[i].opts[QUIZ_SCENARIOS[i].ans]}</span>
+                          {t('quiz_your_answer_lbl')} <span style={{ color: 'var(--short)' }}>{QUIZ_SCENARIOS[i].opts[h.chosen]}</span>
+                          {' · '}{t('quiz_correct_answer_lbl')} <span style={{ color: 'var(--long)' }}>{QUIZ_SCENARIOS[i].opts[QUIZ_SCENARIOS[i].ans]}</span>
                         </div>
                       </div>
                     ) : null)}
@@ -679,7 +675,7 @@ export default function HistoryPanel() {
                   onClick={restartQuiz}
                   style={{ padding: '8px 24px', background: 'var(--cyan)', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: '.65rem', fontWeight: 700, color: '#000' }}
                 >
-                  Пройти снова
+                  {t('quiz_restart')}
                 </button>
               </div>
             </div>

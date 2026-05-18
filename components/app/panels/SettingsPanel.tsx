@@ -109,20 +109,20 @@ export default function SettingsPanel() {
 
       let csv = ''
       if (type === 'trades') {
-        csv = 'ID,Пара,Направление,Тип,Сумма,Вход,TP,SL,Плечо,Статус,PnL,PnL%,Дата\n'
-        csv += rows.map((t: Record<string, unknown>) =>
-          [t.id, t.pair, t.direction, t.order_type, t.amount,
-           t.entry_price ?? '', t.tp_price ?? '', t.sl_price ?? '',
-           t.leverage, t.status, t.pnl ?? '', t.pnl_pct ?? '',
-           new Date(t.created_at as string).toLocaleDateString('ru-RU')].join(',')
+        csv = t('csv_trades_header') + '\n'
+        csv += rows.map((row: Record<string, unknown>) =>
+          [row.id, row.pair, row.direction, row.order_type, row.amount,
+           row.entry_price ?? '', row.tp_price ?? '', row.sl_price ?? '',
+           row.leverage, row.status, row.pnl ?? '', row.pnl_pct ?? '',
+           new Date(row.created_at as string).toLocaleDateString(lang)].join(',')
         ).join('\n')
       } else {
-        csv = 'ID,Пара,ТФ,Вердикт,Уверенность,Вход,TP,SL,Плечо,Исход,PnL%,Дата\n'
+        csv = t('csv_signals_header') + '\n'
         csv += rows.map((s: Record<string, unknown>) =>
           [s.id, s.pair, s.timeframe, s.final_verdict, s.final_confidence,
            s.final_entry ?? '', s.final_tp ?? '', s.final_sl ?? '',
            s.final_leverage ?? '', s.outcome ?? '', s.actual_pnl_pct ?? '',
-           new Date(s.created_at as string).toLocaleDateString('ru-RU')].join(',')
+           new Date(s.created_at as string).toLocaleDateString(lang)].join(',')
         ).join('\n')
       }
 

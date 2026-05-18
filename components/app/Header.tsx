@@ -14,16 +14,16 @@ const SYMS = [
 
 export default function Header() {
   const { logout, user } = useAuth()
-  const { t } = useLang()
+  const { t, lang } = useLang()
   const [time, setTime] = useState('')
   const [tickers, setTickers] = useState<Record<string, Ticker>>({})
 
   useEffect(() => {
-    const tick = () => setTime(new Date().toLocaleTimeString('ru', { timeZone: 'Asia/Almaty', hour: '2-digit', minute: '2-digit', second: '2-digit' }))
+    const tick = () => setTime(new Date().toLocaleTimeString(lang, { timeZone: 'Asia/Almaty', hour: '2-digit', minute: '2-digit', second: '2-digit' }))
     tick()
     const iv = setInterval(tick, 1000)
     return () => clearInterval(iv)
-  }, [])
+  }, [lang])
 
   useEffect(() => {
     async function fetchTickers() {

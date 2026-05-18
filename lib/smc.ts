@@ -606,13 +606,13 @@ function calcProbability(inp: ProbInput): ProbabilityResult {
 
   let recommendation: string
   if (probability >= 75 && scenario !== 'NEUTRAL') {
-    recommendation = `Сильный сетап ${scenario} — входить при подтверждении на младшем ТФ`
+    recommendation = `Strong ${scenario} setup — enter on LTF confirmation`
   } else if (probability >= 60 && scenario !== 'NEUTRAL') {
-    recommendation = `Умеренный ${scenario} сетап — ждать ретеста ключевой зоны`
+    recommendation = `Moderate ${scenario} setup — wait for key zone retest`
   } else if (probability >= 45) {
-    recommendation = 'Смешанные сигналы — наблюдать, не торговать'
+    recommendation = 'Mixed signals — observe, do not trade'
   } else {
-    recommendation = 'Низкая вероятность — пропустить этот сетап'
+    recommendation = 'Low probability — skip this setup'
   }
 
   const pair_placeholder = (s: string) =>
@@ -623,7 +623,7 @@ function calcProbability(inp: ProbInput): ProbabilityResult {
   if (f1 >= 15 && probability >= 45) {
     alerts.push({
       stage: 1, level: 'watchlist', color: 'yellow',
-      message: `${pair_placeholder(scenario)} формируется — структура HTF подтверждает ${htfBias}`,
+      message: `${pair_placeholder(scenario)} forming — HTF structure confirms ${htfBias}`,
       price, type: scenario === 'NEUTRAL' ? 'LONG' : scenario, confidence: Math.round(probability * 0.7),
     })
   }
@@ -631,7 +631,7 @@ function calcProbability(inp: ProbInput): ProbabilityResult {
   if (probability >= 60 && riskReward >= 1.5 && confluence >= 2) {
     alerts.push({
       stage: 2, level: 'setup_ready', color: 'orange',
-      message: `Сетап готов: ${scenario} | Конфлюэнс ${confluence} зон | R:R ${riskReward}`,
+      message: `Setup ready: ${scenario} | Confluence ${confluence} zones | R:R ${riskReward}`,
       price, type: scenario === 'NEUTRAL' ? 'LONG' : scenario, confidence: Math.round(probability * 0.85),
     })
   }
@@ -639,7 +639,7 @@ function calcProbability(inp: ProbInput): ProbabilityResult {
   if (sweepCount >= 1 && probability >= 70 && (nearBullOBs > 0 || nearBearOBs > 0)) {
     alerts.push({
       stage: 3, level: 'execute', color: scenario === 'LONG' ? 'green' : 'red',
-      message: `ТРИГГЕР: ${scenario} | Свип ликвидности + ретест OB | Уверенность ${confidence}%`,
+      message: `TRIGGER: ${scenario} | Liquidity sweep + OB retest | Confidence ${confidence}%`,
       price, type: scenario === 'NEUTRAL' ? 'LONG' : scenario, confidence,
     })
   }
@@ -670,10 +670,10 @@ export function scoreOrderBlock(ob: OrderBlock): {
 
   const score = Math.min(100, Math.round(Object.values(f).reduce((a, b) => a + b, 0)))
   const verdict =
-    score >= 80 ? '🟢 Высокая надёжность' :
-    score >= 60 ? '🟡 Умеренная надёжность' :
-    score >= 40 ? '🟠 Слабая надёжность' :
-                  '🔴 Низкая надёжность'
+    score >= 80 ? '🟢 High reliability' :
+    score >= 60 ? '🟡 Moderate reliability' :
+    score >= 40 ? '🟠 Weak reliability' :
+                  '🔴 Low reliability'
 
   return { score, factors: f, verdict }
 }

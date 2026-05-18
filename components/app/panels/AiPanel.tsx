@@ -102,6 +102,7 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
   const [backtestLoading, setBacktestLoading] = useState(false)
   const [backtestData, setBacktestData] = useState<Record<string, unknown> | null>(null)
   const [showGlossary, setShowGlossary] = useState(false)
+  const triggerAnalysisRef = useRef<(pair?: string, tf?: string) => void>(() => {})
 
   const filteredPairs = React.useMemo(
     () => pairSearch
@@ -258,6 +259,21 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
   }, [t])
 
   useEffect(() => {
+    const TF_MAP: Record<string, string> = {
+      '1m': '1м', '1M': '1м', '5m': '5м', '5M': '5м',
+      '15m': '15м', '15M': '15м', '30m': '30м', '30M': '30м',
+      '1h': '1ч', '1H': '1ч', '4h': '4ч', '4H': '4ч', '1d': '1д', '1D': '1д',
+    }
+    function handler(e: Event) {
+      const d = (e as CustomEvent).detail as { pair?: string; tf?: string } | undefined
+      const normalizedTf = d?.tf ? (TF_MAP[d.tf] ?? d.tf) : undefined
+      triggerAnalysisRef.current(d?.pair, normalizedTf)
+    }
+    window.addEventListener('kotvuk:trigger_analysis', handler)
+    return () => window.removeEventListener('kotvuk:trigger_analysis', handler)
+  }, [])
+
+  useEffect(() => {
     fetch('/api/subscription').then(r => r.json()).then(d => {
       if (d.ok) setQuota({ remaining: d.remaining, limit: d.limit, tier: d.subscription?.tier || 'free' })
     }).catch(() => {})
@@ -311,7 +327,10 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
         const mid = (ob.high + ob.low) / 2
         const dist = Math.abs(price - mid) / price
         if (dist < THRESHOLD) {
-          showToast(`Цена у ${ob.type === 'bullish' ? 'бычьего' : 'медвежьего'} OB $${ob.low.toFixed(0)}-$${ob.high.toFixed(0)}`, 'ok')
+          showToast(
+            (ob.type === 'bullish' ? t('price_near_bull_ob') : t('price_near_bear_ob')).replace('{range}', `$${ob.low.toFixed(0)}-$${ob.high.toFixed(0)}`),
+            'ok'
+          )
           return
         }
       }
@@ -320,7 +339,10 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
         if (liq.isSwept) continue
         const dist = Math.abs(price - liq.price) / price
         if (dist < THRESHOLD) {
-          showToast(`Цена у ${liq.type === 'buy' ? 'BSL' : 'SSL'} $${liq.price.toFixed(0)}`, 'ok')
+          showToast(
+            t('price_near_liq').replace('{type}', liq.type === 'buy' ? 'BSL' : 'SSL').replace('{price}', `$${liq.price.toFixed(0)}`),
+            'ok'
+          )
           return
         }
       }
@@ -418,10 +440,10 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
             chartRef.current?.drawSMC(d.smc as Parameters<KLineChartHandle['drawSMC']>[0], smcSettings)
             setShowSMC(true)
           } else {
-            showToast(d.error || 'Ошибка SMC', 'err')
+            showToast(d.error || t('smc_error_lbl'), 'err')
           }
         } catch {
-          showToast('Ошибка загрузки SMC', 'err')
+          showToast(t('smc_load_error_lbl'), 'err')
         }
         setSmcLoading(false)
       }
@@ -444,9 +466,9 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
       const d = await r.json()
       if (d.ok) {
         setAlerts(prev => [...prev, d.alert])
-        showToast(`🔔 Алерт создан: ${label}`, 'ok')
+        showToast(t('alert_created_lbl').replace('{label}', label), 'ok')
       }
-    } catch { showToast('Ошибка создания алерта', 'err') }
+    } catch { showToast(t('alert_create_error_lbl'), 'err') }
   }
 
   async function deleteAlert(id: number) {
@@ -455,7 +477,7 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
     try {
       await fetch(`/api/alerts/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } })
       setAlerts(prev => prev.filter(a => a.id !== id))
-      showToast('Алерт удалён', 'ok')
+      showToast(t('alert_deleted_lbl'), 'ok')
     } catch {}
   }
 
@@ -473,16 +495,17 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
       })
       const d = await r.json()
       if (d.ok) setBacktestData(d)
-      else showToast(d.error || 'Ошибка бэктеста', 'err')
-    } catch { showToast('Ошибка бэктеста', 'err') }
+      else showToast(d.error || t('backtest_run_error_lbl'), 'err')
+    } catch { showToast(t('backtest_run_error_lbl'), 'err') }
     setBacktestLoading(false)
   }
 
   async function runAI() {
+    if (analyzing) return
     try {
       await getValidToken()
     } catch {
-      showToast('Ошибка авторизации. Попробуйте перезайти.', 'err')
+      showToast(t('auth_error_lbl'), 'err')
       return
     }
 
@@ -535,7 +558,7 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
         setSidebarInds(buildSidebarInds(m))
         setSidebarSR(buildSidebarSR(m))
       } else {
-        const errMsg = data.error || t('error')
+        const errMsg = data.error_code === 'quota_exceeded' ? t('quota_exhausted_lbl') : data.error || t('error')
         showToast(errMsg, 'err')
         if (data.quota) setQuota(data.quota as { remaining: number; limit: number; tier: string })
         setAiOut('empty')
@@ -552,7 +575,7 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
   function buildSidebarInds(m: Record<string, unknown>) {
     const rsi = Number(m.rsi)
     return [
-      { name: 'Объём',   value: String(m.volSignal || ''),                    color: 'neut', label: '' },
+      { name: t('vol_indicator_lbl'),   value: String(m.volSignal || ''),                    color: 'neut', label: '' },
       { name: 'Funding', value: `${Number(m.fundingRate ?? 0).toFixed(4)}%`, color: Number(m.fundingRate ?? 0) > 0.05 ? 'bear' : Number(m.fundingRate ?? 0) < -0.01 ? 'bull' : 'neut', label: Number(m.fundingRate ?? 0) > 0.05 ? 'HOT' : '' },
       { name: 'HTF Bias',value: String((m as Record<string,unknown>).htfBias || m.smc && (m.smc as Record<string,unknown>).htfBias || '—'), color: String((m as Record<string,unknown>).htfBias || (m.smc as Record<string,unknown>)?.htfBias) === 'bullish' ? 'bull' : 'bear', label: '' },
       { name: 'RSI(14)', value: String(rsi),                                   color: rsi > 70 ? 'bear' : rsi < 30 ? 'bull' : 'neut', label: rsi > 70 ? 'OB' : rsi < 30 ? 'OS' : '' },
@@ -566,6 +589,14 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
     ]
     return res
   }
+
+  useEffect(() => {
+    triggerAnalysisRef.current = (newPair?: string, newTf?: string) => {
+      if (newPair) { setPair(newPair); pairRef.current = newPair }
+      if (newTf) { setTf(newTf); tfRef.current = newTf }
+      runAI()
+    }
+  })
 
   const a = aiData?.analysis as Record<string, unknown> | undefined
   const m = aiData?.market as Record<string, unknown> | undefined
@@ -816,7 +847,7 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
                   background: 'var(--bg2)', flexDirection: 'column', gap: 8,
                 }}>
                   <div className="ld-bar" style={{ width: 120 }} />
-                  <div style={{ fontSize: '.6rem', color: 'var(--muted)' }}>Загрузка графика...</div>
+                  <div style={{ fontSize: '.6rem', color: 'var(--muted)' }}>{t('chart_loading_lbl')}</div>
                 </div>
               )}
               <KLineChart
@@ -898,7 +929,7 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round"><path d="M12 2L2 7l10 5 10-5-10-5z" /><path d="M2 17l10 5 10-5" /><path d="M2 12l10 5 10-5" /></svg>
               </div>
               <div className="empty-t">{t('press_analyze')}</div>
-              <div className="empty-s">4-шаговый SMC анализ · Groq AI</div>
+              <div className="empty-s">{t('ai_analysis_subtitle')}</div>
             </div>
           )}
 
@@ -939,7 +970,7 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
             )}
           </div>
           <div className="sidebar-card">
-            <div className="sidebar-card-title">SMC ДАННЫЕ</div>
+            <div className="sidebar-card-title">{t('smc_data_title_lbl')}</div>
             {sidebarInds.length > 0
               ? sidebarInds.map(row => (
                   <div className="ir" key={row.name}>
@@ -975,11 +1006,11 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
       onClose={() => setDrawingSettings(null)}
       onSave={(id, updates) => {
         chartRef.current?.updateOverlay(id, updates)
-        showToast('Настройки сохранены', 'ok')
+        showToast(t('settings_saved'), 'ok')
       }}
       onDelete={(id) => {
         chartRef.current?.removeOverlayById(id)
-        showToast('Объект удалён', 'ok')
+        showToast(t('object_deleted_lbl'), 'ok')
       }}
     />
     {showGlossary && <GlossaryModal onClose={() => setShowGlossary(false)} />}

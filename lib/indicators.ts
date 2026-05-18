@@ -77,12 +77,12 @@ export function analyzeIndicators(candles: Candle[]): MethodResult {
   else if (rsiVal > 70) { score -= 25; shortFactors.push(`RSI ${rsiVal.toFixed(1)} — overbought`) }
   else if (rsiVal > 60) { score -= 10; shortFactors.push(`RSI ${rsiVal.toFixed(1)} — moderately overbought`) }
 
-  if (price > ema50 && ema50 > ema200) { score += 20; longFactors.push('EMA50 > EMA200 — bullish тренд') }
+  if (price > ema50 && ema50 > ema200) { score += 20; longFactors.push('EMA50 > EMA200 — bullish trend') }
   else if (price < ema50 && ema50 < ema200) { score -= 20; shortFactors.push('EMA50 < EMA200 — bearish trend') }
   else if (price > ema50) { score += 8; longFactors.push('Price above EMA50') }
   else if (price < ema50) { score -= 8; shortFactors.push('Price below EMA50') }
 
-  if (macd > 0 && macd > prevMacd) { score += 15; longFactors.push('MACD bullish и растёт') }
+  if (macd > 0 && macd > prevMacd) { score += 15; longFactors.push('MACD bullish and rising') }
   else if (macd < 0 && macd < prevMacd) { score -= 15; shortFactors.push('MACD bearish and falling') }
   else if (macd > 0) { score += 7; longFactors.push('MACD positive') }
   else if (macd < 0) { score -= 7; shortFactors.push('MACD negative') }
@@ -93,7 +93,7 @@ export function analyzeIndicators(candles: Candle[]): MethodResult {
   }
 
   if (stoch < 20) { score += 10; longFactors.push(`StochRSI ${stoch.toFixed(0)} — oversold zone`) }
-  else if (stoch > 80) { score -= 10; shortFactors.push(`StochRSI ${stoch.toFixed(0)} — зона overboughtности`) }
+  else if (stoch > 80) { score -= 10; shortFactors.push(`StochRSI ${stoch.toFixed(0)} — overbought zone`) }
 
   if (volSurge) {
     if (score > 0) { score += 10; longFactors.push('Volume confirms upward move') }
@@ -151,7 +151,7 @@ export function analyzePriceAction(candles: Candle[]): MethodResult {
   let confidence = 35
 
   if (bullish && lowerWick >= body * 2 && upperWick <= body * 0.3 && bodyRatio < 0.4) {
-    patterns.push('Hammer (bullish разворот)')
+    patterns.push('Hammer (bullish reversal)')
     signal = 'LONG'; confidence = Math.max(confidence, 62)
   }
 
@@ -194,7 +194,7 @@ export function analyzePriceAction(candles: Candle[]): MethodResult {
 
   if (!(prev2.close > prev2.open) && Math.abs(prev.close - prev.open) < Math.abs(prev2.close - prev2.open) * 0.3 && bullish &&
       last.close > (prev2.open + prev2.close) / 2) {
-    patterns.push('Morning Star (bullish разворот 3 свечи)')
+    patterns.push('Morning Star (bullish reversal, 3 candles)')
     signal = 'LONG'; confidence = Math.max(confidence, 72)
   }
 
@@ -205,7 +205,7 @@ export function analyzePriceAction(candles: Candle[]): MethodResult {
   }
 
   if (bodyRatio > 0.85 && body > 0) {
-    if (bullish) { patterns.push('Bullish Marubozu (сильный bullish импульс)'); signal = 'LONG'; confidence = Math.max(confidence, 68) }
+    if (bullish) { patterns.push('Bullish Marubozu (strong bullish impulse)'); signal = 'LONG'; confidence = Math.max(confidence, 68) }
     else { patterns.push('Bearish Marubozu (strong bearish momentum)'); signal = 'SHORT'; confidence = Math.max(confidence, 68) }
   }
 
@@ -224,7 +224,7 @@ export function analyzePriceAction(candles: Candle[]): MethodResult {
 
 export function analyzeWyckoff(candles: Candle[]): MethodResult {
   if (candles.length < 50) {
-    return { method: 'Wyckoff', signal: 'WAIT', confidence: 30, factors: ['Insufficient data'], summary: 'Not enough candles для Wyckoff' }
+    return { method: 'Wyckoff', signal: 'WAIT', confidence: 30, factors: ['Insufficient data'], summary: 'Not enough candles for Wyckoff' }
   }
 
   const price    = candles[candles.length - 1].close
@@ -269,11 +269,11 @@ export function analyzeWyckoff(candles: Candle[]): MethodResult {
   } else if (compression && volDecline) {
     if (posInRange < 0.35) {
       factors.push('Accumulation Phase (B) — price in lower range')
-      factors.push('Сжатие волатильности + падение объёма')
+      factors.push('Volatility compression + volume decline')
       signal = 'LONG'; confidence = 55
     } else if (posInRange > 0.65) {
       factors.push('Distribution Phase (B) — price in upper range')
-      factors.push('Сжатие волатильности + падение объёма')
+      factors.push('Volatility compression + volume decline')
       signal = 'SHORT'; confidence = 55
     } else {
       factors.push('Wyckoff: sideways consolidation, no clear direction')
@@ -335,31 +335,31 @@ export function analyzeVolumeProfile(candles: Candle[]): MethodResult {
 
   const vwapDist = ((price - vwap) / vwap) * 100
   if (price < vwap * 0.99) {
-    factors.push(`Цена ниже VWAP ($${vwap.toFixed(2)}) на ${Math.abs(vwapDist).toFixed(1)}% — bearish bias`)
+    factors.push(`Price below VWAP ($${vwap.toFixed(2)}) by ${Math.abs(vwapDist).toFixed(1)}% — bearish bias`)
     signal = 'SHORT'; confidence = Math.max(confidence, 55)
   } else if (price > vwap * 1.01) {
-    factors.push(`Цена выше VWAP ($${vwap.toFixed(2)}) на ${vwapDist.toFixed(1)}% — bullish bias`)
+    factors.push(`Price above VWAP ($${vwap.toFixed(2)}) by ${vwapDist.toFixed(1)}% — bullish bias`)
     signal = 'LONG'; confidence = Math.max(confidence, 55)
   } else {
-    factors.push(`Цена у VWAP ($${vwap.toFixed(2)}) — neutral zone`)
+    factors.push(`Price at VWAP ($${vwap.toFixed(2)}) — neutral zone`)
   }
 
   const pocDist = ((price - pocPrice) / pocPrice) * 100
   if (Math.abs(pocDist) < 0.5) {
-    factors.push(`Цена у POC ($${pocPrice.toFixed(2)}) — maximum volume zone`)
+    factors.push(`Price at POC ($${pocPrice.toFixed(2)}) — maximum volume zone`)
   } else if (price < pocPrice) {
-    factors.push(`Цена ниже POC ($${pocPrice.toFixed(2)}) — gravitating to level`)
+    factors.push(`Price below POC ($${pocPrice.toFixed(2)}) — gravitating to level`)
     if (signal === 'SHORT') confidence = Math.min(confidence + 10, 85)
   } else {
-    factors.push(`Цена выше POC ($${pocPrice.toFixed(2)}) — gravitating to level`)
+    factors.push(`Price above POC ($${pocPrice.toFixed(2)}) — gravitating to level`)
     if (signal === 'LONG') confidence = Math.min(confidence + 10, 85)
   }
 
   if (price <= val * 1.005) {
-    factors.push(`Цена у VAL ($${val.toFixed(2)}) — lower value area boundary — support`)
+    factors.push(`Price at VAL ($${val.toFixed(2)}) — lower value area boundary — support`)
     signal = 'LONG'; confidence = Math.max(confidence, 65)
   } else if (price >= vah * 0.995) {
-    factors.push(`Цена у VAH ($${vah.toFixed(2)}) — upper value area boundary — resistance`)
+    factors.push(`Price at VAH ($${vah.toFixed(2)}) — upper value area boundary — resistance`)
     signal = 'SHORT'; confidence = Math.max(confidence, 65)
   }
 
@@ -385,7 +385,7 @@ export function analyzeFunding(fundingRate: number | null): MethodResult {
       method: 'Funding Rate',
       signal: 'WAIT',
       confidence: 30,
-      factors: ['Данные фандинга недоступны (только для фьючерсов)'],
+      factors: ['Funding data unavailable (futures only)'],
       summary: 'No data',
     }
   }

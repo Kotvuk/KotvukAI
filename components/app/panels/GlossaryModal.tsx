@@ -1,5 +1,6 @@
 'use client'
 import React, { useState } from 'react'
+import { useLang } from '@/contexts/LangContext'
 
 interface GlossaryTerm {
   term: string
@@ -30,11 +31,12 @@ interface GlossaryModalProps {
 }
 
 export default function GlossaryModal({ onClose }: GlossaryModalProps) {
+  const { t } = useLang()
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 6000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={onClose}>
       <div style={{ background: 'var(--bg2)', border: '1px solid var(--line2)', borderRadius: 8, width: '100%', maxWidth: 420, maxHeight: '85vh', overflow: 'auto', padding: '16px 18px' }} onClick={e => e.stopPropagation()}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-          <div style={{ fontSize: '.8rem', fontWeight: 700 }}>📖 Глоссарий SMC</div>
+          <div style={{ fontSize: '.8rem', fontWeight: 700 }}>📖 {t('glossary_lbl')}</div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '1.1rem' }}>✕</button>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -49,10 +51,10 @@ export default function GlossaryModal({ onClose }: GlossaryModalProps) {
           ))}
         </div>
         <div style={{ marginTop: 14, padding: '10px 12px', background: 'var(--bg3)', borderRadius: 5, fontSize: '.55rem', color: 'var(--dim)', lineHeight: 1.5 }}>
-          💡 <b>Конфлюэнс</b> — минимум 3 фактора для входа. Без свипа ликвидности — ждать.
+          💡 <b>{t('confluence_abbr_lbl')}</b>{t('glossary_protip_lbl')}
         </div>
         <button onClick={onClose} style={{ width: '100%', marginTop: 12, padding: '9px 0', borderRadius: 4, border: 'none', background: 'var(--cyan)', color: '#000', cursor: 'pointer', fontSize: '.68rem', fontWeight: 700 }}>
-          Понятно
+          {t('got_it_btn')}
         </button>
       </div>
     </div>

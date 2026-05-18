@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
       const wasCancelled = await cancelTrade(trade.id, user.id)
       if (wasCancelled) {
         await adjustBalance(user.id, Number(trade.amount))
-        await createNotification(user.id, `🗑️ Лимитный ордер ${trade.direction.toUpperCase()} ${trade.pair} отменён (истёк срок)`)
+        await createNotification(user.id, `🗑️ Limit order ${trade.direction.toUpperCase()} ${trade.pair} cancelled (expired)`)
         cancelled++
       }
       continue
@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
     if (limitHit) {
       const wasActivated = await activateTrade(trade.id, user.id, trade.limit_price)
       if (wasActivated) {
-        await createNotification(user.id, `✅ Лимитный ордер исполнен! ${trade.direction.toUpperCase()} ${trade.pair} по $${trade.limit_price}`)
+        await createNotification(user.id, `✅ Limit order executed! ${trade.direction.toUpperCase()} ${trade.pair} @ $${trade.limit_price}`)
         activated++
       }
     }

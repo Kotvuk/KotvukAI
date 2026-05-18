@@ -300,8 +300,8 @@ Reply with a single-line JSON:
   if (trendDir === 'ranging' && (htf === 'neutral' || htf === 'ranging') || s1.ranging_risk === true) {
     if (!consensusOverride) {
       const waitStep1: Step1Result = { signal: 'WAIT', strength: 3, trend: trendDir, summary: summary1 }
-      const waitStep2: Step2Result = { verdict: 'WAIT', confidence: 45, risk_score: 5, leverage: 1, summary: 'Флэт + нейтральный HTF — нет чёткого направления' }
-      const waitFinal = makeWait(45, 'Флэт без ясного HTF-bias. Ожидаем разрешения структуры.', riskUsd, balance, riskPct, allMethods, consensus)
+      const waitStep2: Step2Result = { verdict: 'WAIT', confidence: 45, risk_score: 5, leverage: 1, summary: 'Range + neutral HTF — no clear direction' }
+      const waitFinal = makeWait(45, 'Range with no HTF bias. Waiting for structure resolution.', riskUsd, balance, riskPct, allMethods, consensus)
       return translateResponse(keys, { step1: waitStep1, step2: waitStep2, final: waitFinal, methods: allMethods, consensus })
     }
   }
@@ -513,9 +513,9 @@ Reply with ONLY one line of valid JSON (all numeric fields must be numbers, not 
       }
     })() : undefined,
     insights: [
-      { icon: '📊', tag: 'СТРУКТУРА', text: i1 },
-      { icon: '🎯', tag: 'ЗОНА',      text: i2 },
-      { icon: '💧', tag: 'ЛИКВИДНОСТЬ', text: i3 },
+      { icon: '📊', tag: 'STRUCTURE',  text: i1 },
+      { icon: '🎯', tag: 'ZONE',       text: i2 },
+      { icon: '💧', tag: 'LIQUIDITY',  text: i3 },
     ],
     methods: allMethods,
     consensus,
@@ -538,9 +538,9 @@ function makeWait(confidence: number, reason: string, riskUsd: number, balance: 
     pos_usd: 0,
     ob_used: undefined,
     insights: [
-      { icon: '⏳', tag: 'ОЖИДАНИЕ', text: reason },
-      { icon: '📊', tag: 'БАЛАНС', text: `$${balance} | Риск ${riskPct}% = $${riskUsd}` },
-      { icon: '🎯', tag: 'УСЛОВИЕ', text: 'Ждём подтверждения структуры и свипа ликвидности' },
+      { icon: '⏳', tag: 'WAITING',   text: reason },
+      { icon: '📊', tag: 'BALANCE',   text: `$${balance} | Risk ${riskPct}% = $${riskUsd}` },
+      { icon: '🎯', tag: 'CONDITION', text: 'Waiting for structure confirmation and liquidity sweep' },
     ],
     methods,
     consensus,

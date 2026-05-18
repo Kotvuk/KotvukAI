@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
+import { useLang } from '@/contexts/LangContext'
 import { fmtAlmaty } from '@/lib/fmt'
 
 interface Signal {
@@ -23,6 +24,7 @@ function vc(v: string | null) {
 }
 
 export default function HistoricalSetupsModal({ currentPair, currentTf, currentVerdict, onClose }: Props) {
+  const { t } = useLang()
   const [signals, setSignals] = useState<Signal[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<'all' | 'same_pair' | 'same_signal'>('same_signal')
@@ -58,20 +60,18 @@ export default function HistoricalSetupsModal({ currentPair, currentTf, currentV
       onClick={e => { if (e.target === e.currentTarget) onClose() }}
     >
       <div style={{ background: 'var(--bg2)', border: '1px solid var(--line2)', borderRadius: 6, width: 520, maxHeight: '85vh', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 8px 40px rgba(0,0,0,0.6)' }}>
-        {}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderBottom: '1px solid var(--line2)' }}>
           <span style={{ fontSize: '.68rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.05em' }}>
-            Похожие сетапы — {currentPair} {currentTf}
+            {t('similar_setups_title').replace('{pair}', currentPair).replace('{tf}', currentTf)}
           </span>
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '1rem' }}>✕</button>
         </div>
 
-        {}
         <div style={{ display: 'flex', gap: 6, padding: '10px 16px', borderBottom: '1px solid var(--line2)' }}>
           {[
-            { id: 'same_signal', label: `Тот же сигнал (${currentVerdict})` },
+            { id: 'same_signal', label: t('same_signal_filter_lbl').replace('{verdict}', currentVerdict) },
             { id: 'same_pair',   label: `${currentPair} ${currentTf}` },
-            { id: 'all',         label: 'Все сигналы' },
+            { id: 'all',         label: t('all_signals_filter_lbl') },
           ].map(f => (
             <button
               key={f.id}
@@ -86,15 +86,14 @@ export default function HistoricalSetupsModal({ currentPair, currentTf, currentV
           ))}
         </div>
 
-        {}
         {!loading && filtered.length > 0 && (
           <div style={{ display: 'flex', gap: 8, padding: '10px 16px', borderBottom: '1px solid var(--line2)', flexShrink: 0 }}>
             {[
-              { l: 'Найдено', v: filtered.length },
-              { l: 'Разрешено', v: resolved },
+              { l: t('found_count_lbl'), v: filtered.length },
+              { l: t('resolved_lbl'),    v: resolved },
               { l: 'Win Rate', v: wr !== null ? `${wr}%` : '—', c: wr != null ? (wr >= 55 ? 'var(--long)' : wr >= 45 ? 'var(--wait)' : 'var(--short)') : undefined },
-              { l: 'Ср. уверен. W', v: avgWinConf !== null ? `${avgWinConf}%` : '—', c: 'var(--long)' },
-              { l: 'Ср. уверен. L', v: avgLossConf !== null ? `${avgLossConf}%` : '—', c: 'var(--short)' },
+              { l: t('avg_conf_win_lbl'), v: avgWinConf !== null ? `${avgWinConf}%` : '—', c: 'var(--long)' },
+              { l: t('avg_conf_loss_lbl'), v: avgLossConf !== null ? `${avgLossConf}%` : '—', c: 'var(--short)' },
             ].map(({ l, v, c }) => (
               <div key={l} style={{ flex: 1, background: 'var(--bg3)', borderRadius: 3, padding: '5px 7px', textAlign: 'center' }}>
                 <div style={{ fontSize: '.52rem', color: 'var(--muted)', marginBottom: 2 }}>{l}</div>
@@ -104,7 +103,6 @@ export default function HistoricalSetupsModal({ currentPair, currentTf, currentV
           </div>
         )}
 
-        {}
         <div style={{ overflowY: 'auto', flex: 1 }}>
           {loading && (
             <div style={{ display: 'flex', justifyContent: 'center', padding: 24 }}>
@@ -113,7 +111,7 @@ export default function HistoricalSetupsModal({ currentPair, currentTf, currentV
           )}
           {!loading && filtered.length === 0 && (
             <div style={{ textAlign: 'center', padding: 24, color: 'var(--dim)', fontSize: '.65rem' }}>
-              Похожих сетапов в истории нет
+              {t('no_similar_lbl')}
             </div>
           )}
           {!loading && filtered.map(s => {
@@ -129,8 +127,8 @@ export default function HistoricalSetupsModal({ currentPair, currentTf, currentV
                     <span style={{ fontSize: '.58rem', color: 'var(--dim)' }}>{fmtAlmaty(s.created_at)}</span>
                   </div>
                   <div style={{ display: 'flex', gap: 10 }}>
-                    <span style={{ fontSize: '.58rem', color: 'var(--muted)' }}>Вход ${parseFloat(String(s.final_entry || 0)).toLocaleString()}</span>
-                    <span style={{ fontSize: '.58rem', color: 'var(--muted)' }}>Уверен. {s.final_confidence}%</span>
+                    <span style={{ fontSize: '.58rem', color: 'var(--muted)' }}>{t('entry_price_short_lbl')}{parseFloat(String(s.final_entry || 0)).toLocaleString()}</span>
+                    <span style={{ fontSize: '.58rem', color: 'var(--muted)' }}>{t('conf')} {s.final_confidence}%</span>
                     {rr && <span style={{ fontSize: '.58rem', color: 'var(--muted)' }}>R:R {rr.toFixed(1)}</span>}
                   </div>
                 </div>
@@ -145,14 +143,13 @@ export default function HistoricalSetupsModal({ currentPair, currentTf, currentV
           })}
         </div>
 
-        {}
         {!loading && wr !== null && resolved >= 3 && (
           <div style={{ padding: '10px 16px', borderTop: '1px solid var(--line2)', background: wr >= 55 ? 'rgba(0,230,118,0.06)' : 'rgba(255,165,0,0.06)', flexShrink: 0 }}>
             <div style={{ fontSize: '.63rem', color: 'var(--muted)', lineHeight: 1.5 }}>
-              {wr >= 65 && `Высокая историческая точность (${wr}%). Этот тип сетапа статистически надёжен.`}
-              {wr >= 50 && wr < 65 && `Умеренная точность (${wr}%). Дополнительно проверьте конфлюэнс зон и HTF bias.`}
-              {wr < 50 && `Низкая точность (${wr}%). Рассмотрите ожидание более сильного подтверждения.`}
-              {avgWinConf && avgLossConf && ` Прибыльные сделки имели бо́льшую уверенность ИИ (${avgWinConf}% vs ${avgLossConf}%).`}
+              {wr >= 65 && t('high_accuracy_setup_lbl').replace('{wr}', String(wr))}
+              {wr >= 50 && wr < 65 && t('moderate_accuracy_setup_lbl').replace('{wr}', String(wr))}
+              {wr < 50 && t('low_accuracy_setup_lbl').replace('{wr}', String(wr))}
+              {avgWinConf && avgLossConf && ` ${t('ai_conf_comparison_lbl').replace('{winConf}', String(avgWinConf)).replace('{lossConf}', String(avgLossConf))}`}
             </div>
           </div>
         )}

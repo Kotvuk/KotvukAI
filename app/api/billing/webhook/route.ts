@@ -1,4 +1,4 @@
-﻿export const dynamic = 'force-dynamic'
+export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { stripe, PRICE_ID_TO_TIER } from '@/lib/stripe'

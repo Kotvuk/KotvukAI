@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
 
       const emoji  = outcome === 'win' ? '✅' : '❌'
       const pnlStr = pnlPct > 0 ? `+${pnlPct}%` : `${pnlPct}%`
-      await createNotification(user.id, `${emoji} ${signal.final_verdict} ${signal.pair} ${signal.timeframe} — ${outcome === 'win' ? 'TP достигнут' : 'SL пробит'} (${pnlStr})`)
+      await createNotification(user.id, `${emoji} ${signal.final_verdict} ${signal.pair} ${signal.timeframe} — ${outcome === 'win' ? 'TP hit' : 'SL hit'} (${pnlStr})`)
 
       results.push({ id: signal.id, outcome, pnlPct })
     } catch {

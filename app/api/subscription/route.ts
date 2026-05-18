@@ -4,34 +4,10 @@ import { getUser } from '@/lib/auth-helper'
 import { getSubscription, SUBSCRIPTION_LIMITS } from '@/lib/db'
 
 const SUBSCRIPTION_PLANS = [
-  {
-    tier: 'free',
-    name: 'Free',
-    price: 0,
-    analyses_per_day: SUBSCRIPTION_LIMITS.free,
-    features: ['3 анализа в день', 'История сигналов', 'Торговый журнал'],
-  },
-  {
-    tier: 'starter',
-    name: 'Starter',
-    price: 9.99,
-    analyses_per_day: SUBSCRIPTION_LIMITS.starter,
-    features: ['10 анализов в день', 'Все фичи Free', 'Лимитные ордера', 'Уведомления'],
-  },
-  {
-    tier: 'pro',
-    name: 'Pro',
-    price: 19.99,
-    analyses_per_day: SUBSCRIPTION_LIMITS.pro,
-    features: ['30 анализов в день', 'Все фичи Starter', 'AI Чат', 'Расширенная история'],
-  },
-  {
-    tier: 'elite',
-    name: 'Elite',
-    price: 49.99,
-    analyses_per_day: SUBSCRIPTION_LIMITS.elite,
-    features: ['100 анализов в день', 'Все фичи Pro', 'Приоритетная поддержка', 'API доступ'],
-  },
+  { tier: 'free',    name: 'Free',    price: 0,     analyses_per_day: SUBSCRIPTION_LIMITS.free },
+  { tier: 'starter', name: 'Starter', price: 9.99,  analyses_per_day: SUBSCRIPTION_LIMITS.starter },
+  { tier: 'pro',     name: 'Pro',     price: 19.99, analyses_per_day: SUBSCRIPTION_LIMITS.pro },
+  { tier: 'elite',   name: 'Elite',   price: 49.99, analyses_per_day: SUBSCRIPTION_LIMITS.elite },
 ]
 
 export async function GET(req: NextRequest) {

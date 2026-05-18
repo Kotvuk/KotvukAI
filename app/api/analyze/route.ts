@@ -159,39 +159,42 @@ export async function POST(req: NextRequest) {
           const rawAmount   = analysis.pos_usd || Math.round(riskUsd / Math.max(slDist, 0.001))
           const tradeAmount = Math.min(Math.round(rawAmount), Math.round(balance * userMaxLev))
 
-          const isLimit = analysis.entry_type === 'limit'
-          const limitPx = analysis.entry_price ?? null
+          if (tradeAmount > 0) {
+            const isLimit = analysis.entry_type === 'limit'
+            const limitPx = analysis.entry_price ?? null
 
-          await createTrade(user.id, {
-            pair,
-            direction:    analysis.verdict.toLowerCase() as 'long' | 'short',
-            order_type:   isLimit ? 'limit' : 'market',
-            amount:       tradeAmount,
-            entry_price:  isLimit ? null : limitPx,
-            limit_price:  isLimit ? limitPx : null,
-            tp_price:     analysis.tp_price ?? null,
-            sl_price:     analysis.sl_price ?? null,
-            leverage:     tradeLeverage,
-            account_type: 'ai',
-            status:       isLimit ? 'pending' : 'open',
-            expires_at:   isLimit ? expiresAt.toISOString() : null,
-          })
-          await adjustBalance(user.id, -tradeAmount)
+            await createTrade(user.id, {
+              pair,
+              direction:    analysis.verdict.toLowerCase() as 'long' | 'short',
+              order_type:   isLimit ? 'limit' : 'market',
+              amount:       tradeAmount,
+              entry_price:  isLimit ? null : limitPx,
+              limit_price:  isLimit ? limitPx : null,
+              tp_price:     analysis.tp_price ?? null,
+              sl_price:     analysis.sl_price ?? null,
+              leverage:     tradeLeverage,
+              account_type: 'ai',
+              status:       isLimit ? 'pending' : 'open',
+              expires_at:   isLimit ? expiresAt.toISOString() : null,
+            })
+            await adjustBalance(user.id, -tradeAmount)
 
-          if (isLimit && limitPx) {
-            await createNotification(user.id,
-              `⏳ Limit order ${analysis.verdict} ${pair} waiting @ $${limitPx.toFixed(2)} (expires in 7 days)`
-            )
+            const prec = (analysis.entry_price ?? 0) >= 100 ? 2 : 4
+
+            if (isLimit && limitPx) {
+              await createNotification(user.id,
+                `⏳ Limit order ${analysis.verdict} ${pair} waiting @ $${limitPx.toFixed(prec)} (expires in 7 days)`
+              )
+            }
+
+            const dir = analysis.verdict === 'LONG' ? '📈' : '📉'
+            const msg = `${dir} <b>${analysis.verdict}</b> ${sym} ${timeframe}\n`
+              + `Confidence: <b>${analysis.confidence}%</b>\n`
+              + `Entry: $${(analysis.entry_price ?? 0).toFixed(prec)} | TP: $${(analysis.tp_price ?? 0).toFixed(prec)} | SL: $${(analysis.sl_price ?? 0).toFixed(prec)}\n`
+              + `Leverage: ${analysis.leverage}x | R:R: ${analysis.rr ?? '?'}`
+            const tgChatId = String(user.telegram_chat_id || '')
+            ;(tgChatId ? sendTelegramToUser(tgChatId, msg) : sendTelegram(msg)).catch(() => {})
           }
-
-          const dir = analysis.verdict === 'LONG' ? '📈' : '📉'
-          const prec = (analysis.entry_price ?? 0) >= 100 ? 2 : 4
-          const msg = `${dir} <b>${analysis.verdict}</b> ${sym} ${timeframe}\n`
-            + `Confidence: <b>${analysis.confidence}%</b>\n`
-            + `Entry: $${(analysis.entry_price ?? 0).toFixed(prec)} | TP: $${(analysis.tp_price ?? 0).toFixed(prec)} | SL: $${(analysis.sl_price ?? 0).toFixed(prec)}\n`
-            + `Leverage: ${analysis.leverage}x | R:R: ${analysis.rr ?? '?'}`
-          const tgChatId = String(user.telegram_chat_id || '')
-          ;(tgChatId ? sendTelegramToUser(tgChatId, msg) : sendTelegram(msg)).catch(() => {})
         }
       } catch {}
     }

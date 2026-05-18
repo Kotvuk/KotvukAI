@@ -34,7 +34,7 @@ export async function middleware(req: NextRequest) {
     if (last && now - last < ANALYZE_COOLDOWN_MS) {
       const retryAfter = Math.ceil((ANALYZE_COOLDOWN_MS - (now - last)) / 1000)
       return NextResponse.json(
-        { ok: false, error: `Слишком частые запросы. Подождите ${retryAfter} сек.` },
+        { ok: false, error: `Too many requests. Please wait ${retryAfter}s.` },
         { status: 429, headers: { 'Retry-After': String(retryAfter) } }
       )
     }

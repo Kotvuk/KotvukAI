@@ -47,40 +47,40 @@ export async function POST(req: NextRequest) {
   const smcLiqs = ctx.smc?.liquidityLevels?.slice(0, 4) || []
 
   const prompt = `/no_think
-Ты ИИ-ассистент KotvukAI для криптотрейдинга. Разбери запрос пользователя и ответь JSON-объектом.
+You are KotvukAI trading assistant. Parse the user request and respond with a JSON object.
 
-КОНТЕКСТ:
-- Пара: ${ctx.pair || 'BTC/USDT'}, Таймфрейм: ${ctx.tf || '1h'}
-- Цена: $${ctx.price || 'неизвестна'}
-- Сигнал: ${ctx.verdict || 'нет'} | Вход: $${ctx.entry || '?'} | TP: $${ctx.tp || '?'} | SL: $${ctx.sl || '?'}
+CONTEXT:
+- Pair: ${ctx.pair || 'BTC/USDT'}, Timeframe: ${ctx.tf || '1h'}
+- Price: $${ctx.price || 'unknown'}
+- Signal: ${ctx.verdict || 'none'} | Entry: $${ctx.entry || '?'} | TP: $${ctx.tp || '?'} | SL: $${ctx.sl || '?'}
 - SMC Order Blocks: ${JSON.stringify(smcOBs)}
 - SMC FVGs: ${JSON.stringify(smcFVGs)}
-- SMC Ликвидность: ${JSON.stringify(smcLiqs)}
+- SMC Liquidity: ${JSON.stringify(smcLiqs)}
 
-ЗАПРОС ПОЛЬЗОВАТЕЛЯ: "${message}"
+USER REQUEST: "${message}"
 
-ДОСТУПНЫЕ ДЕЙСТВИЯ:
-- trigger_analysis: { pair?, tf? } — запустить полный AI-анализ. tf в формате: "1м"|"5м"|"15м"|"30м"|"1ч"|"4ч"|"1д"
-- update_markup: { tp, sl, entry } — изменить уровни TP/SL/вход на графике
-- draw_zone: { zoneType: "ob_bullish"|"ob_bearish"|"fvg_bullish"|"fvg_bearish"|"ob_all"|"fvg_all", priceFrom, priceTo, label, color } — нарисовать зону
-- draw_liquidity: { level, side: "buy"|"sell" } — нарисовать уровень ликвидности
-- clear_zones: { target: "all"|"ob"|"fvg"|"liquidity"|"markup" } — очистить разметку
-- set_opacity: { group: "ob"|"fvg"|"liquidity"|"all", opacityValue: 0.1-0.9 } — прозрачность зон
-- set_color: { colorTarget: "ob"|"fvg"|"tp"|"sl"|"entry", colorValue: "#hex" } — изменить цвет
-- navigate_panel: { panel: "dash"|"trades"|"news"|"notifs"|"history" } — перейти в панель
+AVAILABLE ACTIONS:
+- trigger_analysis: { pair?, tf? } — run full AI analysis. tf format: "1м"|"5м"|"15м"|"30м"|"1ч"|"4ч"|"1д"
+- update_markup: { tp, sl, entry } — update TP/SL/entry levels on chart
+- draw_zone: { zoneType: "ob_bullish"|"ob_bearish"|"fvg_bullish"|"fvg_bearish"|"ob_all"|"fvg_all", priceFrom, priceTo, label, color } — draw zone
+- draw_liquidity: { level, side: "buy"|"sell" } — draw liquidity level
+- clear_zones: { target: "all"|"ob"|"fvg"|"liquidity"|"markup" } — clear markup
+- set_opacity: { group: "ob"|"fvg"|"liquidity"|"all", opacityValue: 0.1-0.9 } — zone opacity
+- set_color: { colorTarget: "ob"|"fvg"|"tp"|"sl"|"entry", colorValue: "#hex" } — change color
+- navigate_panel: { panel: "dash"|"trades"|"news"|"notifs"|"history" } — navigate to panel
 
-Если пользователь говорит "анализируй" / "analyse" / "analyze" / "запусти анализ" / "дай сигнал" / "что думаешь по" / "проверь" / "signal" / "проанализируй" — trigger_analysis (с pair и tf если указаны явно, иначе без них).
-Если говорит "нарисуй OB" / "все OB" / "order block" — draw_zone с ob_all. Только если явно сказано бычьи/медвежьи — ob_bullish/ob_bearish.
-Если говорит "FVG" / "фвг" — draw_zone с fvg_all.
-Если говорит "ликвидность" — draw_liquidity.
-Если говорит "сделки" / "журнал" — navigate_panel trades.
-Если говорит "прозрачнее" — set_opacity 0.15–0.3.
-Если говорит "очисти" / "убери" — clear_zones.
+If user says "анализируй" / "analyse" / "analyze" / "запусти анализ" / "дай сигнал" / "what do you think" / "signal" / "проанализируй" — trigger_analysis (include pair and tf only if explicitly stated).
+If user says "draw OB" / "order block" / "нарисуй OB" — draw_zone with ob_all. Use ob_bullish/ob_bearish only if explicitly specified.
+If user says "FVG" / "фвг" — draw_zone with fvg_all.
+If user says "liquidity" / "ликвидность" — draw_liquidity.
+If user says "trades" / "сделки" / "журнал" — navigate_panel trades.
+If user says "more transparent" / "прозрачнее" — set_opacity 0.15–0.3.
+If user says "clear" / "очисти" / "убери" — clear_zones.
 
-Ответь на том же языке, на котором пользователь написал запрос.
+Respond in the same language the user used.
 
-Ответь ТОЛЬКО валидным JSON:
-{"text":"<ответ пользователю 1-2 предложения>","action":{"type":"<тип>","...поля"} или null если просто чат}`
+Respond ONLY with valid JSON:
+{"text":"<response to user, 1-2 sentences>","action":{"type":"<type>","...fields"} or null if just chat}`
 
   const GROQ_KEYS = loadGroqKeys()
   const GROQ_MODEL = getGroqFastModel()

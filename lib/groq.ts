@@ -11,7 +11,7 @@ export function loadGroqKeys(): string[] {
 }
 
 export function getGroqModel(): string {
-  return process.env.GROQ_MODEL || 'moonshotai/kimi-k2-instruct'
+  return process.env.GROQ_MODEL || 'openai/gpt-oss-120b'
 }
 
 export function getGroqFastModel(): string {

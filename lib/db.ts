@@ -514,27 +514,35 @@ export async function getSubscription(userId: number): Promise<Subscription> {
 }
 
 export async function checkAndIncrementAnalysis(userId: number): Promise<{ allowed: boolean; remaining: number; tier: string; limit: number }> {
-  const sub = await getSubscription(userId)
-  const today = new Date().toISOString().slice(0, 10)
-  const limit = SUBSCRIPTION_LIMITS[sub.tier] ?? 3
+  await getSubscription(userId)
 
-  if (sub.last_reset_date !== today) {
-    await sql`
-      UPDATE subscriptions
-      SET analyses_today = 0, last_reset_date = CURRENT_DATE
-      WHERE user_id = ${userId}
-    `
-    sub.analyses_today = 0
-  }
+  const rows = await sql`
+    UPDATE subscriptions
+    SET
+      analyses_today = CASE WHEN last_reset_date < CURRENT_DATE THEN 1 ELSE analyses_today + 1 END,
+      last_reset_date = CURRENT_DATE
+    WHERE user_id = ${userId}
+      AND (last_reset_date < CURRENT_DATE OR analyses_today < (
+        CASE tier
+          WHEN 'starter' THEN 10
+          WHEN 'pro'     THEN 30
+          WHEN 'elite'   THEN 999
+          ELSE 3
+        END
+      ))
+    RETURNING tier, analyses_today
+  `
 
-  if (sub.analyses_today >= limit) {
+  if (rows.length === 0) {
+    const sub = await getSubscription(userId)
+    const limit = SUBSCRIPTION_LIMITS[sub.tier] ?? 3
     return { allowed: false, remaining: 0, tier: sub.tier, limit }
   }
 
-  await sql`
-    UPDATE subscriptions SET analyses_today = analyses_today + 1 WHERE user_id = ${userId}
-  `
-  return { allowed: true, remaining: limit - sub.analyses_today - 1, tier: sub.tier, limit }
+  const tier  = String(rows[0].tier)
+  const count = Number(rows[0].analyses_today)
+  const limit = SUBSCRIPTION_LIMITS[tier] ?? 3
+  return { allowed: true, remaining: Math.max(0, limit - count), tier, limit }
 }
 
 export async function updateSubscriptionTier(userId: number, tier: string, expiresAt?: Date) {

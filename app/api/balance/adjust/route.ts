@@ -8,8 +8,8 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 })
 
   const { type, amount } = await req.json().catch(() => ({})) as { type?: string; amount?: number }
-  if ((type !== 'add' && type !== 'subtract') || !amount || amount <= 0) {
-    return NextResponse.json({ ok: false, error: 'type(add|subtract) and positive amount required' }, { status: 400 })
+  if ((type !== 'add' && type !== 'subtract') || !amount || amount <= 0 || amount > 10_000_000) {
+    return NextResponse.json({ ok: false, error: 'type(add|subtract) and positive amount required (max 10,000,000)' }, { status: 400 })
   }
 
   const delta = type === 'add' ? amount : -amount

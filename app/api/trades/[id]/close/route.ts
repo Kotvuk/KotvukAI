@@ -19,22 +19,24 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     return NextResponse.json({ ok: true })
   }
 
-  let finalPnl: number | null = pnl ?? null
-  let finalPnlPct: number | null = pnl_pct ?? null
+  const tradeToClose = await getTradeById(parseInt(params.id), user.id)
+  if (!tradeToClose) return NextResponse.json({ ok: false, error: 'Trade not found' }, { status: 404 })
+
+  let finalPnl: number | null = tradeToClose.account_type === 'user' ? (pnl ?? null) : null
+  let finalPnlPct: number | null = tradeToClose.account_type === 'user' ? (pnl_pct ?? null) : null
 
   if (finalPnl === null) {
     try {
-      const trade = await getTradeById(parseInt(params.id), user.id)
-      if (trade && trade.entry_price && trade.status === 'open') {
-        const sym = trade.pair.replace('/', '')
+      if (tradeToClose.entry_price && tradeToClose.status === 'open') {
+        const sym = tradeToClose.pair.replace('/', '')
         const priceRes = await fetch(`https://fapi.binance.com/fapi/v1/ticker/price?symbol=${sym}`)
         const priceData: { price?: string } = await priceRes.json()
         const currentPrice = parseFloat(priceData.price || '0')
         if (currentPrice) {
-          const dir = trade.direction === 'long' ? 1 : -1
-          const entry = Number(trade.entry_price)
-          const pnlPct = ((currentPrice - entry) / entry) * 100 * dir * trade.leverage
-          const pnlAbs = (pnlPct / 100) * Number(trade.amount)
+          const dir = tradeToClose.direction === 'long' ? 1 : -1
+          const entry = Number(tradeToClose.entry_price)
+          const pnlPct = ((currentPrice - entry) / entry) * 100 * dir * tradeToClose.leverage
+          const pnlAbs = (pnlPct / 100) * Number(tradeToClose.amount)
           finalPnlPct = parseFloat(pnlPct.toFixed(2))
           finalPnl = parseFloat(pnlAbs.toFixed(2))
         }
@@ -42,10 +44,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     } catch {}
   }
 
-  const tradeToClose = await getTradeById(parseInt(params.id), user.id)
   const wasClosed = await closeTrade(parseInt(params.id), user.id, finalPnl, finalPnlPct)
-  if (wasClosed && tradeToClose && tradeToClose.account_type === 'ai') {
-    const restored = Number(tradeToClose.amount) + (finalPnl ?? 0)
+  if (wasClosed && tradeToClose.account_type === 'ai') {
+    const restored = Math.max(0, Number(tradeToClose.amount) + (finalPnl ?? 0))
     await adjustBalance(user.id, restored)
   }
   return NextResponse.json({ ok: true, pnl: finalPnl, pnl_pct: finalPnlPct })

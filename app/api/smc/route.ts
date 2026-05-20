@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
 
     let candles: { timestamp: number; open: number; high: number; low: number; close: number; volume: number }[]
     if (Array.isArray(clientCandles) && clientCandles.length > 0) {
-      candles = clientCandles
+      candles = clientCandles.length > 2000 ? clientCandles.slice(-2000) : clientCandles
     } else {
       const res = await fetch(
         `https://fapi.binance.com/fapi/v1/klines?symbol=${sym}&interval=${interval}&limit=1500`

@@ -17,8 +17,6 @@ name: Auto Analysis
 # ─────────────────────────────────────────────────────────────────────────────
 
 on:
-  schedule:
-    - cron: '*/5 * * * *'
   workflow_dispatch:
     inputs:
       tf:
@@ -69,21 +67,18 @@ jobs:
 
           PIDS=()
 
-          # Launch one curl per batch per TF (all in background)
           for TF in $TF_LIST; do
             for BATCH in 0 1 2; do
-              curl -sf --max-time 70 \
+              curl -s --max-time 70 \
                 "${APP_URL}/api/analyze/auto?secret=${SECRET}&batch=${BATCH}&tf=${TF}" \
                 -o "/tmp/r_${TF}_${BATCH}.json" &
               PIDS+=($!)
             done
           done
 
-          # Wait for analysis to finish before checking outcomes
           wait "${PIDS[@]}"
 
-          # Signal / outcome check runs AFTER analysis to avoid race conditions
-          curl -sf --max-time 70 \
+          curl -s --max-time 70 \
             "${APP_URL}/api/signals/auto-check?secret=${SECRET}" \
             -o /tmp/signals.json
 

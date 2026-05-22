@@ -1,4 +1,5 @@
 export const dynamic = 'force-dynamic'
+export const maxDuration = 60
 import { NextRequest, NextResponse } from 'next/server'
 import { sql, updateUserWatchlist, getUserWatchlist, updateAutoAnalyzePaused, type User } from '@/lib/db'
 import { DEFAULT_WATCHLIST } from '@/lib/pairs'

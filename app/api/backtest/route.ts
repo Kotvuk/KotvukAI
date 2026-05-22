@@ -1,4 +1,5 @@
 export const dynamic = 'force-dynamic'
+export const maxDuration = 60
 import { NextRequest, NextResponse } from 'next/server'
 import { getUser } from '@/lib/auth-helper'
 import { calcEnhancedSMC } from '@/lib/smc'
@@ -7,6 +8,8 @@ const TF_MAP: Record<string, string> = {
   '1м': '1m', '5м': '5m', '15м': '15m', '30м': '30m',
   '1ч': '1h', '4ч': '4h', '1д': '1d',
 }
+
+const PAIR_RE = /^[A-Z]{2,12}(USDT?|BTC|ETH|BNB)$/
 
 interface Candle {
   timestamp: number; open: number; high: number; low: number; close: number; volume: number
@@ -21,6 +24,7 @@ export async function POST(req: NextRequest) {
   if (!pair || !timeframe) return NextResponse.json({ ok: false, error: 'Missing pair/timeframe' }, { status: 400 })
 
   const symbol = (pair as string).replace('/', '')
+  if (!PAIR_RE.test(symbol)) return NextResponse.json({ ok: false, error: 'Invalid pair format' }, { status: 400 })
   const interval = TF_MAP[timeframe as string] || '1h'
 
   let candles: Candle[] = []

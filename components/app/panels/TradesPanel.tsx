@@ -85,7 +85,7 @@ export default function TradesPanel({ defaultAccount = 'user', onTabMounted }: T
 
   useEffect(() => {
     async function fetchPrices() {
-      const pairs = Array.from(new Set(openRef.current.map(t => t.pair)))
+      const pairs = Array.from(new Set(openRef.current.map(tr => tr.pair)))
       if (!pairs.length) return
       const results: Record<string, number> = {}
       await Promise.all(pairs.map(async p => {
@@ -109,7 +109,7 @@ export default function TradesPanel({ defaultAccount = 'user', onTabMounted }: T
     const d = await r.json()
     if (d.ok) {
       setTrades(d.trades || [])
-      openRef.current = (d.trades || []).filter((t: Trade) => t.status === 'open')
+      openRef.current = (d.trades || []).filter((tr: Trade) => tr.status === 'open')
     }
     loadBalance()
   }
@@ -205,16 +205,16 @@ export default function TradesPanel({ defaultAccount = 'user', onTabMounted }: T
     }
   }
 
-  const pending = trades.filter(t => t.status === 'pending')
-  const open    = trades.filter(t => t.status === 'open')
-  const closed  = trades.filter(t => t.status === 'closed' || t.status === 'cancelled')
+  const pending = trades.filter(tr => tr.status === 'pending')
+  const open    = trades.filter(tr => tr.status === 'open')
+  const closed  = trades.filter(tr => tr.status === 'closed' || tr.status === 'cancelled')
   const filtered = pairSearch ? allPairs.filter(p => p.toLowerCase().includes(pairSearch.toLowerCase())) : allPairs
 
   const todayStr = new Date().toDateString()
-  const closedToday = closed.filter(t => t.status === 'closed' && new Date(t.closed_at || t.created_at).toDateString() === todayStr)
-  const pnlToday = closedToday.reduce((s, t) => s + (t.pnl ?? 0), 0)
-  const closedReal = closed.filter(t => t.status === 'closed' && t.pnl !== null)
-  const wins = closedReal.filter(t => (t.pnl ?? 0) > 0).length
+  const closedToday = closed.filter(tr => tr.status === 'closed' && new Date(tr.closed_at || tr.created_at).toDateString() === todayStr)
+  const pnlToday = closedToday.reduce((s, tr) => s + (tr.pnl ?? 0), 0)
+  const closedReal = closed.filter(tr => tr.status === 'closed' && tr.pnl !== null)
+  const wins = closedReal.filter(tr => (tr.pnl ?? 0) > 0).length
   const winRate = closedReal.length > 0 ? Math.round(wins / closedReal.length * 100) : null
   const displayBalance = account === 'ai' ? (aiBalance ?? '…') : null
 

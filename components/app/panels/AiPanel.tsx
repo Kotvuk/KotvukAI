@@ -281,8 +281,8 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
 
   useEffect(() => {
     if (active) {
-      const t = setTimeout(() => window.dispatchEvent(new Event('resize')), 50)
-      return () => clearTimeout(t)
+      const tid = setTimeout(() => window.dispatchEvent(new Event('resize')), 50)
+      return () => clearTimeout(tid)
     }
   }, [active])
 
@@ -356,7 +356,7 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
     chartRef.current?.loadChart(pairRef.current, tfRef.current)
   }, [])
 
-  const saveDrawings = useCallback(async (p: string, t: string) => {
+  const saveDrawings = useCallback(async (sym: string, tfStr: string) => {
     const token = await getValidToken().catch(() => null)
     if (!token) return
     const drawings = chartRef.current?.getUserDrawings() ?? []
@@ -365,16 +365,16 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
       await fetch('/api/drawings', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ pair: p, timeframe: t, drawings }),
+        body: JSON.stringify({ pair: sym, timeframe: tfStr, drawings }),
       })
     } catch {}
   }, [getValidToken])
 
-  const loadDrawings = useCallback(async (p: string, t: string) => {
+  const loadDrawings = useCallback(async (sym: string, tfStr: string) => {
     const token = await getValidToken().catch(() => null)
     if (!token) return
     try {
-      const res = await fetch(`/api/drawings?pair=${encodeURIComponent(p)}&timeframe=${encodeURIComponent(t)}`, {
+      const res = await fetch(`/api/drawings?pair=${encodeURIComponent(sym)}&timeframe=${encodeURIComponent(tfStr)}`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       const data = await res.json()
@@ -812,9 +812,9 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
                   onClick={() => setShowAlerts(v => !v)}
                 >
                   🔔
-                  {alerts.filter(a => a.pair === pair).length > 0 && (
+                  {alerts.filter(al => al.pair === pair).length > 0 && (
                     <span style={{ position: 'absolute', top: -3, right: -3, background: '#ffa500', color: '#000', borderRadius: '50%', width: 10, height: 10, fontSize: '.4rem', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 }}>
-                      {alerts.filter(a => a.pair === pair).length}
+                      {alerts.filter(al => al.pair === pair).length}
                     </span>
                   )}
                 </button>
@@ -884,7 +884,7 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
                   <div style={{ fontSize: '.58rem', color: 'var(--muted)', marginBottom: 6 }}>{t('ob_alerts_click_lbl')}</div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 8 }}>
                     {smcDataRef.current.orderBlocks.slice(0, 5).map((ob, i) => {
-                      const existing = alerts.find(a => a.pair === pair && Math.abs(a.price_high - ob.high) < 0.01 && Math.abs(a.price_low - ob.low) < 0.01)
+                      const existing = alerts.find(al => al.pair === pair && Math.abs(al.price_high - ob.high) < 0.01 && Math.abs(al.price_low - ob.low) < 0.01)
                       const label = `${ob.type === 'bullish' ? 'Bull' : 'Bear'} OB ${ob.quality} $${ob.low.toFixed(0)}-$${ob.high.toFixed(0)}`
                       return (
                         <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 8px', background: 'var(--bg3)', borderRadius: 4, borderLeft: `2px solid ${ob.type === 'bullish' ? 'var(--long)' : 'var(--short)'}` }}>
@@ -907,10 +907,10 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
               ) : (
                 <div style={{ fontSize: '.6rem', color: 'var(--dim)', textAlign: 'center', padding: '8px 0' }}>{t('ob_load_smc_lbl')}</div>
               )}
-              {alerts.filter(a => a.pair === pair).length > 0 && (
+              {alerts.filter(al => al.pair === pair).length > 0 && (
                 <>
                   <div style={{ fontSize: '.58rem', color: 'var(--muted)', marginBottom: 5, marginTop: 8, borderTop: '1px solid var(--line2)', paddingTop: 8 }}>{t('ob_active_alerts_lbl').replace('{pair}', pair)}</div>
-                  {alerts.filter(a => a.pair === pair).map(alert => (
+                  {alerts.filter(al => al.pair === pair).map(alert => (
                     <div key={alert.id} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '3px 6px', background: 'rgba(255,165,0,0.06)', borderRadius: 3, marginBottom: 3 }}>
                       <span style={{ fontSize: '.6rem', color: '#ffa500' }}>🔔</span>
                       <span style={{ fontSize: '.58rem', color: 'var(--text)', flex: 1 }}>{alert.label || `$${Number(alert.price_low).toFixed(0)}-$${Number(alert.price_high).toFixed(0)}`}</span>

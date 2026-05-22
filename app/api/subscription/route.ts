@@ -5,9 +5,9 @@ import { getSubscription, SUBSCRIPTION_LIMITS } from '@/lib/db'
 
 const SUBSCRIPTION_PLANS = [
   { tier: 'free',    name: 'Free',    price: 0,     analyses_per_day: SUBSCRIPTION_LIMITS.free },
-  { tier: 'starter', name: 'Starter', price: 9.99,  analyses_per_day: SUBSCRIPTION_LIMITS.starter },
-  { tier: 'pro',     name: 'Pro',     price: 19.99, analyses_per_day: SUBSCRIPTION_LIMITS.pro },
-  { tier: 'elite',   name: 'Elite',   price: 49.99, analyses_per_day: SUBSCRIPTION_LIMITS.elite },
+  { tier: 'starter', name: 'Starter', price: 9,  analyses_per_day: SUBSCRIPTION_LIMITS.starter },
+  { tier: 'pro',     name: 'Pro',     price: 29, analyses_per_day: SUBSCRIPTION_LIMITS.pro },
+  { tier: 'elite',   name: 'Elite',   price: 79, analyses_per_day: SUBSCRIPTION_LIMITS.elite },
 ]
 
 export async function GET(req: NextRequest) {

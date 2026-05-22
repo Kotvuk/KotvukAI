@@ -28,7 +28,7 @@ export function usePairs() {
           }
         })
         .catch(() => {
-          _promise = null // allow retry on next mount
+          _promise = null
         })
     }
     _promise.then(() => {

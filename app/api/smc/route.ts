@@ -1,4 +1,5 @@
 export const dynamic = 'force-dynamic'
+export const maxDuration = 60
 import { NextRequest, NextResponse } from 'next/server'
 import { getUser } from '@/lib/auth-helper'
 import { calcEnhancedSMC } from '@/lib/smc'
@@ -7,6 +8,8 @@ const TF_MAP: Record<string, string> = {
   '1м': '1m', '5м': '5m', '15м': '15m', '30м': '30m',
   '1ч': '1h', '4ч': '4h', '1д': '1d',
 }
+
+const PAIR_RE = /^[A-Z]{2,12}(USDT?|BTC|ETH|BNB)$/
 
 export async function POST(req: NextRequest) {
   const user = await getUser(req)
@@ -17,12 +20,13 @@ export async function POST(req: NextRequest) {
   if (!pair || !timeframe) return NextResponse.json({ ok: false, error: 'pair and timeframe required' }, { status: 400 })
 
   const sym      = pair.replace('/', '')
+  if (!PAIR_RE.test(sym)) return NextResponse.json({ ok: false, error: 'Invalid pair format' }, { status: 400 })
   const interval = TF_MAP[timeframe] || '1h'
 
   try {
     let fundingRate: number | null = null
     try {
-      const fr = await fetch(`https://fapi.binance.com/fapi/v1/fundingRate?symbol=${sym}&limit=1`)
+      const fr = await fetch(`https://fapi.binance.com/fapi/v1/fundingRate?symbol=${sym}&limit=1`, { signal: AbortSignal.timeout(5_000) })
       const fd: { fundingRate?: string }[] = await fr.json()
       if (fd[0]?.fundingRate) fundingRate = parseFloat(fd[0].fundingRate) * 100
     } catch {  }
@@ -32,7 +36,8 @@ export async function POST(req: NextRequest) {
       candles = clientCandles.length > 2000 ? clientCandles.slice(-2000) : clientCandles
     } else {
       const res = await fetch(
-        `https://fapi.binance.com/fapi/v1/klines?symbol=${sym}&interval=${interval}&limit=1500`
+        `https://fapi.binance.com/fapi/v1/klines?symbol=${sym}&interval=${interval}&limit=1500`,
+        { signal: AbortSignal.timeout(15_000) }
       )
       const raw: number[][] = await res.json()
       if (!Array.isArray(raw)) throw new Error('Binance error')

@@ -67,8 +67,8 @@ const jsonLd = {
   offers: [
     { '@type': 'Offer', name: 'Free',    price: '0',   priceCurrency: 'USD' },
     { '@type': 'Offer', name: 'Starter', price: '9',   priceCurrency: 'USD' },
-    { '@type': 'Offer', name: 'Pro',     price: '19',  priceCurrency: 'USD' },
-    { '@type': 'Offer', name: 'Elite',   price: '49',  priceCurrency: 'USD' },
+    { '@type': 'Offer', name: 'Pro',     price: '29',  priceCurrency: 'USD' },
+    { '@type': 'Offer', name: 'Elite',   price: '79',  priceCurrency: 'USD' },
   ],
   featureList: [
     '6-метод анализ с консенсусом 3/6 (SMC + индикаторы + Price Action + Wyckoff + Volume Profile + Funding Rate)',

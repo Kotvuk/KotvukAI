@@ -1,4 +1,5 @@
 export const dynamic = 'force-dynamic'
+export const maxDuration = 60
 import { NextRequest, NextResponse } from 'next/server'
 import { getUser } from '@/lib/auth-helper'
 import { getPendingTrades, activateTrade, cancelTrade, createNotification, adjustBalance } from '@/lib/db'
@@ -16,7 +17,8 @@ export async function POST(req: NextRequest) {
   try {
     const symbols = JSON.stringify(pairs)
     const res = await fetch(
-      `https://fapi.binance.com/fapi/v1/ticker/price?symbols=${encodeURIComponent(symbols)}`
+      `https://fapi.binance.com/fapi/v1/ticker/price?symbols=${encodeURIComponent(symbols)}`,
+      { signal: AbortSignal.timeout(8_000) }
     )
     if (res.ok) {
       const data: { symbol: string; price: string }[] = await res.json()

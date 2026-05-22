@@ -1,4 +1,5 @@
 export const dynamic = 'force-dynamic'
+export const maxDuration = 60
 import { NextRequest, NextResponse } from 'next/server'
 import { getUser } from '@/lib/auth-helper'
 import { closeTrade, cancelTrade, getTradeById, adjustBalance } from '@/lib/db'
@@ -29,7 +30,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     try {
       if (tradeToClose.entry_price && tradeToClose.status === 'open') {
         const sym = tradeToClose.pair.replace('/', '')
-        const priceRes = await fetch(`https://fapi.binance.com/fapi/v1/ticker/price?symbol=${sym}`)
+        const priceRes = await fetch(`https://fapi.binance.com/fapi/v1/ticker/price?symbol=${sym}`, { signal: AbortSignal.timeout(6_000) })
         const priceData: { price?: string } = await priceRes.json()
         const currentPrice = parseFloat(priceData.price || '0')
         if (currentPrice) {

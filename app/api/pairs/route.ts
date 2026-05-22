@@ -1,3 +1,4 @@
+export const maxDuration = 60
 import { NextResponse } from 'next/server'
 import { STATIC_PAIRS } from '@/lib/pairs'
 

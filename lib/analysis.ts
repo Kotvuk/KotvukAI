@@ -477,8 +477,8 @@ Reply with ONLY one line of valid JSON (all numeric fields must be numbers, not 
   const rrStr  = sl_pct !== 0 ? (Math.abs(tp_pct) / Math.abs(sl_pct)).toFixed(1) : '?'
 
   const i1 = String(json.i1 || trend)
-  const i2 = String(json.i2 || `Entry $${entryPrice} → TP $${tpPrice.toFixed(2)} (+${tp_pct}%)`)
-  const i3 = String(json.i3 || `SL $${slPrice.toFixed(2)} (-${sl_pct}%) | R:R 1:${rrStr}`)
+  const i2 = String(json.i2 || `Entry $${entryPrice} → TP $${tpPrice.toFixed(2)} (+${Math.abs(tp_pct).toFixed(2)}%)`)
+  const i3 = String(json.i3 || `SL $${slPrice.toFixed(2)} (-${Math.abs(sl_pct).toFixed(2)}%) | R:R 1:${rrStr}`)
 
   const step1: Step1Result = { signal: verdict, strength: Math.round(confidence / 10), trend: trendDir, summary: summary1 }
   const step2: Step2Result = { verdict, confidence, risk_score: riskScore, leverage, summary: step2Summary }

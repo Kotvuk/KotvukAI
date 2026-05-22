@@ -1,4 +1,5 @@
 export const dynamic = 'force-dynamic'
+export const maxDuration = 60
 import { NextRequest, NextResponse } from 'next/server'
 import { getUser } from '@/lib/auth-helper'
 import { getTrades, createTrade, adjustBalance } from '@/lib/db'
@@ -26,7 +27,7 @@ export async function POST(req: NextRequest) {
   if (body.order_type === 'market' && !body.entry_price) {
     try {
       const sym = body.pair.replace('/', '')
-      const res = await fetch(`https://fapi.binance.com/fapi/v1/ticker/price?symbol=${sym}`)
+      const res = await fetch(`https://fapi.binance.com/fapi/v1/ticker/price?symbol=${sym}`, { signal: AbortSignal.timeout(6_000) })
       const d: { price?: string } = await res.json()
       if (d.price) body.entry_price = parseFloat(d.price)
     } catch {}

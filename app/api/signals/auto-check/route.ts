@@ -152,7 +152,7 @@ export async function GET(req: NextRequest) {
       if (trade.expires_at && new Date(trade.expires_at).getTime() < now) {
         const wasCancelled = await cancelTrade(trade.id, trade.user_id)
         if (wasCancelled) {
-          await adjustBalance(trade.user_id, Number(trade.amount))
+          if (trade.account_type === 'ai') await adjustBalance(trade.user_id, Number(trade.amount))
           const msg = `🗑️ Limit order <b>${trade.direction.toUpperCase()} ${trade.pair}</b> cancelled — expired (7 days)`
           const tgChatId = await getTgChatId(trade.user_id)
           await Promise.allSettled([
@@ -222,7 +222,7 @@ export async function GET(req: NextRequest) {
         if (!wasClosed) continue
 
         if (trade.account_type === 'ai') {
-          await adjustBalance(trade.user_id, trade.amount + pnlUsd)
+          await adjustBalance(trade.user_id, Math.max(0, trade.amount + pnlUsd))
         }
 
         const emoji   = hit === 'tp' ? '✅' : '❌'

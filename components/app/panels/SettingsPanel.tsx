@@ -34,12 +34,12 @@ export default function SettingsPanel() {
   useEffect(() => {
     fetch('/api/settings').then(r => r.json()).then(d => {
       if (d.ok && d.settings) {
-        if (d.settings.nickname)         setNickname(d.settings.nickname)
-        if (d.settings.email)            setEmail(d.settings.email)
-        if (d.settings.ai_balance)        setAiBalance(d.settings.ai_balance)
-        if (d.settings.ai_risk_per_trade) setAiRisk(d.settings.ai_risk_per_trade)
-        if (d.settings.ai_max_leverage)   setAiLeverage(d.settings.ai_max_leverage)
-        if (d.settings.telegram_chat_id)  setTgChatId(d.settings.telegram_chat_id)
+        if (d.settings.nickname)                   setNickname(d.settings.nickname)
+        if (d.settings.email)                      setEmail(d.settings.email)
+        if (d.settings.ai_balance != null)         setAiBalance(d.settings.ai_balance)
+        if (d.settings.ai_risk_per_trade != null)  setAiRisk(d.settings.ai_risk_per_trade)
+        if (d.settings.ai_max_leverage != null)    setAiLeverage(d.settings.ai_max_leverage)
+        if (d.settings.telegram_chat_id)           setTgChatId(d.settings.telegram_chat_id)
       }
     }).catch(() => {})
     if (user?.email) setEmail(user.email)
@@ -334,7 +334,10 @@ export default function SettingsPanel() {
               type="text"
               className="fi"
               value={tgChatId}
-              onChange={e => setTgChatId(e.target.value.replace(/\D/g, ''))}
+              onChange={e => {
+                const raw = e.target.value
+                if (raw === '' || raw === '-' || /^-?\d+$/.test(raw)) setTgChatId(raw)
+              }}
               placeholder={t('tg_placeholder')}
               style={{ flex: 1 }}
             />

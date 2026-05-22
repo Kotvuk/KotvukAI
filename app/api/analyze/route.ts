@@ -159,7 +159,7 @@ export async function POST(req: NextRequest) {
           const rawAmount   = analysis.pos_usd || Math.round(riskUsd / Math.max(slDist, 0.001))
           const tradeAmount = Math.min(Math.round(rawAmount), Math.round(balance * userMaxLev))
 
-          if (tradeAmount > 0) {
+          if (tradeAmount > 0 && balance > 0) {
             const isLimit = analysis.entry_type === 'limit'
             const limitPx = analysis.entry_price ?? null
 

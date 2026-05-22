@@ -78,7 +78,7 @@ export default function PrivacyPage() {
 
         <h2 style={h2s}>7. Безопасность</h2>
         <p style={ps}>
-          Платформа использует HTTPS, заголовки безопасности (HSTS, X-Frame-Options, CSP) и Firebase Authentication
+          Платформа использует HTTPS, заголовки безопасности (HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy) и Firebase Authentication
           для защиты вашего аккаунта. Пароли хранятся в Firebase в зашифрованном виде.
         </p>
 

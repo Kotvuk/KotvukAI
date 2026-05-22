@@ -1,4 +1,5 @@
 export const dynamic = 'force-dynamic'
+export const maxDuration = 60
 import { NextResponse } from 'next/server'
 
 const SYMBOLS = ['BTCUSDT','ETHUSDT','SOLUSDT','BNBUSDT','XRPUSDT','AVAXUSDT','DOGEUSDT','LINKUSDT']
@@ -14,7 +15,7 @@ export async function GET() {
       const joined = JSON.stringify(SYMBOLS)
       const res = await fetch(
         `${baseUrl}?symbols=${encodeURIComponent(joined)}`,
-        { next: { revalidate: 30 } }
+        { next: { revalidate: 30 }, signal: AbortSignal.timeout(8_000) }
       )
       if (!res.ok) continue
       const data: { symbol: string; lastPrice: string; priceChangePercent: string }[] = await res.json()

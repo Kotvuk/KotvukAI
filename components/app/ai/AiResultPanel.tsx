@@ -117,16 +117,16 @@ export default function AiResultPanel({ aiData, pair, tf, smcProb, onNavigate, o
               )}
             </div>
             <div style={{ padding: '8px 10px', display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {methods.map(m => {
-                const sc = m.signal === 'LONG' ? 'var(--long)' : m.signal === 'SHORT' ? 'var(--short)' : 'var(--wait)'
+              {methods.map(mth => {
+                const sc = mth.signal === 'LONG' ? 'var(--long)' : mth.signal === 'SHORT' ? 'var(--short)' : 'var(--wait)'
                 return (
-                  <div key={m.method} style={{ display: 'flex', alignItems: 'center', gap: 7 }} title={m.summary}>
-                    <span style={{ width: 88, fontSize: '.6rem', color: 'var(--muted)', flexShrink: 0 }}>{m.method}</span>
-                    <span style={{ width: 40, fontSize: '.58rem', fontWeight: 700, color: sc, flexShrink: 0 }}>{m.signal}</span>
+                  <div key={mth.method} style={{ display: 'flex', alignItems: 'center', gap: 7 }} title={mth.summary}>
+                    <span style={{ width: 88, fontSize: '.6rem', color: 'var(--muted)', flexShrink: 0 }}>{mth.method}</span>
+                    <span style={{ width: 40, fontSize: '.58rem', fontWeight: 700, color: sc, flexShrink: 0 }}>{mth.signal}</span>
                     <div style={{ flex: 1, height: 3, background: 'var(--bg3)', borderRadius: 2 }}>
-                      <div style={{ height: 3, borderRadius: 2, background: sc, width: `${m.confidence}%`, transition: 'width .3s' }} />
+                      <div style={{ height: 3, borderRadius: 2, background: sc, width: `${mth.confidence}%`, transition: 'width .3s' }} />
                     </div>
-                    <span style={{ fontSize: '.6rem', color: 'var(--text)', width: 28, textAlign: 'right' }}>{m.confidence}%</span>
+                    <span style={{ fontSize: '.6rem', color: 'var(--text)', width: 28, textAlign: 'right' }}>{mth.confidence}%</span>
                   </div>
                 )
               })}
@@ -137,8 +137,8 @@ export default function AiResultPanel({ aiData, pair, tf, smcProb, onNavigate, o
 
       <div className="levels">
         <div className="lv"><div className="lv-l">{t('entry')}</div><div className="lv-v lv-entry">${Number(a.entry_price || 0).toLocaleString()}</div><div className="lv-p">{a.entry_type === 'market' ? 'market' : 'limit'}</div></div>
-        <div className="lv"><div className="lv-l">{t('take_profit')}</div><div className="lv-v lv-tp">${Number(a.tp_price || 0).toLocaleString()}</div><div className="lv-p">+{String(a.tp_pct || '—')}%</div></div>
-        <div className="lv"><div className="lv-l">{t('stop_loss')}</div><div className="lv-v lv-sl">${Number(a.sl_price || 0).toLocaleString()}</div><div className="lv-p">-{String(a.sl_pct || '—')}%</div></div>
+        <div className="lv"><div className="lv-l">{t('take_profit')}</div><div className="lv-v lv-tp">${Number(a.tp_price || 0).toLocaleString()}</div><div className="lv-p">{a.tp_pct ? `+${Math.abs(Number(a.tp_pct)).toFixed(2)}%` : '—'}</div></div>
+        <div className="lv"><div className="lv-l">{t('stop_loss')}</div><div className="lv-v lv-sl">${Number(a.sl_price || 0).toLocaleString()}</div><div className="lv-p">{a.sl_pct ? `-${Math.abs(Number(a.sl_pct)).toFixed(2)}%` : '—'}</div></div>
       </div>
 
       {aiData.risk_management && (() => {

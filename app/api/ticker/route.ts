@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic'
 export const maxDuration = 60
 import { NextResponse } from 'next/server'
 
-const SYMBOLS = ['BTCUSDT','ETHUSDT','SOLUSDT','BNBUSDT','XRPUSDT','AVAXUSDT','DOGEUSDT','LINKUSDT']
+const SYMBOLS = ['BTCUSDT','ETHUSDT','SOLUSDT','BNBUSDT','XRPUSDT','AVAXUSDT','DOGEUSDT','LINKUSDT','ADAUSDT','DOTUSDT','TRXUSDT','LTCUSDT','ATOMUSDT','UNIUSDT','INJUSDT','POLUSDT']
 
 const BINANCE_APIS = [
   'https://api.binance.com/api/v3/ticker/24hr',

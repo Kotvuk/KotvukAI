@@ -49,7 +49,7 @@ const TICKER_SYMS = [
   { sym: 'ATOM/USDT', key: 'ATOMUSDT' },
   { sym: 'UNI/USDT', key: 'UNIUSDT' },
   { sym: 'INJ/USDT', key: 'INJUSDT' },
-  { sym: 'MATIC/USDT', key: 'MATICUSDT' },
+  { sym: 'POL/USDT', key: 'POLUSDT' },
 ]
 type TickerMap = Record<string, { price: number; change: number }>
 

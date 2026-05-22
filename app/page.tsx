@@ -142,7 +142,7 @@ function SignalMockupInner() {
         <div style={{ padding: '14px 20px', borderBottom: '1px solid rgba(255,255,255,.07)', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
           {([
             { vis: levVis[0], label: 'ENTRY', price: '$84,312', change: '────────', color: '#00d4ff', cc: '#4a5568' },
-            { vis: levVis[1], label: 'TP', price: '$86,419', change: '▲ +2.5%', color: '#00e676', cc: '#00e676' },
+            { vis: levVis[1], label: 'TP', price: '$87,134', change: '▲ +3.3%', color: '#00e676', cc: '#00e676' },
             { vis: levVis[2], label: 'SL', price: '$82,968', change: '▼ -1.6%', color: '#ff3d57', cc: '#ff3d57' },
           ]).map(({ vis, label, price, change, color, cc }) => (
             <div key={label} style={levSt(vis)}>

@@ -77,10 +77,11 @@ export default function DashPanel() {
           <div className="thead"><span className="thead-t">{t('recent_signals')}</span></div>
           <div className="twrap">
             <table className="tbl">
-              <thead><tr><th>{t('pair')}</th><th>{t('tf')}</th><th>{t('signal')}</th><th>{t('conf')}</th><th>{t('risk')}</th><th>{t('result')}</th></tr></thead>
+              <thead><tr><th>{t('date')}</th><th>{t('pair')}</th><th>{t('tf')}</th><th>{t('signal')}</th><th>{t('conf')}</th><th>{t('risk')}</th><th>{t('result')}</th></tr></thead>
               <tbody>
                 {signals.length ? signals.map(s => (
                   <tr key={s.id}>
+                    <td style={{ whiteSpace: 'nowrap', fontSize: '.6rem', color: 'var(--dim)' }}>{fmtAlmaty(s.created_at)}</td>
                     <td>{s.pair}</td>
                     <td>{s.timeframe}</td>
                     <td><span className={`tag tag-${vc(s.final_verdict)}`}>{s.final_verdict || '—'}</span></td>

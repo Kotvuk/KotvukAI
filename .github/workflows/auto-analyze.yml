@@ -17,6 +17,8 @@ name: Auto Analysis
 # ─────────────────────────────────────────────────────────────────────────────
 
 on:
+  schedule:
+    - cron: '*/5 * * * *'
   workflow_dispatch:
     inputs:
       tf:

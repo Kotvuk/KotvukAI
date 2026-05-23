@@ -132,7 +132,7 @@ export async function GET(req: NextRequest) {
           + `Result: <b>${pnlStr}</b>`
         const tgChatId = await getTgChatId(signal.user_id)
         await Promise.allSettled([
-          tgChatId ? sendTelegramToUser(tgChatId, tgMsg) : Promise.resolve(),
+          tgChatId ? sendTelegramToUser(tgChatId, tgMsg) : sendTelegram(tgMsg),
           createNotification(signal.user_id, `${emoji} ${signal.final_verdict} ${signal.pair} ${signal.timeframe} — ${label} (${pnlStr})`),
         ])
 
@@ -156,7 +156,7 @@ export async function GET(req: NextRequest) {
           const msg = `🗑️ Limit order <b>${trade.direction.toUpperCase()} ${trade.pair}</b> cancelled — expired (7 days)`
           const tgChatId = await getTgChatId(trade.user_id)
           await Promise.allSettled([
-            tgChatId ? sendTelegramToUser(tgChatId, msg) : Promise.resolve(),
+            tgChatId ? sendTelegramToUser(tgChatId, msg) : sendTelegram(msg),
             createNotification(trade.user_id, `🗑️ Limit order ${trade.direction.toUpperCase()} ${trade.pair} cancelled (expired)`),
           ])
           tradesCancelled++
@@ -178,7 +178,7 @@ export async function GET(req: NextRequest) {
           const msg = `✅ <b>Limit order executed!</b>\n${trade.direction.toUpperCase()} ${trade.pair} @ $${trade.limit_price}`
           const tgChatId = await getTgChatId(trade.user_id)
           await Promise.allSettled([
-            tgChatId ? sendTelegramToUser(tgChatId, msg) : Promise.resolve(),
+            tgChatId ? sendTelegramToUser(tgChatId, msg) : sendTelegram(msg),
             createNotification(trade.user_id, `✅ Limit order executed! ${trade.direction.toUpperCase()} ${trade.pair} @ $${trade.limit_price}`),
           ])
           tradesActivated++
@@ -236,7 +236,7 @@ export async function GET(req: NextRequest) {
 
         const tgChatId = await getTgChatId(trade.user_id)
         await Promise.allSettled([
-          tgChatId ? sendTelegramToUser(tgChatId, msg) : Promise.resolve(),
+          tgChatId ? sendTelegramToUser(tgChatId, msg) : sendTelegram(msg),
           createNotification(trade.user_id, `${emoji} AUTO ${trade.direction.toUpperCase()} ${trade.pair} — ${hit === 'tp' ? 'TP' : 'SL'} (${pnlStr})`),
         ])
 

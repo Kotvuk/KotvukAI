@@ -77,6 +77,7 @@ export interface ProbabilityResult {
   riskReward: number
   expectedR: number
   recommendation: string
+  recommendationKey: 'smc_rec_strong' | 'smc_rec_moderate' | 'smc_rec_mixed' | 'smc_rec_low'
   factors: {
     htfStructure: number
     confluenceZones: number
@@ -93,6 +94,8 @@ export interface Alert {
   level: 'watchlist' | 'setup_ready' | 'execute'
   color: 'yellow' | 'orange' | 'green' | 'red'
   message: string
+  confluenceCount?: number
+  htfBiasVal?: string
   price: number
   type: 'LONG' | 'SHORT'
   confidence: number
@@ -605,17 +608,22 @@ function calcProbability(inp: ProbInput): ProbabilityResult {
   const expectedR = parseFloat((riskReward * (probability / 100) - (1 - probability / 100)).toFixed(2))
 
   let recommendation: string
+  let recommendationKey: ProbabilityResult['recommendationKey']
   if (probability >= 75 && scenario !== 'NEUTRAL') {
-    recommendation = `Strong ${scenario} setup — enter on LTF confirmation`
+    recommendation     = `Strong ${scenario} setup — enter on LTF confirmation`
+    recommendationKey  = 'smc_rec_strong'
   } else if (probability >= 60 && scenario !== 'NEUTRAL') {
-    recommendation = `Moderate ${scenario} setup — wait for key zone retest`
+    recommendation     = `Moderate ${scenario} setup — wait for key zone retest`
+    recommendationKey  = 'smc_rec_moderate'
   } else if (probability >= 45) {
-    recommendation = 'Mixed signals — observe, do not trade'
+    recommendation     = 'Mixed signals — observe, do not trade'
+    recommendationKey  = 'smc_rec_mixed'
   } else {
-    recommendation = 'Low probability — skip this setup'
+    recommendation     = 'Low probability — skip this setup'
+    recommendationKey  = 'smc_rec_low'
   }
 
-  const pair_placeholder = (s: string) =>
+  const dirEmoji = (s: string) =>
     s === 'LONG' ? '🟢 LONG' : s === 'SHORT' ? '🔴 SHORT' : '⚪ NEUTRAL'
 
   const alerts: Alert[] = []
@@ -623,7 +631,8 @@ function calcProbability(inp: ProbInput): ProbabilityResult {
   if (f1 >= 15 && probability >= 45) {
     alerts.push({
       stage: 1, level: 'watchlist', color: 'yellow',
-      message: `${pair_placeholder(scenario)} forming — HTF structure confirms ${htfBias}`,
+      message: `${dirEmoji(scenario)} forming — HTF structure confirms ${htfBias}`,
+      htfBiasVal: htfBias,
       price, type: scenario === 'NEUTRAL' ? 'LONG' : scenario, confidence: Math.round(probability * 0.7),
     })
   }
@@ -632,6 +641,7 @@ function calcProbability(inp: ProbInput): ProbabilityResult {
     alerts.push({
       stage: 2, level: 'setup_ready', color: 'orange',
       message: `Setup ready: ${scenario} | Confluence ${confluence} zones | R:R ${riskReward}`,
+      confluenceCount: confluence,
       price, type: scenario === 'NEUTRAL' ? 'LONG' : scenario, confidence: Math.round(probability * 0.85),
     })
   }
@@ -645,7 +655,7 @@ function calcProbability(inp: ProbInput): ProbabilityResult {
   }
 
   return {
-    scenario, probability, confidence, riskReward, expectedR, recommendation,
+    scenario, probability, confidence, riskReward, expectedR, recommendation, recommendationKey,
     factors: { htfStructure: f1, confluenceZones: f2, volumeProfile: f3, temporalContext: f4, historicalStats: f5, marketSentiment: f6 },
     alerts,
   }

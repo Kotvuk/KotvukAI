@@ -324,7 +324,9 @@ export default function AiResultPanel({ aiData, pair, tf, smcProb, onNavigate, o
               ))}
             </div>
             <div style={{ fontSize: '.63rem', color: 'var(--muted)', lineHeight: 1.5, borderTop: '1px solid var(--line2)', paddingTop: 8 }}>
-              {smcProb.recommendation}
+              {smcProb.recommendationKey
+                ? t(smcProb.recommendationKey).replace('{dir}', smcProb.scenario)
+                : smcProb.recommendation}
             </div>
             {smcProb.alerts.length > 0 && (
               <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 5 }}>
@@ -332,13 +334,23 @@ export default function AiResultPanel({ aiData, pair, tf, smcProb, onNavigate, o
                   const alertBg     = alert.color === 'green' ? 'rgba(0,230,118,0.1)' : alert.color === 'red' ? 'rgba(255,61,87,0.1)' : alert.color === 'orange' ? 'rgba(255,165,0,0.1)' : 'rgba(255,220,0,0.1)'
                   const alertBorder = alert.color === 'green' ? '#00e676' : alert.color === 'red' ? '#ff3d57' : alert.color === 'orange' ? '#ffa500' : '#ffdd00'
                   const stageName   = alert.level === 'watchlist' ? t('stage_watchlist_lbl') : alert.level === 'setup_ready' ? t('stage_ready_lbl') : t('stage_trigger_lbl')
+
+                  let alertText: string
+                  if (alert.level === 'watchlist') {
+                    alertText = `${alert.type} ${t('alert_forming_lbl')} — ${t('alert_htf_confirms_lbl')} ${alert.htfBiasVal ?? ''}`
+                  } else if (alert.level === 'setup_ready') {
+                    alertText = `${t('alert_setup_ready_lbl')}: ${alert.type} | ${t('confluence_zones_lbl')} ${alert.confluenceCount ?? ''} ${t('alert_zones_lbl')} | R:R ${smcProb.riskReward}`
+                  } else {
+                    alertText = `${t('alert_trigger_lbl')}: ${alert.type} | ${t('alert_sweep_ob_lbl')} | ${t('confidence')} ${alert.confidence}%`
+                  }
+
                   return (
                     <div key={i} style={{ background: alertBg, border: `1px solid ${alertBorder}40`, borderLeft: `3px solid ${alertBorder}`, borderRadius: 3, padding: '6px 9px' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
                         <span style={{ fontSize: '.55rem', color: alertBorder, fontWeight: 700, textTransform: 'uppercase' }}>{t('stage_lbl')} {alert.stage} · {stageName}</span>
                         <span style={{ fontSize: '.55rem', color: 'var(--muted)' }}>{alert.confidence}%</span>
                       </div>
-                      <div style={{ fontSize: '.6rem', color: 'var(--text)', lineHeight: 1.4 }}>{alert.message}</div>
+                      <div style={{ fontSize: '.6rem', color: 'var(--text)', lineHeight: 1.4 }}>{alertText}</div>
                     </div>
                   )
                 })}

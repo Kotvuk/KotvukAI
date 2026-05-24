@@ -75,7 +75,7 @@ export default function AiResultPanel({ aiData, pair, tf, smcProb, livePrice, on
               </span>
             )}
           </div>
-          <div className="velap">{elap}s · Groq</div>
+          <div className="velap">{elap}s · AI</div>
         </div>
         <div className="vstats">
           <div className="vst">
@@ -97,6 +97,28 @@ export default function AiResultPanel({ aiData, pair, tf, smcProb, livePrice, on
           </div>
         </div>
       </div>
+
+      {String(a.verdict) === 'WAIT' && (
+        <div style={{ margin: '8px 0 4px', padding: '11px 14px', background: 'rgba(255,165,0,0.08)', borderRadius: 6, border: '1px solid rgba(255,165,0,0.25)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 5, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '.6rem', color: '#ffa500', fontWeight: 700, letterSpacing: '.04em' }}>{t('wait_signal_lbl')}</span>
+            {watchLevel > 0 && (
+              <span style={{ fontSize: '.65rem', background: 'rgba(255,165,0,0.2)', color: '#ffa500', borderRadius: 4, padding: '2px 9px', fontWeight: 700 }}>
+                ${watchLevel.toLocaleString()}
+              </span>
+            )}
+            {resistances[0] > 0 && (
+              <span style={{ fontSize: '.58rem', color: '#ff6b6b' }}>R ${resistances[0].toLocaleString()}</span>
+            )}
+            {supports[0] > 0 && (
+              <span style={{ fontSize: '.58rem', color: '#69f0ae' }}>S ${supports[0].toLocaleString()}</span>
+            )}
+          </div>
+          {!!a.wait_for && (
+            <div style={{ fontSize: '.63rem', color: 'var(--text)', lineHeight: 1.65 }}>{String(a.wait_for)}</div>
+          )}
+        </div>
+      )}
 
       <div className="pipe">
         {[
@@ -151,11 +173,13 @@ export default function AiResultPanel({ aiData, pair, tf, smcProb, livePrice, on
         )
       })()}
 
-      <div className="levels">
-        <div className="lv"><div className="lv-l">{t('entry')}</div><div className="lv-v lv-entry">${Number(a.entry_price || 0).toLocaleString()}</div><div className="lv-p">{a.entry_type === 'market' ? 'market' : 'limit'}</div></div>
-        <div className="lv"><div className="lv-l">{t('take_profit')}</div><div className="lv-v lv-tp">${Number(a.tp_price || 0).toLocaleString()}</div><div className="lv-p">{a.tp_pct ? `+${Math.abs(Number(a.tp_pct)).toFixed(2)}%` : '—'}</div></div>
-        <div className="lv"><div className="lv-l">{t('stop_loss')}</div><div className="lv-v lv-sl">${Number(a.sl_price || 0).toLocaleString()}</div><div className="lv-p">{a.sl_pct ? `-${Math.abs(Number(a.sl_pct)).toFixed(2)}%` : '—'}</div></div>
-      </div>
+      {String(a.verdict) !== 'WAIT' && (
+        <div className="levels">
+          <div className="lv"><div className="lv-l">{t('entry')}</div><div className="lv-v lv-entry">${Number(a.entry_price || 0).toLocaleString()}</div><div className="lv-p">{a.entry_type === 'market' ? 'market' : 'limit'}</div></div>
+          <div className="lv"><div className="lv-l">{t('take_profit')}</div><div className="lv-v lv-tp">${Number(a.tp_price || 0).toLocaleString()}</div><div className="lv-p">{a.tp_pct ? `+${Math.abs(Number(a.tp_pct)).toFixed(2)}%` : '—'}</div></div>
+          <div className="lv"><div className="lv-l">{t('stop_loss')}</div><div className="lv-v lv-sl">${Number(a.sl_price || 0).toLocaleString()}</div><div className="lv-p">{a.sl_pct ? `-${Math.abs(Number(a.sl_pct)).toFixed(2)}%` : '—'}</div></div>
+        </div>
+      )}
 
       {aiData.risk_management && (() => {
         const rm = aiData.risk_management as Record<string, unknown>
@@ -227,32 +251,6 @@ export default function AiResultPanel({ aiData, pair, tf, smcProb, livePrice, on
         >
           {t('open_position_lbl')} {String(a.verdict)} →
         </button>
-      )}
-
-      {String(a.verdict) === 'WAIT' && (
-        <div style={{ margin: '10px 0', padding: '12px 14px', background: 'rgba(255,165,0,0.08)', borderRadius: 6, border: '1px solid rgba(255,165,0,0.25)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
-            <span style={{ fontSize: '.6rem', color: '#ffa500', fontWeight: 700 }}>{t('wait_signal_lbl')}</span>
-            {watchLevel > 0 && (
-              <span style={{ fontSize: '.6rem', background: 'rgba(255,165,0,0.18)', color: '#ffa500', borderRadius: 4, padding: '2px 8px', fontWeight: 700, letterSpacing: '.02em' }}>
-                ${watchLevel.toLocaleString()}
-              </span>
-            )}
-            {resistances[0] > 0 && (
-              <span style={{ fontSize: '.55rem', color: 'var(--muted)' }}>
-                R: ${resistances[0].toLocaleString()}
-              </span>
-            )}
-            {supports[0] > 0 && (
-              <span style={{ fontSize: '.55rem', color: 'var(--muted)' }}>
-                S: ${supports[0].toLocaleString()}
-              </span>
-            )}
-          </div>
-          {!!a.wait_for && (
-            <div style={{ fontSize: '.65rem', color: 'var(--text)', lineHeight: 1.6 }}>{String(a.wait_for)}</div>
-          )}
-        </div>
       )}
 
       <div className="desc">{smcWrap(String(a.full_description || '—'))}</div>

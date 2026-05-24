@@ -3,7 +3,15 @@ import { NextResponse } from 'next/server'
 import { STATIC_PAIRS } from '@/lib/pairs'
 
 const EXCLUDED_SUFFIXES = ['UP', 'DOWN', 'BULL', 'BEAR', '3L', '3S', '2L', '2S', '5L', '5S']
-const EXCLUDED_BASES    = new Set(['WBTC', 'BTCDOM', 'BNBDOM', 'DEFI', 'ALTDOM', 'MIDDOM', 'BVOL', 'IBVOL', 'ETHBTC'])
+const EXCLUDED_BASES    = new Set([
+  'WBTC', 'BTCDOM', 'BNBDOM', 'DEFI', 'ALTDOM', 'MIDDOM', 'BVOL', 'IBVOL', 'ETHBTC',
+  'AAPL', 'AMD',  'AMZN', 'AVGO', 'BABA', 'BRKB', 'COIN', 'CSCO', 'DIS',
+  'GOOGL', 'HD',  'HOOD', 'INTC', 'JPM',  'LITE', 'META', 'MRVL', 'MSFT',
+  'MU',   'NVDA', 'ORCL', 'PLTR', 'QCOM', 'RKLB', 'SNDK', 'TSLA', 'TSM',
+  'UBER', 'V',    'WMT',  'MSTR',
+  'QQQ',  'SPY',  'EWY',  'SOXL',
+  'BZ',   'CL',   'USAR', 'XPD',  'XPT',
+])
 
 function toSlash(symbol: string): string {
   return symbol.slice(0, -4) + '/USDT'
@@ -15,7 +23,7 @@ function isExcluded(symbol: string): boolean {
   return EXCLUDED_SUFFIXES.some(s => base.endsWith(s))
 }
 
-export const revalidate = 3600
+export const revalidate = 1800
 
 export async function GET() {
   try {
@@ -24,7 +32,7 @@ export async function GET() {
 
     const res = await fetch('https://fapi.binance.com/fapi/v1/premiumIndex', {
       signal: ctrl.signal,
-      next: { revalidate: 3600 },
+      next: { revalidate: 1800 },
     })
     clearTimeout(timer)
 

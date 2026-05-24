@@ -155,11 +155,13 @@ export async function POST(req: NextRequest) {
           const slDist = (analysis.sl_price && analysis.entry_price)
             ? Math.abs(analysis.entry_price - analysis.sl_price) / analysis.entry_price
             : 0.02
-          const riskUsd     = balance * riskPct / 100
-          const rawAmount   = analysis.pos_usd || Math.round(riskUsd / Math.max(slDist, 0.001))
-          const tradeAmount = Math.min(Math.round(rawAmount), Math.round(balance * userMaxLev))
+          const effectiveBal = balance > 0 ? balance : 1000
+          const riskUsd      = effectiveBal * riskPct / 100
+          const rawAmount    = analysis.pos_usd || Math.round(riskUsd / Math.max(slDist, 0.001))
+          const tradeAmount  = Math.min(Math.round(rawAmount), Math.round(effectiveBal * tradeLeverage))
+          const marginUsed   = tradeLeverage > 1 ? Math.ceil(tradeAmount / tradeLeverage) : tradeAmount
 
-          if (tradeAmount > 0 && balance > 0) {
+          if (tradeAmount > 0) {
             const isLimit = analysis.entry_type === 'limit'
             const limitPx = analysis.entry_price ?? null
 
@@ -177,7 +179,7 @@ export async function POST(req: NextRequest) {
               status:       isLimit ? 'pending' : 'open',
               expires_at:   isLimit ? expiresAt.toISOString() : null,
             })
-            await adjustBalance(user.id, -tradeAmount)
+            if (balance > 0) await adjustBalance(user.id, -Math.min(marginUsed, balance))
 
             const prec = (analysis.entry_price ?? 0) >= 100 ? 2 : 4
 

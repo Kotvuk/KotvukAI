@@ -28,11 +28,12 @@ interface Props {
   pair: string
   tf: string
   smcProb: ProbabilityResult | null
+  livePrice?: number | null
   onNavigate?: (panel: 'dash' | 'ai' | 'trades' | 'news' | 'notifs' | 'history' | 'settings') => void
   onShowHistorical?: () => void
 }
 
-export default function AiResultPanel({ aiData, pair, tf, smcProb, onNavigate, onShowHistorical }: Props) {
+export default function AiResultPanel({ aiData, pair, tf, smcProb, livePrice, onNavigate, onShowHistorical }: Props) {
   const { t } = useLang()
 
   const insTagMap: Record<string, string> = {
@@ -49,6 +50,14 @@ export default function AiResultPanel({ aiData, pair, tf, smcProb, onNavigate, o
   const p = aiData.pipeline as Record<string, unknown>
   const elap = aiData.elapsed as number | undefined
 
+  const displayPrice = livePrice ?? Number(m.price || 0)
+  const analysisPrice = Number(m.price || 0)
+  const priceMoved = livePrice !== null && livePrice !== undefined && Math.abs(livePrice - analysisPrice) / analysisPrice > 0.0005
+
+  const resistances = (m.resistances as number[] | undefined) || []
+  const supports    = (m.supports    as number[] | undefined) || []
+  const watchLevel  = Number((a as { watch_level?: number }).watch_level) || resistances[0] || supports[0] || 0
+
   const V  = vc(String(a.verdict))
   const rc = Number(a.risk_score) >= 7 ? 'var(--short)' : Number(a.risk_score) >= 4 ? 'var(--wait)' : 'var(--long)'
 
@@ -58,7 +67,14 @@ export default function AiResultPanel({ aiData, pair, tf, smcProb, onNavigate, o
         <div className={`vsig ${V}`}>{String(a.verdict)}</div>
         <div className="vmeta">
           <div className="vpair">{pair} · {tf.toUpperCase()}</div>
-          <div className="vprice">${Number(m.price || 0).toLocaleString()}</div>
+          <div className="vprice" style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+            ${displayPrice.toLocaleString()}
+            {priceMoved && (
+              <span style={{ fontSize: '.52rem', color: livePrice! > analysisPrice ? 'var(--long)' : 'var(--short)', fontWeight: 400 }}>
+                {livePrice! > analysisPrice ? '↑' : '↓'}{((Math.abs(livePrice! - analysisPrice) / analysisPrice) * 100).toFixed(2)}%
+              </span>
+            )}
+          </div>
           <div className="velap">{elap}s · Groq</div>
         </div>
         <div className="vstats">
@@ -213,17 +229,29 @@ export default function AiResultPanel({ aiData, pair, tf, smcProb, onNavigate, o
         </button>
       )}
 
-      {String(a.verdict) === 'WAIT' && a.wait_for && (
+      {String(a.verdict) === 'WAIT' && (
         <div style={{ margin: '10px 0', padding: '12px 14px', background: 'rgba(255,165,0,0.08)', borderRadius: 6, border: '1px solid rgba(255,165,0,0.25)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
             <span style={{ fontSize: '.6rem', color: '#ffa500', fontWeight: 700 }}>{t('wait_signal_lbl')}</span>
-            {(a as { watch_level?: number }).watch_level ? (
-              <span style={{ fontSize: '.6rem', background: 'rgba(255,165,0,0.18)', color: '#ffa500', borderRadius: 4, padding: '1px 7px', fontWeight: 700, letterSpacing: '.02em' }}>
-                ${Number((a as { watch_level?: number }).watch_level).toLocaleString()}
+            {watchLevel > 0 && (
+              <span style={{ fontSize: '.6rem', background: 'rgba(255,165,0,0.18)', color: '#ffa500', borderRadius: 4, padding: '2px 8px', fontWeight: 700, letterSpacing: '.02em' }}>
+                ${watchLevel.toLocaleString()}
               </span>
-            ) : null}
+            )}
+            {resistances[0] > 0 && (
+              <span style={{ fontSize: '.55rem', color: 'var(--muted)' }}>
+                R: ${resistances[0].toLocaleString()}
+              </span>
+            )}
+            {supports[0] > 0 && (
+              <span style={{ fontSize: '.55rem', color: 'var(--muted)' }}>
+                S: ${supports[0].toLocaleString()}
+              </span>
+            )}
           </div>
-          <div style={{ fontSize: '.65rem', color: 'var(--text)', lineHeight: 1.6 }}>{String(a.wait_for)}</div>
+          {!!a.wait_for && (
+            <div style={{ fontSize: '.65rem', color: 'var(--text)', lineHeight: 1.6 }}>{String(a.wait_for)}</div>
+          )}
         </div>
       )}
 

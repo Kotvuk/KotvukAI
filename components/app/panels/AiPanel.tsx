@@ -967,6 +967,7 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
               pair={pair}
               tf={tf}
               smcProb={smcProb}
+              livePrice={marketData?.close ?? null}
               onNavigate={onNavigate}
               onShowHistorical={() => setShowHistorical(true)}
             />

@@ -25,8 +25,8 @@ export default function SettingsPanel() {
   const [exporting, setExporting]     = useState(false)
   const [purchasing, setPurchasing]   = useState<string | null>(null)
   const [portalLoading, setPortalLoading] = useState(false)
-  const [aiBalance, setAiBalance]   = useState(1000)
-  const [aiRisk, setAiRisk]         = useState(1.0)
+  const [aiBalance, setAiBalance]       = useState(1000)
+  const [aiTradeAmount, setAiTradeAmount] = useState(100)
   const [aiLeverage, setAiLeverage] = useState(20)
   const [tgChatId, setTgChatId]     = useState('')
   const [tgSaving, setTgSaving]     = useState(false)
@@ -37,7 +37,7 @@ export default function SettingsPanel() {
         if (d.settings.nickname)                   setNickname(d.settings.nickname)
         if (d.settings.email)                      setEmail(d.settings.email)
         if (d.settings.ai_balance != null)         setAiBalance(d.settings.ai_balance)
-        if (d.settings.ai_risk_per_trade != null)  setAiRisk(d.settings.ai_risk_per_trade)
+        if (d.settings.ai_trade_amount != null) setAiTradeAmount(d.settings.ai_trade_amount)
         if (d.settings.ai_max_leverage != null)    setAiLeverage(d.settings.ai_max_leverage)
         if (d.settings.telegram_chat_id)           setTgChatId(d.settings.telegram_chat_id)
       }
@@ -56,7 +56,7 @@ export default function SettingsPanel() {
     try {
       const r = await fetch('/api/settings', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nickname, email, lang, ai_balance: aiBalance, ai_risk_per_trade: aiRisk, ai_max_leverage: aiLeverage, telegram_chat_id: tgChatId }),
+        body: JSON.stringify({ nickname, email, lang, ai_balance: aiBalance, ai_trade_amount: aiTradeAmount, ai_max_leverage: aiLeverage, telegram_chat_id: tgChatId }),
       })
       const d = await r.json()
       if (!d.ok) { showToast(d.error || t('error'), 'err'); return }
@@ -257,14 +257,20 @@ export default function SettingsPanel() {
             <div className="ff full">
               <div className="rw">
                 <div className="rt">
-                  <label className="fl">{t('risk_per_trade_label')}</label>
-                  <span className="rv">{aiRisk.toFixed(1)}%</span>
+                  <label className="fl">Сумма сделки ($)</label>
+                  <span className="rv">${aiTradeAmount.toLocaleString()}</span>
                 </div>
-                <input type="range" min={0.1} max={10} step={0.1} value={aiRisk}
-                  onChange={e => setAiRisk(parseFloat(e.target.value))} />
-                <div className="rm"><span>0.1%</span><span>10%</span></div>
-                <div style={{ fontSize: '.58rem', color: 'var(--dim)', marginTop: 2 }}>
-                  ${Math.round(aiBalance * aiRisk / 100)} {t('rm_risk_lbl').replace('$', '').trim()} · ≈ {Math.round(100 / aiRisk)}×
+                <input
+                  type="number" min={1} max={1000000} step={1}
+                  value={aiTradeAmount}
+                  onChange={e => {
+                    const v = parseInt(e.target.value)
+                    if (!isNaN(v) && v >= 1) setAiTradeAmount(v)
+                  }}
+                  style={{ marginTop: 4, width: '100%', background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 4, color: 'var(--text)', padding: '4px 8px', fontSize: '.65rem' }}
+                />
+                <div style={{ fontSize: '.58rem', color: 'var(--dim)', marginTop: 4 }}>
+                  AI откроет сделку на эту сумму · маржа ≈ ${Math.ceil(aiTradeAmount / Math.max(aiLeverage, 1)).toLocaleString()}
                 </div>
               </div>
             </div>

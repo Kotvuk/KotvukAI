@@ -78,12 +78,12 @@ export async function GET(req: NextRequest) {
     const market = calcMarketData(candles, fundingRate)
     if (htfBias) market.htfBias = htfBias
 
-    const balance    = Number(user.ai_balance ?? 1000)
-    const riskPct    = Number(user.ai_risk_per_trade ?? 1.0)
-    const maxLev     = Number(user.ai_max_leverage ?? 20)
+    const balance      = Number(user.ai_balance ?? 1000)
+    const fixedAmount  = Number(user.ai_trade_amount ?? 100)
+    const maxLev       = Number(user.ai_max_leverage ?? 20)
 
     const start = Date.now()
-    const { step1, step2, final } = await fullAnalysis(sym, tfLabel, market, candles, [], maxLev, balance, riskPct)
+    const { step1, step2, final } = await fullAnalysis(sym, tfLabel, market, candles, [], maxLev, balance, 1.0)
     const elapsed = ((Date.now() - start) / 1000).toFixed(1)
 
     const signal = await saveSignal(user.id, {
@@ -103,11 +103,7 @@ export async function GET(req: NextRequest) {
     )
 
     if (final.verdict === 'LONG' || final.verdict === 'SHORT') {
-      const slDist = (final.sl_price && final.entry_price)
-        ? Math.abs(final.entry_price - final.sl_price) / final.entry_price
-        : 0.02
-      const riskUsd     = balance * riskPct / 100
-      const tradeAmount = Math.round(final.pos_usd || (riskUsd / Math.max(slDist, 0.001)))
+      const tradeAmount = fixedAmount > 0 ? fixedAmount : 100
       const isLimit     = final.entry_type === 'limit'
       const expiresAt   = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
 

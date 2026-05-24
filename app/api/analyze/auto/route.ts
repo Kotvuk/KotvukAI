@@ -84,15 +84,15 @@ async function analyzeOne(
     const market = calcMarketData(candles, fundingRate)
     if (htfBias) market.htfBias = htfBias
 
-    const balance  = Number(user.ai_balance ?? 1000)
-    const riskPct  = Number(user.ai_risk_per_trade ?? 1.0)
-    const maxLev   = Number(user.ai_max_leverage ?? 20)
+    const balance      = Number(user.ai_balance ?? 1000)
+    const fixedAmount  = Number(user.ai_trade_amount ?? 100)
+    const maxLev       = Number(user.ai_max_leverage ?? 20)
     const userId   = Number(user.id)
     const tfLabel  = ({ '5m': '5м', '15m': '15м', '30m': '30м', '1h': '1ч', '4h': '4ч' } as Record<string, string>)[interval] ?? interval
 
     const pairFmt = sym.endsWith('USDT') ? sym.slice(0, -4) + '/USDT' : sym
     const memorySignals = await getSignalsForPair(userId, pairFmt, 5)
-    const { step1, step2, final } = await fullAnalysis(pairFmt, tfLabel, market, candles, memorySignals, maxLev, balance, riskPct)
+    const { step1, step2, final } = await fullAnalysis(pairFmt, tfLabel, market, candles, memorySignals, maxLev, balance, 1.0)
 
     await saveSignal(userId, {
       pair: pairFmt, timeframe: tfLabel,
@@ -135,12 +135,7 @@ async function analyzeOne(
         return { ok: true, verdict: final.verdict, confidence: final.confidence }
       }
 
-      const slDist = (final.sl_price && final.entry_price)
-        ? Math.abs(final.entry_price - final.sl_price) / final.entry_price
-        : 0.02
-      const riskUsd     = balance * riskPct / 100
-      const rawAmount   = final.pos_usd || Math.round(riskUsd / Math.max(slDist, 0.001))
-      const tradeAmount = Math.min(Math.round(rawAmount), Math.round(balance * maxLev))
+      const tradeAmount = fixedAmount > 0 ? fixedAmount : 100
 
       if (tradeAmount <= 0 || balance <= 0) {
         return { ok: true, verdict: final.verdict, confidence: final.confidence }

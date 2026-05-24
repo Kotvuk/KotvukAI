@@ -10,7 +10,7 @@ export interface User {
   lang: string
   ai_max_leverage: number
   ai_balance?: number
-  ai_risk_per_trade?: number
+  ai_trade_amount?: number
   stripe_customer_id?: string | null
   telegram_chat_id?: string | null
   watchlist?: string[] | null
@@ -485,16 +485,16 @@ export async function adjustBalance(userId: number, delta: number): Promise<numb
 export async function updateUserSettings(userId: number, data: {
   nickname?: string; email?: string; lang?: string
   ai_max_leverage?: number
-  ai_balance?: number; ai_risk_per_trade?: number
+  ai_balance?: number; ai_trade_amount?: number
 }) {
   await sql`
     UPDATE users SET
-      nickname          = COALESCE(${data.nickname ?? null}, nickname),
-      email             = COALESCE(${data.email ?? null}, email),
-      lang              = COALESCE(${data.lang ?? null}, lang),
-      ai_max_leverage   = COALESCE(${data.ai_max_leverage ?? null}, ai_max_leverage),
-      ai_balance        = COALESCE(${data.ai_balance ?? null}, ai_balance),
-      ai_risk_per_trade = COALESCE(${data.ai_risk_per_trade ?? null}, ai_risk_per_trade)
+      nickname         = COALESCE(${data.nickname ?? null}, nickname),
+      email            = COALESCE(${data.email ?? null}, email),
+      lang             = COALESCE(${data.lang ?? null}, lang),
+      ai_max_leverage  = COALESCE(${data.ai_max_leverage ?? null}, ai_max_leverage),
+      ai_balance       = COALESCE(${data.ai_balance ?? null}, ai_balance),
+      ai_trade_amount  = COALESCE(${data.ai_trade_amount ?? null}, ai_trade_amount)
     WHERE id = ${userId}
   `
 }
@@ -684,7 +684,7 @@ export async function initDB() {
   `
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS ai_max_leverage INTEGER DEFAULT 20`
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS ai_balance NUMERIC DEFAULT 10000`
-  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS ai_risk_per_trade NUMERIC DEFAULT 1.0`
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS ai_trade_amount NUMERIC DEFAULT 100`
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_customer_id TEXT`
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS telegram_chat_id TEXT`
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS watchlist JSONB`

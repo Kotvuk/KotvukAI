@@ -118,10 +118,10 @@ export async function POST(req: NextRequest) {
     if (htfBias) market.htfBias = htfBias
 
     const memorySignals = await getSignalsForPair(user.id, pair, 5)
-    const balance       = Number(user.ai_balance ?? 1000)
-    const riskPct       = Number(user.ai_risk_per_trade ?? 1.0)
+    const balance       = Number(user.ai_balance ?? 10000)
+    const fixedAmount   = Number(user.ai_trade_amount ?? 100)
     const userMaxLev    = Number(user.ai_max_leverage ?? 20)
-    const { step1, step2, final: analysis, methods, consensus } = await fullAnalysis(pair, timeframe, market, candles, memorySignals, userMaxLev, balance, riskPct)
+    const { step1, step2, final: analysis, methods, consensus } = await fullAnalysis(pair, timeframe, market, candles, memorySignals, userMaxLev, balance, 1.0)
 
     const elapsed = ((Date.now() - start) / 1000).toFixed(1)
 
@@ -157,14 +157,8 @@ export async function POST(req: NextRequest) {
           const expiresAt     = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
           const tradeLeverage = Math.min(analysis.leverage ?? 2, userMaxLev)
 
-          const slDist = (analysis.sl_price && analysis.entry_price)
-            ? Math.abs(analysis.entry_price - analysis.sl_price) / analysis.entry_price
-            : 0.02
-          const effectiveBal = balance > 0 ? balance : 1000
-          const riskUsd      = effectiveBal * riskPct / 100
-          const rawAmount    = analysis.pos_usd || Math.round(riskUsd / Math.max(slDist, 0.001))
-          const tradeAmount  = Math.min(Math.round(rawAmount), Math.round(effectiveBal * tradeLeverage))
-          const marginUsed   = tradeLeverage > 1 ? Math.ceil(tradeAmount / tradeLeverage) : tradeAmount
+          const tradeAmount = fixedAmount > 0 ? fixedAmount : 100
+          const marginUsed  = tradeLeverage > 1 ? Math.ceil(tradeAmount / tradeLeverage) : tradeAmount
 
           if (tradeAmount > 0) {
             const isLimit = analysis.entry_type === 'limit'
@@ -235,7 +229,6 @@ export async function POST(req: NextRequest) {
       quota: { remaining: quota.remaining, tier: quota.tier, limit: quota.limit },
       risk_management: {
         balance,
-        risk_pct: riskPct,
         risk_usd: analysis.risk_usd,
         pos_usd: analysis.pos_usd,
         leverage: userMaxLev,

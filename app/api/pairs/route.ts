@@ -11,6 +11,8 @@ const EXCLUDED_BASES    = new Set([
   'UBER', 'V',    'WMT',  'MSTR',
   'QQQ',  'SPY',  'EWY',  'SOXL',
   'BZ',   'CL',   'USAR', 'XPD',  'XPT',
+  'XAU',  'XAG',  'PAXG',
+  'EWJ',  'NATGAS', 'USDC', 'BTCST',
 ])
 
 function toSlash(symbol: string): string {
@@ -20,7 +22,10 @@ function toSlash(symbol: string): string {
 function isExcluded(symbol: string): boolean {
   const base = symbol.slice(0, -4)
   if (EXCLUDED_BASES.has(base)) return true
-  return EXCLUDED_SUFFIXES.some(s => base.endsWith(s))
+  if (EXCLUDED_SUFFIXES.some(s => base.endsWith(s))) return true
+  if (base.length < 2) return true
+  if (!/^[A-Z0-9]+$/.test(base)) return true
+  return false
 }
 
 export const revalidate = 1800

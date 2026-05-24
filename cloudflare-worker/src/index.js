@@ -29,8 +29,8 @@ async function runAnalysis(env, now, forceTfs) {
     return list
   })()
 
-  const base   = env.APP_URL.replace(/\/$/, '')
-  const secret = env.AUTO_ANALYZE_SECRET
+  const base   = env.APP_URL.replace(/^﻿/, '').trim().replace(/\/$/, '')
+  const secret = env.AUTO_ANALYZE_SECRET.replace(/^﻿/, '').trim()
 
   const urls = []
   for (const tf of tfs) {

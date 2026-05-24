@@ -58,16 +58,23 @@ export default function AiPanelToolbar({
           <button key={val} className={`tf ${tf === val ? 'active' : ''}`} onClick={() => onSelectTf(val)}>{label}</button>
         ))}
       </div>
-      <button className="run" onClick={onRunAI} disabled={analyzing || (quota !== null && quota.remaining <= 0)}>
-        {analyzing ? t('analyzing') : t('analyze')}
-      </button>
-      {quota !== null && (
-        <div style={{ fontSize: '.58rem', color: quota.remaining <= 0 ? 'var(--short)' : quota.remaining <= 2 ? '#ffa500' : 'var(--dim)', marginTop: 4, textAlign: 'center' }}>
-          {quota.remaining <= 0
-            ? t('quota_exhausted_lbl')
-            : t('quota_remaining_lbl').replace('{remaining}', String(quota.remaining)).replace('{limit}', String(quota.limit))}
-        </div>
-      )}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <button className="run" onClick={onRunAI} disabled={analyzing || (quota !== null && quota.remaining <= 0)}>
+          {analyzing ? t('analyzing') : t('analyze')}
+        </button>
+        {quota !== null && (
+          <span style={{
+            fontSize: '.58rem',
+            fontWeight: 700,
+            color: quota.remaining <= 0 ? 'var(--short)' : quota.remaining <= 2 ? '#ffa500' : 'var(--muted)',
+            letterSpacing: '.02em',
+            minWidth: 28,
+            textAlign: 'center',
+          }}>
+            {quota.remaining}/{quota.limit}
+          </span>
+        )}
+      </div>
     </div>
   )
 }

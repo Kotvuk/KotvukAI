@@ -215,7 +215,14 @@ export default function AiResultPanel({ aiData, pair, tf, smcProb, onNavigate, o
 
       {String(a.verdict) === 'WAIT' && a.wait_for && (
         <div style={{ margin: '10px 0', padding: '12px 14px', background: 'rgba(255,165,0,0.08)', borderRadius: 6, border: '1px solid rgba(255,165,0,0.25)' }}>
-          <div style={{ fontSize: '.6rem', color: '#ffa500', fontWeight: 700, marginBottom: 4 }}>{t('wait_signal_lbl')}</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+            <span style={{ fontSize: '.6rem', color: '#ffa500', fontWeight: 700 }}>{t('wait_signal_lbl')}</span>
+            {(a as { watch_level?: number }).watch_level ? (
+              <span style={{ fontSize: '.6rem', background: 'rgba(255,165,0,0.18)', color: '#ffa500', borderRadius: 4, padding: '1px 7px', fontWeight: 700, letterSpacing: '.02em' }}>
+                ${Number((a as { watch_level?: number }).watch_level).toLocaleString()}
+              </span>
+            ) : null}
+          </div>
           <div style={{ fontSize: '.65rem', color: 'var(--text)', lineHeight: 1.6 }}>{String(a.wait_for)}</div>
         </div>
       )}

@@ -13,6 +13,16 @@
   --mono: 'Geist Mono', monospace; --display: 'Syne', sans-serif;
 }
 
+[data-theme="light"] {
+  --bg: #f5f6f8; --bg2: #eef0f4; --bg3: #e6e9ef;
+  --line: #dde1e9; --line2: #d0d5df; --line3: #c4cad6;
+  --text: #1c1e26; --muted: #7a8099; --dim: #e2e5ec;
+  --cyan: #0087cc; --cyan2: #006699; --cyan-dim: rgba(0,135,204,.08);
+  --long: #00a854; --long-dim: rgba(0,168,84,.08);
+  --short: #e0293d; --short-dim: rgba(224,41,61,.08);
+  --wait: #d4870c; --wait-dim: rgba(212,135,12,.08);
+}
+
 html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--mono); overflow: hidden; }
 
 body::before {

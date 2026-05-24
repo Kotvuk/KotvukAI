@@ -301,7 +301,8 @@ Reply with a single-line JSON:
     if (!consensusOverride) {
       const waitStep1: Step1Result = { signal: 'WAIT', strength: 3, trend: trendDir, summary: summary1 }
       const waitStep2: Step2Result = { verdict: 'WAIT', confidence: 45, risk_score: 5, leverage: 1, summary: 'Range + neutral HTF — no clear direction' }
-      const waitFinal = makeWait(45, 'Range with no HTF bias. Waiting for structure resolution.', riskUsd, balance, riskPct, allMethods, consensus)
+      const rangeLevel = market.resistances[0] || market.supports[0] || 0
+      const waitFinal = makeWait(45, 'Range with no HTF bias. Waiting for structure resolution.', riskUsd, balance, riskPct, allMethods, consensus, rangeLevel)
       return translateResponse(keys, { step1: waitStep1, step2: waitStep2, final: waitFinal, methods: allMethods, consensus })
     }
   }
@@ -342,7 +343,8 @@ Reply with a single-line JSON:
     if (!consensusOverride) {
       const waitStep1: Step1Result = { signal: 'WAIT', strength: 4, trend: trendDir, summary: summary1 }
       const waitStep2: Step2Result = { verdict: 'WAIT', confidence: 48, risk_score: 5, leverage: 1, summary: `Only ${confluenceCount} factor(s) out of ${minConfluence} required. ${step2Summary}` }
-      const waitFinal = makeWait(48, `Insufficient confluence (${confluenceCount}/${minConfluence}). ${String(s2.wait_reason || 'Wait for a cleaner setup.')}`, riskUsd, balance, riskPct, allMethods, consensus)
+      const poiLevel = Number(s2.poi_low || 0) || Number(s2.poi_high || 0)
+      const waitFinal = makeWait(48, `Insufficient confluence (${confluenceCount}/${minConfluence}). ${String(s2.wait_reason || 'Wait for a cleaner setup.')}`, riskUsd, balance, riskPct, allMethods, consensus, poiLevel)
       return translateResponse(keys, { step1: waitStep1, step2: waitStep2, final: waitFinal, methods: allMethods, consensus })
     }
   }
@@ -523,7 +525,7 @@ Reply with ONLY one line of valid JSON (all numeric fields must be numbers, not 
   return translateResponse(keys, { step1, step2, final, methods: allMethods, consensus })
 }
 
-function makeWait(confidence: number, reason: string, riskUsd: number, balance: number, riskPct: number, methods?: MethodResult[], consensus?: ConsensusResult): FinalResult {
+function makeWait(confidence: number, reason: string, riskUsd: number, balance: number, riskPct: number, methods?: MethodResult[], consensus?: ConsensusResult, watchLevel?: number): FinalResult {
   return {
     verdict: 'WAIT', confidence, risk_score: 4, leverage: 1,
     entry_price: 0, entry_limit: null, entry_type: 'limit',
@@ -533,6 +535,7 @@ function makeWait(confidence: number, reason: string, riskUsd: number, balance: 
     confluence: '', invalidation: '', position_size: '',
     exit_instruction: '', why_this_signal: reason,
     wait_for: reason,
+    watch_level: watchLevel && watchLevel > 0 ? watchLevel : undefined,
     rr: 0, min_rr: 2,
     risk_usd: riskUsd,
     pos_usd: 0,
@@ -775,6 +778,7 @@ export interface FinalResult {
   exit_instruction: string
   why_this_signal: string
   wait_for: string
+  watch_level?: number
   insights: { icon: string; tag: string; text: string }[]
   rr?: number
   min_rr?: number

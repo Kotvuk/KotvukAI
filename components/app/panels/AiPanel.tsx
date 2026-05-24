@@ -13,6 +13,8 @@ import HistoricalSetupsModal from '@/components/app/panels/HistoricalSetupsModal
 import GlossaryModal from '@/components/app/panels/GlossaryModal'
 import AiResultPanel from '@/components/app/ai/AiResultPanel'
 import AiBacktestModal from '@/components/app/ai/AiBacktestModal'
+import ScreenerModal from '@/components/app/ai/ScreenerModal'
+import MultiTFModal from '@/components/app/ai/MultiTFModal'
 import { usePairs } from '@/hooks/usePairs'
 
 const DRAW_TOOL_KEYS = [
@@ -102,6 +104,8 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
   const [backtestLoading, setBacktestLoading] = useState(false)
   const [backtestData, setBacktestData] = useState<Record<string, unknown> | null>(null)
   const [showGlossary, setShowGlossary] = useState(false)
+  const [screenerOpen, setScreenerOpen] = useState(false)
+  const [multiTFOpen, setMultiTFOpen] = useState(false)
   const triggerAnalysisRef = useRef<(pair?: string, tf?: string) => void>(() => {})
 
   const filteredPairs = React.useMemo(
@@ -829,6 +833,22 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
                 </button>
                 <button
                   className="vl-btn"
+                  style={{ color: 'var(--muted)', fontSize: '.5rem', padding: '2px 5px' }}
+                  title="Screener — top setups"
+                  onClick={() => setScreenerOpen(true)}
+                >
+                  SCR
+                </button>
+                <button
+                  className="vl-btn"
+                  style={{ color: 'var(--muted)', fontSize: '.5rem', padding: '2px 5px' }}
+                  title="Multi-Timeframe"
+                  onClick={() => setMultiTFOpen(true)}
+                >
+                  MTF
+                </button>
+                <button
+                  className="vl-btn"
                   style={{ color: 'var(--muted)', fontSize: '.55rem', padding: '2px 5px' }}
                   title={t('glossary_lbl')}
                   onClick={() => setShowGlossary(true)}
@@ -1030,6 +1050,16 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
       tf={tf}
       onClose={() => setBacktestOpen(false)}
       onRerun={runBacktest}
+    />
+    <ScreenerModal
+      open={screenerOpen}
+      onClose={() => setScreenerOpen(false)}
+      onSelectPair={(p) => { setPair(p); pairRef.current = p }}
+    />
+    <MultiTFModal
+      open={multiTFOpen}
+      pair={pair}
+      onClose={() => setMultiTFOpen(false)}
     />
     </>
   )

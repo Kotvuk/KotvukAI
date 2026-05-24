@@ -319,7 +319,7 @@ export default function AiResultPanel({ aiData, pair, tf, smcProb, onNavigate, o
                   <div style={{ flex: 1, height: 3, background: 'var(--bg3)', borderRadius: 2 }}>
                     <div style={{ height: 3, borderRadius: 2, width: `${(val / max) * 100}%`, background: 'var(--cyan)', transition: 'width .3s' }} />
                   </div>
-                  <span style={{ fontSize: '.6rem', color: 'var(--text)', width: 28, textAlign: 'right' }}>{val}/{max}</span>
+                  <span style={{ fontSize: '.6rem', color: 'var(--text)', width: 28, textAlign: 'right' }}>{Math.round((val / max) * 100)}%</span>
                 </div>
               ))}
             </div>

@@ -442,6 +442,7 @@ Reply with ONLY one line of valid JSON (all numeric fields must be numbers, not 
 
   const isLongV  = verdict === 'LONG'
   const isShortV = verdict === 'SHORT'
+  const sigFigs  = entryPrice >= 1000 ? 2 : entryPrice >= 1 ? 4 : 6
 
   if (isLongV || isShortV) {
     if (isLongV  && tpPrice && slPrice && tpPrice < entryPrice && slPrice > entryPrice) [tpPrice, slPrice] = [slPrice, tpPrice]
@@ -469,7 +470,6 @@ Reply with ONLY one line of valid JSON (all numeric fields must be numbers, not 
       else         tpPrice = entryPrice - slDistFinal * 2.0
     }
 
-    const sigFigs = entryPrice >= 1000 ? 2 : entryPrice >= 1 ? 4 : 6
     tpPrice = parseFloat(tpPrice.toFixed(sigFigs))
     slPrice = parseFloat(slPrice.toFixed(sigFigs))
   }
@@ -482,6 +482,17 @@ Reply with ONLY one line of valid JSON (all numeric fields must be numbers, not 
   const i2 = String(json.i2 || `Entry $${entryPrice} → TP $${tpPrice.toFixed(2)} (+${Math.abs(tp_pct).toFixed(2)}%)`)
   const i3 = String(json.i3 || `SL $${slPrice.toFixed(2)} (-${Math.abs(sl_pct).toFixed(2)}%) | R:R 1:${rrStr}`)
 
+  const whyFinal = desc || [summary1, step2Summary, confluenceStr]
+    .filter(s => s.trim().length > 3).join('. ')
+
+  const entryFinal = entryLogic || (verdict !== 'WAIT'
+    ? `Entry at $${entryPrice.toFixed(sigFigs)} (${autoEntryType === 'limit' ? 'limit order' : 'market'})${confluenceStr ? '. ' + confluenceStr : ''}`
+    : whyFinal)
+
+  const exitFinal = exitWhy || (verdict !== 'WAIT'
+    ? `TP $${tpPrice.toFixed(sigFigs)} (+${Math.abs(tp_pct).toFixed(2)}%) | SL $${slPrice.toFixed(sigFigs)} (-${Math.abs(sl_pct).toFixed(2)}%) | R:R 1:${rrStr}`
+    : '')
+
   const step1: Step1Result = { signal: verdict, strength: Math.round(confidence / 10), trend: trendDir, summary: summary1 }
   const step2: Step2Result = { verdict, confidence, risk_score: riskScore, leverage, summary: step2Summary }
   const final: FinalResult = {
@@ -489,9 +500,9 @@ Reply with ONLY one line of valid JSON (all numeric fields must be numbers, not 
     entry_price: entryPrice, entry_limit: null, entry_type: autoEntryType,
     tp_price: tpPrice, tp_pct: tp_pct,
     sl_price: slPrice, sl_pct: sl_pct,
-    full_description: desc, entry_instruction: entryLogic,
+    full_description: whyFinal, entry_instruction: entryFinal,
     confluence: confluenceStr, invalidation, position_size: positionSize,
-    exit_instruction: exitWhy, why_this_signal: desc,
+    exit_instruction: exitFinal, why_this_signal: whyFinal,
     wait_for: waitFor,
     rr: aiRr || parseFloat(rrStr),
     min_rr: minRr,

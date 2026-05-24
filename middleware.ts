@@ -13,8 +13,7 @@ export async function middleware(req: NextRequest) {
     !pathname.startsWith('/api/klines') &&
     !pathname.startsWith('/api/ticker') &&
     !pathname.startsWith('/api/news') &&
-    !pathname.startsWith('/api/analyze/test') &&
-    !pathname.startsWith('/api/analyze/batch') &&
+!pathname.startsWith('/api/analyze/batch') &&
     !pathname.startsWith('/api/analyze/auto') &&
     !pathname.startsWith('/api/cron/') &&
     !pathname.startsWith('/api/signals/auto-check') &&

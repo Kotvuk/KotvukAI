@@ -458,8 +458,20 @@ export default function TradesPanel({ defaultAccount = 'user', onTabMounted }: T
                     <td>
                       {tr.status === 'cancelled'
                         ? <span className="tag tag-cancelled">{t('status_cancelled')}</span>
-                        : tr.pnl_pct !== null
-                          ? (Number(tr.pnl_pct) > 0 ? <span className="pnl-p">+{tr.pnl_pct}%</span> : <span className="pnl-n">{tr.pnl_pct}%</span>)
+                        : (tr.pnl !== null || tr.pnl_pct !== null)
+                          ? (() => {
+                              const val = tr.pnl ?? 0
+                              const pct = tr.pnl_pct ?? 0
+                              const pos = tr.pnl !== null ? val > 0 : pct > 0
+                              return (
+                                <span className={pos ? 'pnl-p' : 'pnl-n'}>
+                                  {pos ? '+' : ''}${Math.abs(val).toFixed(2)}
+                                  {tr.pnl_pct !== null && (
+                                    <span style={{ opacity: .7, fontSize: '.85em' }}> ({pct > 0 ? '+' : ''}{pct}%)</span>
+                                  )}
+                                </span>
+                              )
+                            })()
                           : '—'}
                     </td>
                     <td>{fmtAlmaty(tr.closed_at || tr.created_at)}</td>

@@ -561,6 +561,15 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
         if (data.quota) setQuota(data.quota as { remaining: number; limit: number; tier: string })
         setSidebarInds(buildSidebarInds(m))
         setSidebarSR(buildSidebarSR(m))
+
+        if (data.trade_created) {
+          const isLmt = a.entry_type === 'limit'
+          showToast(isLmt ? `⏳ Лимитный ордер ${a.verdict} ${pairRef.current} поставлен` : `🤖 AI открыл ${a.verdict} ${pairRef.current} рыночно`, 'ok')
+        } else if (data.trade_skipped === 'duplicate') {
+          showToast(`ℹ️ ${a.verdict} ${pairRef.current} уже открыт на AI счёте`, 'ok')
+        } else if (data.trade_skipped) {
+          showToast(`⚠️ Трейд не открыт: ${data.trade_skipped}`, 'err')
+        }
       } else {
         const errMsg = data.error_code === 'quota_exceeded' ? t('quota_exhausted_lbl') : data.error || t('error')
         showToast(errMsg, 'err')

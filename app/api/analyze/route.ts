@@ -139,6 +139,9 @@ export async function POST(req: NextRequest) {
 
     await createNotification(user.id, `📊 ${analysis.verdict} ${pair} ${timeframe} — confidence ${analysis.confidence}%`)
 
+    let tradeCreated = false
+    let tradeSkipped = ''
+
     if (analysis.verdict === 'LONG' || analysis.verdict === 'SHORT') {
       try {
         const existing = await sql`
@@ -148,7 +151,9 @@ export async function POST(req: NextRequest) {
             AND status IN ('pending', 'open') AND account_type = 'ai'
           LIMIT 1
         `
-        if (existing.length === 0) {
+        if (existing.length > 0) {
+          tradeSkipped = 'duplicate'
+        } else {
           const expiresAt     = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
           const tradeLeverage = Math.min(analysis.leverage ?? 2, userMaxLev)
 
@@ -180,12 +185,17 @@ export async function POST(req: NextRequest) {
               expires_at:   isLimit ? expiresAt.toISOString() : null,
             })
             if (balance > 0) await adjustBalance(user.id, -Math.min(marginUsed, balance))
+            tradeCreated = true
 
             const prec = (analysis.entry_price ?? 0) >= 100 ? 2 : 4
 
             if (isLimit && limitPx) {
               await createNotification(user.id,
                 `⏳ Limit order ${analysis.verdict} ${pair} waiting @ $${limitPx.toFixed(prec)} (expires in 7 days)`
+              )
+            } else {
+              await createNotification(user.id,
+                `🤖 AI opened ${analysis.verdict} ${pair} @ market | TP $${(analysis.tp_price ?? 0).toFixed(prec)} | SL $${(analysis.sl_price ?? 0).toFixed(prec)}`
               )
             }
 
@@ -196,14 +206,21 @@ export async function POST(req: NextRequest) {
               + `Leverage: ${analysis.leverage}x | R:R: ${analysis.rr ?? '?'}`
             const tgChatId = String(user.telegram_chat_id || '')
             ;(tgChatId ? sendTelegramToUser(tgChatId, msg) : sendTelegram(msg)).catch(() => {})
+          } else {
+            tradeSkipped = 'zero_amount'
           }
         }
-      } catch {}
+      } catch (e) {
+        console.error('[analyze] trade creation error:', e)
+        tradeSkipped = e instanceof Error ? e.message : 'db_error'
+      }
     }
 
     return NextResponse.json({
       ok: true,
       elapsed: parseFloat(elapsed),
+      trade_created: tradeCreated,
+      trade_skipped: tradeSkipped || undefined,
       analysis,
       market,
       smc_probability: market.smc.probability,

@@ -178,8 +178,8 @@ body::before {
 
 /* DESC / INSTR */
 .desc { padding: 10px 12px; border-left: 2px solid var(--cyan); background: var(--bg2); font-size: .68rem; line-height: 1.7; color: #999; margin-bottom: 8px; }
-.instr { display: flex; gap: 8px; align-items: flex-start; padding: 7px 10px; background: var(--bg2); border: 1px solid var(--line2); margin-bottom: 5px; font-size: .66rem; color: var(--muted); line-height: 1.5; }
-.ik { font-size: .55rem; font-weight: 600; color: var(--dim); text-transform: uppercase; letter-spacing: .06em; flex-shrink: 0; padding-top: 1px; min-width: 38px; }
+.instr { display: flex; gap: 9px; align-items: flex-start; padding: 8px 12px; border-radius: 5px; margin-bottom: 5px; font-size: .65rem; color: var(--text); line-height: 1.55; border-left: 3px solid transparent; }
+.ik { font-size: .5rem; font-weight: 700; color: #fff; text-transform: uppercase; letter-spacing: .07em; flex-shrink: 0; padding: 2px 7px; border-radius: 3px; margin-top: 1px; white-space: nowrap; }
 
 /* INSIGHTS */
 .ins-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 7px; margin-bottom: 10px; }

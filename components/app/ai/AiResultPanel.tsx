@@ -255,33 +255,36 @@ export default function AiResultPanel({ aiData, pair, tf, smcProb, livePrice, on
 
       <div className="desc">{smcWrap(String(a.full_description || '—'))}</div>
 
-      <div className="instr"><span className="ik" style={{ background: '#f0a500' }}>{t('entry_badge_lbl')}</span><span>{String(a.entry_instruction || '—')}</span></div>
+      <div className="instr" style={{ background: 'rgba(240,165,0,0.08)', borderLeftColor: '#f0a500' }}>
+        <span className="ik" style={{ background: '#f0a500' }}>{t('entry_badge_lbl')}</span>
+        <span>{String(a.entry_instruction || '—')}</span>
+      </div>
       {a.entry_type === 'limit' && a.entry_limit && (
-        <div className="instr" style={{ background: 'rgba(240,165,0,0.08)', borderLeft: '2px solid #f0a500' }}>
+        <div className="instr" style={{ background: 'rgba(240,165,0,0.05)', borderLeftColor: '#f0a500' }}>
           <span className="ik" style={{ background: '#f0a500' }}>{t('limit_badge_lbl')}</span>
           <span>{t('limit_order_at')} <b>${Number(a.entry_limit).toLocaleString()}</b></span>
         </div>
       )}
       {a.confluence && (
-        <div className="instr" style={{ background: 'rgba(0,230,118,0.06)', borderLeft: '2px solid #00e676' }}>
+        <div className="instr" style={{ background: 'rgba(0,230,118,0.07)', borderLeftColor: '#00e676' }}>
           <span className="ik" style={{ background: '#00e676', color: '#000' }}>{t('confluence_badge_lbl')}</span>
           <span>{smcWrap(String(a.confluence))}</span>
         </div>
       )}
       {a.invalidation && (
-        <div className="instr" style={{ background: 'rgba(255,61,87,0.06)', borderLeft: '2px solid #ff3d57' }}>
+        <div className="instr" style={{ background: 'rgba(255,61,87,0.07)', borderLeftColor: '#ff3d57' }}>
           <span className="ik" style={{ background: '#ff3d57' }}>{t('invalidation_badge_lbl')}</span>
           <span>{smcWrap(String(a.invalidation))}</span>
         </div>
       )}
       {a.position_size && (
-        <div className="instr" style={{ background: 'rgba(100,180,255,0.06)', borderLeft: '2px solid #64b4ff' }}>
+        <div className="instr" style={{ background: 'rgba(100,180,255,0.07)', borderLeftColor: '#64b4ff' }}>
           <span className="ik" style={{ background: '#64b4ff', color: '#000' }}>{t('volume_badge_lbl')}</span>
           <span>{String(a.position_size)}</span>
         </div>
       )}
-      <div className="instr" style={{ marginBottom: 10 }}>
-        <span className="ik" style={{ background: '#ff3d57' }}>{t('exit_badge_lbl')}</span>
+      <div className="instr" style={{ background: 'rgba(201,117,255,0.07)', borderLeftColor: '#c975ff', marginBottom: 10 }}>
+        <span className="ik" style={{ background: '#c975ff' }}>{t('exit_badge_lbl')}</span>
         <span>{String(a.exit_instruction || '—')}</span>
       </div>
 

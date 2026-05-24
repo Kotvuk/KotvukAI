@@ -60,3 +60,13 @@ electron/out/
 
 # TypeScript build cache
 tsconfig.tsbuildinfo
+
+# Electron builds
+/release/
+/release-*/
+/dist-electron/
+/dist-electron-new/
+/out/
+
+# Misc temp files
+=

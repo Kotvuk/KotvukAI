@@ -122,22 +122,23 @@ async function analyzeOne(
         return { ok: true, verdict: final.verdict, confidence: final.confidence }
       }
 
-      const recentSl = await sql`
+      const recentTrade = await sql`
         SELECT id FROM trades
         WHERE user_id = ${userId} AND pair = ${pairFmt}
-          AND direction = ${final.verdict.toLowerCase()}
-          AND status = 'closed' AND account_type = 'ai'
-          AND pnl_pct < 0
-          AND closed_at > NOW() - INTERVAL '4 hours'
+          AND account_type = 'ai'
+          AND (
+            (status = 'closed' AND closed_at > NOW() - INTERVAL '24 hours')
+            OR (status = 'cancelled' AND closed_at > NOW() - INTERVAL '24 hours')
+          )
         LIMIT 1
       `
-      if (recentSl.length > 0) {
+      if (recentTrade.length > 0) {
         return { ok: true, verdict: final.verdict, confidence: final.confidence }
       }
 
       const tradeAmount = fixedAmount > 0 ? fixedAmount : 100
 
-      if (tradeAmount <= 0 || balance <= 0) {
+      if (tradeAmount <= 0 || balance < tradeAmount) {
         return { ok: true, verdict: final.verdict, confidence: final.confidence }
       }
       const isLimit     = final.entry_type === 'limit'

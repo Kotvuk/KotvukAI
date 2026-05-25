@@ -5,7 +5,8 @@ import { getAllPendingSignals, getAllPendingTrades, getAllOpenTrades, expireOldS
 import { sendTelegram, sendTelegramToUser } from '@/lib/telegram'
 
 async function fetchCandles(sym: string, sinceMs: number): Promise<{ high: number; low: number }[]> {
-  const url = `https://fapi.binance.com/fapi/v1/klines?symbol=${sym}&interval=1h&startTime=${sinceMs}&limit=200`
+  const clampedMs = Math.max(sinceMs, Date.now() - 196 * 3_600_000)
+  const url = `https://fapi.binance.com/fapi/v1/klines?symbol=${sym}&interval=1h&startTime=${clampedMs}&limit=200`
   try {
     const ctrl = new AbortController()
     const t = setTimeout(() => ctrl.abort(), 8000)

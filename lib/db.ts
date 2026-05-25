@@ -571,6 +571,7 @@ export async function getAllPendingTrades(): Promise<Trade[]> {
     SELECT * FROM trades
     WHERE status = 'pending'
     ORDER BY created_at DESC
+    LIMIT 200
   `
   return rows as Trade[]
 }
@@ -590,7 +591,7 @@ export async function getAllOpenTrades(): Promise<Trade[]> {
 
 export async function activateTrade(id: number, userId: number, entryPrice: number): Promise<boolean> {
   const rows = await sql`
-    UPDATE trades SET status = 'open', entry_price = ${entryPrice}
+    UPDATE trades SET status = 'open', entry_price = ${entryPrice}, created_at = NOW()
     WHERE id = ${id} AND user_id = ${userId} AND status = 'pending'
     RETURNING id
   `

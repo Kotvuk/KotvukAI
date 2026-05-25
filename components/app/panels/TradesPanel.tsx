@@ -396,8 +396,11 @@ export default function TradesPanel({ defaultAccount = 'user', onTabMounted }: T
                   <span style={{ fontWeight: 700, fontSize: '.75rem' }}>{tr.pair}</span>
                   <span className={`tag tag-${tr.direction}`}>{tr.direction.toUpperCase()}</span>
                   <span style={{ fontSize: '.62rem', color: 'var(--muted)' }}>{tr.leverage}× · ${parseFloat(String(tr.amount)).toFixed(2)}</span>
-                  <span style={{ marginLeft: 'auto', fontSize: '.62rem', color: 'var(--muted)' }}>
-                    {t('entry_at')} {ep ? '$' + ep.toLocaleString() : '—'}
+                  <span style={{ marginLeft: 'auto', fontSize: '.62rem', color: 'var(--dim)' }}>
+                    {fmtAlmaty(tr.created_at)}
+                  </span>
+                  <span style={{ fontSize: '.62rem', color: 'var(--muted)' }}>
+                    {cur ? '$' + cur.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 }) : '—'}
                   </span>
                   {pct != null && (
                     <span style={{ fontWeight: 700, fontSize: '.72rem', color: pct >= 0 ? 'var(--long)' : 'var(--short)' }}>
@@ -426,6 +429,7 @@ export default function TradesPanel({ defaultAccount = 'user', onTabMounted }: T
                   </div>
                 ) : (
                   <div style={{ display: 'flex', gap: 12, alignItems: 'center', fontSize: '.63rem', marginBottom: 6 }}>
+                    <span style={{ color: 'var(--muted)' }}>{t('entry_at')} <span style={{ color: 'var(--text)' }}>{ep ? '$' + ep.toLocaleString() : '—'}</span></span>
                     <span style={{ color: 'var(--muted)' }}>TP: <span style={{ color: 'var(--long)' }}>{tr.tp_price ? '$' + parseFloat(String(tr.tp_price)).toLocaleString() : '—'}</span></span>
                     <span style={{ color: 'var(--muted)' }}>SL: <span style={{ color: 'var(--short)' }}>{tr.sl_price ? '$' + parseFloat(String(tr.sl_price)).toLocaleString() : '—'}</span></span>
                     <button

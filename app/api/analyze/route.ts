@@ -5,7 +5,6 @@ import { getUser } from '@/lib/auth-helper'
 import { fullAnalysis, calcMarketData, type Candle } from '@/lib/analysis'
 import { calcEnhancedSMC } from '@/lib/smc'
 import { saveSignal, createNotification, createTrade, getSignalsForPair, checkAndIncrementAnalysis, SUBSCRIPTION_LIMITS, adjustBalance, sql } from '@/lib/db'
-import { sendTelegram, sendTelegramToUser } from '@/lib/telegram'
 
 const TF_MAP: Record<string, string> = {
   '1м': '1m', '5м': '5m', '15м': '15m', '30м': '30m',
@@ -193,13 +192,6 @@ export async function POST(req: NextRequest) {
               )
             }
 
-            const dir = analysis.verdict === 'LONG' ? '📈' : '📉'
-            const msg = `${dir} <b>${analysis.verdict}</b> ${sym} ${timeframe}\n`
-              + `Confidence: <b>${analysis.confidence}%</b>\n`
-              + `Entry: $${(analysis.entry_price ?? 0).toFixed(prec)} | TP: $${(analysis.tp_price ?? 0).toFixed(prec)} | SL: $${(analysis.sl_price ?? 0).toFixed(prec)}\n`
-              + `Leverage: ${analysis.leverage}x | R:R: ${analysis.rr ?? '?'}`
-            const tgChatId = String(user.telegram_chat_id || '')
-            ;(tgChatId ? sendTelegramToUser(tgChatId, msg) : sendTelegram(msg)).catch(() => {})
           } else {
             tradeSkipped = 'zero_amount'
           }

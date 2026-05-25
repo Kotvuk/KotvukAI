@@ -114,7 +114,6 @@ async function analyzeOne(
       const existing = await sql`
         SELECT id FROM trades
         WHERE user_id = ${userId} AND pair = ${pairFmt}
-          AND direction = ${final.verdict.toLowerCase()}
           AND status IN ('pending', 'open') AND account_type = 'ai'
         LIMIT 1
       `

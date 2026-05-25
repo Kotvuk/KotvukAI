@@ -4,19 +4,19 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAllPendingSignals, getAllPendingTrades, getAllOpenTrades, expireOldSignals, setSignalOutcome, activateTrade, cancelTrade, closeTrade, adjustBalance, createNotification, getUserById } from '@/lib/db'
 import { sendTelegram, sendTelegramToUser } from '@/lib/telegram'
 
-async function fetchCandles(sym: string, sinceMs: number): Promise<{ high: number; low: number }[]> {
-  const clampedMs = Math.max(sinceMs, Date.now() - 196 * 3_600_000)
-  const url = `https://fapi.binance.com/fapi/v1/klines?symbol=${sym}&interval=1h&startTime=${clampedMs}&limit=200`
+async function fetchCandles(sym: string, sinceMs: number): Promise<{ candles: { high: number; low: number }[]; startMs: number }> {
+  const startMs = Math.max(sinceMs, Date.now() - 196 * 3_600_000)
+  const url = `https://fapi.binance.com/fapi/v1/klines?symbol=${sym}&interval=1h&startTime=${startMs}&limit=200`
   try {
     const ctrl = new AbortController()
     const t = setTimeout(() => ctrl.abort(), 8000)
     const res = await fetch(url, { signal: ctrl.signal, cache: 'no-store' })
     clearTimeout(t)
-    if (!res.ok) return []
+    if (!res.ok) return { candles: [], startMs }
     const raw: number[][] = await res.json()
-    return raw.map(c => ({ high: parseFloat(String(c[2])), low: parseFloat(String(c[3])) }))
+    return { candles: raw.map(c => ({ high: parseFloat(String(c[2])), low: parseFloat(String(c[3])) })), startMs }
   } catch {
-    return []
+    return { candles: [], startMs }
   }
 }
 
@@ -95,14 +95,14 @@ export async function GET(req: NextRequest) {
     for (const sym of Object.keys(bySymbol)) {
       const signals  = bySymbol[sym]
       const oldestMs = Math.min(...signals.map(s => new Date(s.created_at).getTime()))
-      const candles  = await fetchCandles(sym, oldestMs)
+      const { candles, startMs } = await fetchCandles(sym, oldestMs)
       if (!candles.length) continue
 
       for (const signal of signals) {
         if (!signal.final_tp || !signal.final_sl || !signal.final_entry || !signal.final_verdict) continue
 
         const sigStartMs = new Date(signal.created_at).getTime()
-        const startIdx   = Math.max(0, Math.floor((sigStartMs - oldestMs) / HOUR_MS))
+        const startIdx   = Math.max(0, Math.floor((sigStartMs - startMs) / HOUR_MS))
         const slice      = candles.slice(startIdx)
         if (!slice.length) continue
 
@@ -196,7 +196,7 @@ export async function GET(req: NextRequest) {
     for (const sym of Object.keys(bySymbol)) {
       const group    = bySymbol[sym]
       const oldestMs = Math.min(...group.map(t => new Date(t.created_at).getTime()))
-      const candles  = await fetchCandles(sym, oldestMs)
+      const { candles, startMs } = await fetchCandles(sym, oldestMs)
       if (!candles.length) continue
 
       for (const trade of group) {
@@ -207,7 +207,7 @@ export async function GET(req: NextRequest) {
         const isLong = trade.direction === 'long'
 
         const tradeStartMs = new Date(trade.created_at).getTime()
-        const startIdx     = Math.max(0, Math.floor((tradeStartMs - oldestMs) / HOUR_MS))
+        const startIdx     = Math.max(0, Math.floor((tradeStartMs - startMs) / HOUR_MS))
         const slice        = candles.slice(startIdx)
         if (!slice.length) continue
 

@@ -143,12 +143,21 @@ async function analyzeOne(
       const isLimit     = final.entry_type === 'limit'
       const expiresAt   = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
 
+      let marketEntry = final.entry_price || null
+      if (!isLimit && !marketEntry) {
+        try {
+          const pr = await fetch(`https://fapi.binance.com/fapi/v1/ticker/price?symbol=${sym}`, { signal: AbortSignal.timeout(4000) })
+          const pd: { price?: string } = await pr.json()
+          if (pd.price) marketEntry = parseFloat(pd.price)
+        } catch {}
+      }
+
       await createTrade(userId, {
         pair:        pairFmt,
         direction:   final.verdict.toLowerCase() as 'long' | 'short',
         order_type:  isLimit ? 'limit' : 'market',
         amount:      tradeAmount,
-        entry_price: isLimit ? null : (final.entry_price || null),
+        entry_price: isLimit ? null : marketEntry,
         limit_price: isLimit ? (final.entry_price || null) : null,
         tp_price:    final.tp_price || null,
         sl_price:    final.sl_price || null,

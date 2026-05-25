@@ -122,20 +122,28 @@ export async function GET(req: NextRequest) {
 
         await setSignalOutcome(signal.id, outcome, pnlPct, signal.user_id)
 
-        const emoji    = outcome === 'win' ? '✅' : '❌'
-        const pnlStr   = pnlPct >= 0 ? `+${pnlPct}%` : `${pnlPct}%`
-        const prec     = entry >= 100 ? 2 : 4
-        const entryStr = entry.toFixed(prec)
-        const hitStr   = hitPrice.toFixed(prec)
-        const label    = hit === 'tp' ? 'TP' : 'SL'
-        const tgMsg    = `${emoji} <b>${signal.final_verdict} ${signal.pair}</b> ${signal.timeframe}\n`
-          + `Entry: $${entryStr} → ${label}: $${hitStr}\n`
-          + `Result: <b>${pnlStr}</b>`
-        const tgChatId = await getTgChatId(signal.user_id)
-        await Promise.allSettled([
-          tgChatId ? sendTelegramToUser(tgChatId, tgMsg) : sendTelegram(tgMsg),
-          createNotification(signal.user_id, `${emoji} ${signal.final_verdict} ${signal.pair} ${signal.timeframe} — ${label} (${pnlStr})`),
-        ])
+        const hasTrade = await import('@/lib/db').then(m => m.sql`
+          SELECT id FROM trades
+          WHERE user_id = ${signal.user_id} AND pair = ${signal.pair}
+            AND (closed_at > NOW() - INTERVAL '1 hour' OR status = 'open')
+          LIMIT 1
+        `)
+        if (!hasTrade.length) {
+          const emoji    = outcome === 'win' ? '✅' : '❌'
+          const pnlStr   = pnlPct >= 0 ? `+${pnlPct}%` : `${pnlPct}%`
+          const prec     = entry >= 100 ? 2 : 4
+          const entryStr = entry.toFixed(prec)
+          const hitStr   = hitPrice.toFixed(prec)
+          const label    = hit === 'tp' ? 'TP' : 'SL'
+          const tgMsg    = `${emoji} <b>${signal.final_verdict} ${signal.pair}</b> ${signal.timeframe}\n`
+            + `Entry: $${entryStr} → ${label}: $${hitStr}\n`
+            + `Result: <b>${pnlStr}</b>`
+          const tgChatId = await getTgChatId(signal.user_id)
+          await Promise.allSettled([
+            tgChatId ? sendTelegramToUser(tgChatId, tgMsg) : sendTelegram(tgMsg),
+            createNotification(signal.user_id, `${emoji} ${signal.final_verdict} ${signal.pair} ${signal.timeframe} — ${label} (${pnlStr})`),
+          ])
+        }
 
         signalsUpdated++
       }

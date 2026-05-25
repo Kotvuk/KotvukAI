@@ -591,7 +591,10 @@ export async function getAllOpenTrades(): Promise<Trade[]> {
 
 export async function activateTrade(id: number, userId: number, entryPrice: number): Promise<boolean> {
   const rows = await sql`
-    UPDATE trades SET status = 'open', entry_price = ${entryPrice}, created_at = NOW()
+    UPDATE trades SET
+      status = 'open',
+      entry_price = ${entryPrice},
+      created_at = CASE WHEN account_type = 'ai' THEN NOW() ELSE created_at END
     WHERE id = ${id} AND user_id = ${userId} AND status = 'pending'
     RETURNING id
   `

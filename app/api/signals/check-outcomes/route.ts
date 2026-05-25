@@ -10,7 +10,12 @@ const TF_MAP: Record<string, string> = {
 }
 
 async function fetchCandlesSince(sym: string, interval: string, sinceMs: number): Promise<{ high: number; low: number; close: number }[]> {
-  const url = `https://fapi.binance.com/fapi/v1/klines?symbol=${sym}&interval=${interval}&startTime=${sinceMs}&limit=200`
+  const intervalMs: Record<string, number> = {
+    '1m': 60_000, '5m': 300_000, '15m': 900_000, '30m': 1_800_000, '1h': 3_600_000, '4h': 14_400_000,
+  }
+  const candleMs = intervalMs[interval] ?? 3_600_000
+  const clampedMs = Math.max(sinceMs, Date.now() - candleMs * 200)
+  const url = `https://fapi.binance.com/fapi/v1/klines?symbol=${sym}&interval=${interval}&startTime=${clampedMs}&limit=200`
   const ctrl = new AbortController()
   const t = setTimeout(() => ctrl.abort(), 8000)
   const res = await fetch(url, { signal: ctrl.signal }).finally(() => clearTimeout(t))

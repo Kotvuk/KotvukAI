@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
 import { NextRequest, NextResponse } from 'next/server'
-import { getAllPendingSignals, getAllPendingTrades, getAllOpenTrades, expireOldSignals, setSignalOutcome, activateTrade, cancelTrade, closeTrade, adjustBalance, createNotification, getUserById } from '@/lib/db'
+import { getAllPendingSignals, getAllPendingTrades, getAllOpenTrades, expireOldSignals, setSignalOutcome, activateTrade, cancelTrade, closeTrade, adjustBalance, createNotification, getUserById, sql } from '@/lib/db'
 import { sendTelegram, sendTelegramToUser } from '@/lib/telegram'
 
 async function fetchCandles(sym: string, sinceMs: number): Promise<{ candles: { high: number; low: number }[]; startMs: number }> {
@@ -122,12 +122,13 @@ export async function GET(req: NextRequest) {
 
         await setSignalOutcome(signal.id, outcome, pnlPct, signal.user_id)
 
-        const hasTrade = await import('@/lib/db').then(m => m.sql`
+        const hasTrade = await sql`
           SELECT id FROM trades
           WHERE user_id = ${signal.user_id} AND pair = ${signal.pair}
-            AND (closed_at > NOW() - INTERVAL '1 hour' OR status = 'open')
+            AND account_type = 'ai'
+            AND (closed_at > NOW() - INTERVAL '24 hours' OR status IN ('open', 'pending'))
           LIMIT 1
-        `)
+        `
         if (!hasTrade.length) {
           const emoji    = outcome === 'win' ? '✅' : '❌'
           const pnlStr   = pnlPct >= 0 ? `+${pnlPct}%` : `${pnlPct}%`

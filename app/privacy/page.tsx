@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import ScrollUnlocker from '@/components/ui/ScrollUnlocker'
 
 export const metadata: Metadata = {
   title: 'Политика конфиденциальности',
@@ -20,6 +21,7 @@ const uls: React.CSSProperties = { fontSize: '.72rem', color: '#555', lineHeight
 export default function PrivacyPage() {
   return (
     <div style={s}>
+      <ScrollUnlocker />
       <div style={container}>
         <Link href="/" style={{ fontSize: '.65rem', color: '#444', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6, marginBottom: 40 }}>
           ← На главную

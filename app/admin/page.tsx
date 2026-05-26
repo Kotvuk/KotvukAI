@@ -55,6 +55,11 @@ export default function AdminPage() {
   }, [user])
 
   useEffect(() => {
+    document.body.style.overflow = 'auto'
+    return () => { document.body.style.overflow = '' }
+  }, [])
+
+  useEffect(() => {
     if (!loading && !user) router.push('/login')
   }, [user, loading, router])
 

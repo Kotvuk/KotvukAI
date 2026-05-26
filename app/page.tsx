@@ -657,7 +657,7 @@ export default function LandingPage() {
             <ul>
               <li><strong style={{ color: '#c8d4e0' }}>Firebase (Google)</strong> — аутентификация и хранение профилей</li>
               <li><strong style={{ color: '#c8d4e0' }}>Neon Database</strong> — хранение сигналов, сделок и журнала</li>
-              <li><strong style={{ color: '#c8d4e0' }}>Groq API</strong> — обработка AI-запросов (данные не сохраняются)</li>
+              <li><strong style={{ color: '#c8d4e0' }}>AI Engine</strong> — обработка AI-запросов (данные не сохраняются)</li>
               <li><strong style={{ color: '#c8d4e0' }}>Binance API</strong> — получение рыночных данных (только чтение)</li>
               <li><strong style={{ color: '#c8d4e0' }}>Vercel</strong> — хостинг и доставка приложения</li>
             </ul>

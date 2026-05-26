@@ -472,7 +472,7 @@
   "backtest_run_error_lbl": "Ошибка бэктеста",
   "auth_error_lbl": "Ошибка авторизации. Попробуйте перезайти.",
   "chart_loading_lbl": "Загрузка графика...",
-  "ai_analysis_subtitle": "4-шаговый SMC анализ · Groq AI",
+  "ai_analysis_subtitle": "4-шаговый SMC анализ · KotvukAI",
   "amount_placeholder": "Сумма ($)",
   "after_label": "После:",
 

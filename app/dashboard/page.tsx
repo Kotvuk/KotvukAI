@@ -17,7 +17,7 @@ const SettingsPanel= dynamic(() => import('@/components/app/panels/SettingsPanel
 const AiChat           = dynamic(() => import('@/components/app/AiChat'),              { ssr: false })
 const OnboardingModal  = dynamic(() => import('@/components/app/OnboardingModal'),    { ssr: false })
 
-const ADMIN_EMAIL = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || '').toLowerCase()
+const ADMIN_EMAIL = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'kotvukai@gmail.com').toLowerCase()
 
 type Panel = 'dash' | 'ai' | 'trades' | 'news' | 'notifs' | 'history' | 'settings'
 

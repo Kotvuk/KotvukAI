@@ -11,7 +11,7 @@ const TIER_LIMITS: Record<string, { analyses: number; label: string; price: stri
   free:    { analyses: 3,   label: 'Free',    price: '$0/мес' },
   starter: { analyses: 10,  label: 'Starter', price: '$9/мес' },
   pro:     { analyses: 30,  label: 'Pro',     price: '$29/мес' },
-  elite:   { analyses: 100, label: 'Elite',   price: '$79/мес' },
+  elite:   { analyses: 999, label: 'Elite',   price: '$79/мес' },
 }
 const TIERS = ['free', 'starter', 'pro', 'elite']
 

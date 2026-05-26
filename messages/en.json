@@ -472,7 +472,7 @@
   "backtest_run_error_lbl": "Backtest error",
   "auth_error_lbl": "Auth error. Please sign in again.",
   "chart_loading_lbl": "Loading chart...",
-  "ai_analysis_subtitle": "4-step SMC analysis · Groq AI",
+  "ai_analysis_subtitle": "4-step SMC analysis · KotvukAI",
   "amount_placeholder": "Amount ($)",
   "after_label": "After:",
 

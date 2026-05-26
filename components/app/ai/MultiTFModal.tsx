@@ -70,8 +70,8 @@ export default function MultiTFModal({ open, pair, onClose }: Props) {
         {!data && !loading && (
           <div style={{ textAlign: 'center', padding: '20px 0 14px' }}>
             <div style={{ fontSize: '.6rem', color: 'var(--dim)', marginBottom: 16, lineHeight: 1.7 }}>
-              Pure algo analysis on 5M / 15M / 1H / 4H.
-              <br />No Groq — instant confluence check.
+              Pure algorithmic analysis on 5M / 15M / 1H / 4H.
+              <br />Instant multi-timeframe confluence check.
             </div>
             <button
               onClick={run}

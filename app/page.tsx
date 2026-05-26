@@ -47,7 +47,6 @@ const TICKER_SYMS = [
   { sym: 'TRX/USDT', key: 'TRXUSDT' },
   { sym: 'LTC/USDT', key: 'LTCUSDT' },
   { sym: 'ATOM/USDT', key: 'ATOMUSDT' },
-  { sym: 'UNI/USDT', key: 'UNIUSDT' },
   { sym: 'INJ/USDT', key: 'INJUSDT' },
   { sym: 'POL/USDT', key: 'POLUSDT' },
 ]

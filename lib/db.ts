@@ -71,7 +71,7 @@ export const SUBSCRIPTION_LIMITS: Record<string, number> = {
   free:    3,
   starter: 10,
   pro:     30,
-  elite:   100,
+  elite:   999,
 }
 
 export interface Notification {
@@ -516,13 +516,15 @@ export async function getSubscription(userId: number): Promise<Subscription> {
 export async function checkAndIncrementAnalysis(userId: number): Promise<{ allowed: boolean; remaining: number; tier: string; limit: number }> {
   await getSubscription(userId)
 
+  const todayUtc = new Date().toISOString().slice(0, 10)
+
   const rows = await sql`
     UPDATE subscriptions
     SET
-      analyses_today = CASE WHEN last_reset_date < CURRENT_DATE THEN 1 ELSE analyses_today + 1 END,
-      last_reset_date = CURRENT_DATE
+      analyses_today = CASE WHEN last_reset_date < ${todayUtc}::date THEN 1 ELSE analyses_today + 1 END,
+      last_reset_date = ${todayUtc}::date
     WHERE user_id = ${userId}
-      AND (last_reset_date < CURRENT_DATE OR analyses_today < (
+      AND (last_reset_date < ${todayUtc}::date OR analyses_today < (
         CASE tier
           WHEN 'starter' THEN 10
           WHEN 'pro'     THEN 30

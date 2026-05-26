@@ -229,6 +229,9 @@ export async function POST(req: NextRequest) {
       },
     })
   } catch (e: unknown) {
-    return NextResponse.json({ ok: false, error: e instanceof Error ? e.message : 'AI error' }, { status: 500 })
+    const msg = e instanceof Error ? e.message : String(e)
+    console.error('[analyze] error:', msg)
+    const isGroqExhausted = msg.includes('exhausted') || msg.includes('rate') || msg.includes('429')
+    return NextResponse.json({ ok: false, error: msg }, { status: isGroqExhausted ? 503 : 500 })
   }
 }

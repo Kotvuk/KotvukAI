@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getUser } from '@/lib/auth-helper'
 import { fullAnalysis, calcMarketData, type Candle } from '@/lib/analysis'
 import { calcEnhancedSMC } from '@/lib/smc'
-import { saveSignal, createNotification, createTrade, getSignalsForPair, checkAndIncrementAnalysis, SUBSCRIPTION_LIMITS, adjustBalance, sql } from '@/lib/db'
+import { saveSignal, createNotification, createTrade, getSignalsForPair, getGlobalLossPatterns, checkAndIncrementAnalysis, SUBSCRIPTION_LIMITS, adjustBalance, sql } from '@/lib/db'
 
 const TF_MAP: Record<string, string> = {
   '1м': '1m', '5м': '5m', '15м': '15m', '30м': '30m',
@@ -116,11 +116,14 @@ export async function POST(req: NextRequest) {
     const market = calcMarketData(candles, fundingRate)
     if (htfBias) market.htfBias = htfBias
 
-    const memorySignals = await getSignalsForPair(user.id, pair, 5)
+    const [memorySignals, globalPatterns] = await Promise.all([
+      getSignalsForPair(user.id, pair, 10),
+      getGlobalLossPatterns(user.id),
+    ])
     const balance       = Number(user.ai_balance ?? 10000)
     const fixedAmount   = Number(user.ai_trade_amount ?? 100)
     const userMaxLev    = Number(user.ai_max_leverage ?? 20)
-    const { step1, step2, final: analysis, methods, consensus } = await fullAnalysis(pair, timeframe, market, candles, memorySignals, userMaxLev, balance, 1.0)
+    const { step1, step2, final: analysis, methods, consensus } = await fullAnalysis(pair, timeframe, market, candles, memorySignals, userMaxLev, balance, 1.0, globalPatterns)
 
     const elapsed = ((Date.now() - start) / 1000).toFixed(1)
 

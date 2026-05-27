@@ -3,7 +3,7 @@ export const maxDuration = 60
 import { NextRequest, NextResponse } from 'next/server'
 import { fullAnalysis, calcMarketData, type Candle } from '@/lib/analysis'
 import { calcEnhancedSMC } from '@/lib/smc'
-import { sql, saveSignal, createTrade, createNotification, getUserWatchlist, getSignalsForPair, adjustBalance, type User } from '@/lib/db'
+import { sql, saveSignal, createTrade, createNotification, getUserWatchlist, getSignalsForPair, getGlobalLossPatterns, adjustBalance, type User } from '@/lib/db'
 import { sendTelegram, sendTelegramToUser } from '@/lib/telegram'
 import { DEFAULT_WATCHLIST } from '@/lib/pairs'
 
@@ -91,8 +91,11 @@ async function analyzeOne(
     const tfLabel  = ({ '5m': '5м', '15m': '15м', '30m': '30м', '1h': '1ч', '4h': '4ч' } as Record<string, string>)[interval] ?? interval
 
     const pairFmt = sym.endsWith('USDT') ? sym.slice(0, -4) + '/USDT' : sym
-    const memorySignals = await getSignalsForPair(userId, pairFmt, 5)
-    const { step1, step2, final } = await fullAnalysis(pairFmt, tfLabel, market, candles, memorySignals, maxLev, balance, 1.0)
+    const [memorySignals, globalPatterns] = await Promise.all([
+      getSignalsForPair(userId, pairFmt, 10),
+      getGlobalLossPatterns(userId),
+    ])
+    const { step1, step2, final } = await fullAnalysis(pairFmt, tfLabel, market, candles, memorySignals, maxLev, balance, 1.0, globalPatterns)
 
     await saveSignal(userId, {
       pair: pairFmt, timeframe: tfLabel,

@@ -391,15 +391,68 @@ export async function clearNotifications(userId: number) {
   await sql`DELETE FROM notifications WHERE user_id = ${userId}`
 }
 
-export async function getSignalsForPair(userId: number, pair: string, limit = 5): Promise<Signal[]> {
+export async function getSignalsForPair(userId: number, pair: string, limit = 10): Promise<Signal[]> {
   const rows = await sql`
     SELECT id, pair, timeframe, final_verdict, final_confidence,
-           final_entry, final_tp, final_sl, final_leverage, outcome, actual_pnl_pct, created_at
+           final_entry, final_tp, final_sl, final_leverage, outcome, actual_pnl_pct, raw_response, created_at
     FROM signals
     WHERE user_id = ${userId} AND pair = ${pair}
     ORDER BY created_at DESC LIMIT ${limit}
   `
   return rows as Signal[]
+}
+
+export async function getGlobalLossPatterns(userId: number): Promise<string> {
+  const rows = await sql`
+    SELECT raw_response, final_verdict, actual_pnl_pct
+    FROM signals
+    WHERE user_id = ${userId}
+      AND outcome = 'loss'
+      AND created_at > NOW() - INTERVAL '30 days'
+      AND raw_response IS NOT NULL
+    ORDER BY created_at DESC
+    LIMIT 25
+  `
+  if (rows.length < 3) return ''
+
+  let rsiOverboughtLongs = 0
+  let highFundingLongs = 0
+  let weakObCount = 0
+  let trendConflict = 0
+  const n = rows.length
+
+  for (const row of rows) {
+    const raw = row.raw_response as Record<string, unknown> | null
+    if (!raw) continue
+    const m = raw.market as Record<string, unknown> | undefined
+    const pipe = raw.pipeline as Record<string, unknown> | undefined
+    const s1 = pipe?.step1 as Record<string, unknown> | undefined
+    const finalData = (raw.analysis || raw.final) as Record<string, unknown> | undefined
+    const obUsed = finalData?.ob_used as Record<string, unknown> | undefined
+
+    const rsi = Number(m?.rsi ?? 0)
+    const funding = Number(m?.fundingRate ?? 0)
+    const trend = String(s1?.trend ?? '')
+    const verdict = String(row.final_verdict ?? '')
+    const obQ = String(obUsed?.quality ?? '')
+
+    if (verdict === 'LONG' && rsi > 65) rsiOverboughtLongs++
+    if (verdict === 'LONG' && funding > 0.05) highFundingLongs++
+    if (obQ === 'B' || obQ === 'C') weakObCount++
+    if (
+      (verdict === 'LONG' && (trend === 'bearish' || trend === 'ranging')) ||
+      (verdict === 'SHORT' && (trend === 'bullish' || trend === 'ranging'))
+    ) trendConflict++
+  }
+
+  const rules: string[] = []
+  if (rsiOverboughtLongs >= 2) rules.push(`RSI>65 on LONG → ${rsiOverboughtLongs}/${n} losses (require RSI<65 for longs)`)
+  if (highFundingLongs >= 2) rules.push(`Funding>0.05% on LONG → ${highFundingLongs}/${n} losses (avoid overheated longs)`)
+  if (weakObCount >= Math.ceil(n * 0.5)) rules.push(`B/C quality OB → ${weakObCount}/${n} losses (prefer A/A+ zones only)`)
+  if (trendConflict >= 2) rules.push(`Trend/HTF conflict → ${trendConflict}/${n} losses (align with HTF trend)`)
+
+  if (!rules.length) return ''
+  return `\n⛔ LEARNED RULES (from ${n} losses in 30 days):\n${rules.map(r => `  • ${r}`).join('\n')}\n`
 }
 
 export async function getPendingSignals(userId: number): Promise<Signal[]> {

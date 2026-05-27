@@ -166,44 +166,70 @@ interface MemorySignal {
   final_confidence: number | null; final_entry: number | null
   final_tp: number | null; final_sl: number | null
   outcome: 'win' | 'loss' | null; actual_pnl_pct: number | null
+  raw_response?: Record<string, unknown> | null
   created_at: string
 }
 
-function getHistory(signals: MemorySignal[]): string {
-  if (!signals.length) return ''
+function extractSignalConditions(raw: Record<string, unknown> | null | undefined): string[] {
+  if (!raw) return []
+  const m = raw.market as Record<string, unknown> | undefined
+  const pipe = raw.pipeline as Record<string, unknown> | undefined
+  const s1 = pipe?.step1 as Record<string, unknown> | undefined
+  const finalData = (raw.analysis || raw.final) as Record<string, unknown> | undefined
+  const obUsed = finalData?.ob_used as Record<string, unknown> | undefined
 
-  const lines = signals.map(s => {
-    const date = new Date(s.created_at).toLocaleDateString('en-US')
-    const outcome = s.outcome ? (s.outcome === 'win' ? '✅ WIN' : '❌ LOSS') : '⏳ pending'
+  const rsi = m?.rsi !== undefined ? Number(m.rsi) : null
+  const funding = m?.fundingRate !== undefined ? Number(m.fundingRate) : null
+  const trend = String(s1?.trend || m?.htfBias || '')
+  const obQ = String(obUsed?.quality || '')
+
+  const out: string[] = []
+  if (rsi !== null && rsi > 0) {
+    const flag = rsi > 70 ? '🔴' : rsi > 65 ? '⚠️' : rsi < 30 ? '🟢' : ''
+    out.push(`RSI=${rsi.toFixed(0)}${flag}`)
+  }
+  if (trend) out.push(`trend=${trend}`)
+  if (obQ) out.push(`OB=${obQ}`)
+  if (funding !== null && Math.abs(funding) > 0.01) out.push(`funding=${funding > 0 ? '+' : ''}${funding.toFixed(3)}%${funding > 0.05 ? '⚠️' : ''}`)
+  return out
+}
+
+function getHistory(signals: MemorySignal[], globalPatterns = ''): string {
+  if (!signals.length) return globalPatterns
+
+  const wins    = signals.filter(s => s.outcome === 'win')
+  const losses  = signals.filter(s => s.outcome === 'loss')
+  const pending = signals.filter(s => !s.outcome)
+
+  const fmtLine = (s: MemorySignal, tag: string) => {
+    const d = new Date(s.created_at).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit' })
     const pnlNum = s.actual_pnl_pct != null ? Number(s.actual_pnl_pct) : null
-    const pnl = pnlNum != null && !isNaN(pnlNum) ? ` PnL:${pnlNum > 0 ? '+' : ''}${pnlNum.toFixed(1)}%` : ''
-    return `[${date} ${s.timeframe}] ${s.final_verdict ?? 'WAIT'} conf:${s.final_confidence ?? '?'}% entry:$${s.final_entry ?? '?'} tp:$${s.final_tp ?? '?'} sl:$${s.final_sl ?? '?'} → ${outcome}${pnl}`
-  })
-
-  const losses = signals.filter(s => s.outcome === 'loss')
-  let lossAnalysis = ''
-  if (losses.length > 0) {
-    const lossLines = losses.map(s => {
-      const hints: string[] = []
-      if (s.final_verdict === 'LONG' && s.final_entry && s.final_sl) {
-        const slDist = ((s.final_entry - s.final_sl) / s.final_entry * 100).toFixed(1)
-        hints.push(`SL ${slDist}% below entry`)
-      }
-      if (s.final_verdict === 'SHORT' && s.final_entry && s.final_sl) {
-        const slDist = ((s.final_sl - s.final_entry) / s.final_entry * 100).toFixed(1)
-        hints.push(`SL ${slDist}% above entry`)
-      }
-      const pnlVal = s.actual_pnl_pct != null ? Number(s.actual_pnl_pct) : null
-      if (pnlVal != null && pnlVal < -5) hints.push('large loss — OB failed under pressure')
-      if (pnlVal != null && pnlVal < -1 && pnlVal > -5) hints.push('price tapped SL — weak zone')
-      const conf = s.final_confidence ?? 0
-      if (conf < 60) hints.push(`low confidence ${conf}% — signal was weak`)
-      return `  • ${s.final_verdict} [${new Date(s.created_at).toLocaleDateString('en-US')}]: ${hints.join('; ') || 'zone did not hold — likely insufficient confluence'}`
-    })
-    lossAnalysis = `\n⚠️ LOSS REVIEW (${losses.length} signals) — AVOID THE SAME MISTAKES:\n${lossLines.join('\n')}\n→ Require more confluence factors. Never enter without a liquidity sweep and a clear POI.\n`
+    const pnl = pnlNum != null ? ` ${pnlNum >= 0 ? '+' : ''}${pnlNum.toFixed(1)}%` : ''
+    const conds = extractSignalConditions(s.raw_response).join(', ')
+    return `  • ${s.final_verdict ?? 'WAIT'} [${d} ${s.timeframe}] conf:${s.final_confidence ?? '?'}%${conds ? ' [' + conds + ']' : ''} → ${tag}${pnl}`
   }
 
-  return `\n━━━ MEMORY: recent signals for this pair ━━━\n${lines.join('\n')}\n${lossAnalysis}Use this history: repeat winning patterns, avoid losing patterns.\n`
+  let out = '\n━━━ MEMORY: recent signals for this pair ━━━\n'
+
+  if (wins.length) {
+    out += `✅ WIN PATTERNS (${wins.length}):\n`
+    out += wins.map(s => fmtLine(s, 'WIN')).join('\n') + '\n'
+  }
+
+  if (losses.length) {
+    out += `⚠️ LOSS PATTERNS (${losses.length}) — DO NOT REPEAT:\n`
+    out += losses.map(s => fmtLine(s, 'LOSS')).join('\n') + '\n'
+    out += `→ Study these conditions. Never repeat the losing setup.\n`
+  }
+
+  if (pending.length) {
+    out += `⏳ PENDING: ${pending.map(s => `${s.final_verdict} conf:${s.final_confidence ?? '?'}%`).join(', ')}\n`
+  }
+
+  if (globalPatterns) out += globalPatterns
+
+  out += 'Apply winning patterns. Strictly avoid all losing conditions.\n'
+  return out
 }
 
 export async function fullAnalysis(
@@ -214,14 +240,15 @@ export async function fullAnalysis(
   memorySignals: MemorySignal[] = [],
   maxLeverage = 20,
   balance = 1000,
-  riskPct = 1.0
+  riskPct = 1.0,
+  globalLossPatterns = ''
 ): Promise<{ step1: Step1Result; step2: Step2Result; final: FinalResult; methods: MethodResult[]; consensus: ConsensusResult }> {
   const keys       = loadGroqKeys()
   const mainModel  = getGroqModel()
   const quickModel = getGroqFastModel()
   const price      = market.price
   const ctx        = getContext(market)
-  const histCtx    = getHistory(memorySignals)
+  const histCtx    = getHistory(memorySignals, globalLossPatterns)
 
   const indResult = analyzeIndicators(candles)
   const paResult  = analyzePriceAction(candles)
@@ -236,6 +263,13 @@ export async function fullAnalysis(
   const recentOutcomes = memorySignals.slice(0, 3).map(s => s.outcome)
   const consecutiveLosses = recentOutcomes.filter(o => o === 'loss').length
   const strictMode = consecutiveLosses >= 2
+
+  const resolvedSignals = memorySignals.filter(s => s.outcome !== null)
+  const pairWinRate = resolvedSignals.length >= 3
+    ? resolvedSignals.filter(s => s.outcome === 'win').length / resolvedSignals.length
+    : null
+  const lowWinRate = pairWinRate !== null && pairWinRate < 0.4
+  const minConfThreshold = strictMode ? 70 : lowWinRate ? 75 : 60
 
   const utcHour = new Date().getUTCHours()
   const session = utcHour < 8 ? 'Asia (00-08 UTC, low liquidity)'
@@ -410,6 +444,17 @@ Reply with ONLY one line of valid JSON (all numeric fields must be numbers, not 
     ? consensus.decision
     : rawVerdict
   const confidence  = Number(json.c || json.confidence || 50)
+
+  if ((verdict === 'LONG' || verdict === 'SHORT') && confidence < minConfThreshold && !consensusOverride) {
+    const ws1: Step1Result = { signal: 'WAIT', strength: 3, trend: trendDir, summary: summary1 }
+    const ws2: Step2Result = {
+      verdict: 'WAIT', confidence: 48, risk_score: 5, leverage: 1,
+      summary: `Confidence ${confidence}% below ${minConfThreshold}%${lowWinRate ? ` (win rate ${Math.round((pairWinRate ?? 0) * 100)}% on this pair)` : ''}`,
+    }
+    const wf = makeWait(48, `Confidence gate: ${confidence}% < ${minConfThreshold}% required.`, riskUsd, balance, riskPct, allMethods, consensus)
+    return translateResponse(keys, { step1: ws1, step2: ws2, final: wf, methods: allMethods, consensus })
+  }
+
   const rawRisk     = Number(json.r || json.risk_score || 5)
   const riskScore   = rawRisk > 0 && rawRisk < 1 ? Math.round(rawRisk * 10) : Math.round(rawRisk)
   const leverage    = Math.min(Number(json.l || json.leverage || 2), maxLeverage)
@@ -428,7 +473,7 @@ Reply with ONLY one line of valid JSON (all numeric fields must be numbers, not 
 
   const { entry: entryPrice, ob: selectedOB } = findEntry(verdict, price, aiEntry, market.smc)
 
-  const LIMIT_THRESHOLD = 0.002
+  const LIMIT_THRESHOLD = 0.005
   const autoEntryType: 'market' | 'limit' = (
     (verdict === 'LONG'  && entryPrice < price * (1 - LIMIT_THRESHOLD)) ||
     (verdict === 'SHORT' && entryPrice > price * (1 + LIMIT_THRESHOLD))

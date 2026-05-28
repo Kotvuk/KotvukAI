@@ -66,7 +66,11 @@ tsconfig.tsbuildinfo
 /release-*/
 /dist-electron/
 /dist-electron-new/
+/dist-electron/
+/dist-electron-new/
 /out/
 
 # Misc temp files
 =
+
+.vercel

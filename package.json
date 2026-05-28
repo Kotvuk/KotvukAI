@@ -1,6 +1,6 @@
 {
   "name": "kotvuk-ai",
-  "version": "1.4.1",
+  "version": "1.6.0",
   "description": "KotvukAI — AI-платформа для анализа криптовалютных рынков",
   "private": true,
   "main": "electron/main.js",
@@ -44,7 +44,7 @@
     "copyright": "Copyright © 2025 KotvukAI",
     "asar": false,
     "directories": {
-      "output": "dist-electron"
+      "output": "release-1.6.0"
     },
     "files": [
       "electron/**/*",

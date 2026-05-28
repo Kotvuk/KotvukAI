@@ -13,7 +13,7 @@ export async function GET() {
     const ctrl  = new AbortController()
     const timer = setTimeout(() => ctrl.abort(), 10000)
 
-    const res = await fetch('https://fapi.binance.com/fapi/v1/premiumIndex', {
+    const res = await fetch('https://fapi.binance.com/fapi/v1/ticker/24hr', {
       signal: ctrl.signal,
       next: { revalidate: 1800 },
     })
@@ -21,17 +21,17 @@ export async function GET() {
 
     if (!res.ok) return NextResponse.json(STATIC_PAIRS)
 
-    const data = await res.json() as Array<{ symbol: string; markPrice?: string }>
+    const data = await res.json() as Array<{ symbol: string; lastPrice?: string }>
 
     const priceMap: Record<string, number> = {}
     const pairSet  = new Set<string>()
 
     for (const item of data) {
-      const { symbol, markPrice } = item
+      const { symbol, lastPrice } = item
       if (!symbol.endsWith('USDT') || isExcluded(symbol)) continue
       const pair = toSlash(symbol)
       pairSet.add(pair)
-      if (markPrice) priceMap[pair] = parseFloat(markPrice)
+      if (lastPrice) priceMap[pair] = parseFloat(lastPrice)
     }
 
     if (pairSet.size < 50) return NextResponse.json(STATIC_PAIRS)

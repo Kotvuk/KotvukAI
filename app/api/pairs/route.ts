@@ -1,31 +1,9 @@
 export const maxDuration = 60
 import { NextResponse } from 'next/server'
-import { STATIC_PAIRS } from '@/lib/pairs'
-
-const EXCLUDED_SUFFIXES = ['UP', 'DOWN', 'BULL', 'BEAR', '3L', '3S', '2L', '2S', '5L', '5S']
-const EXCLUDED_BASES    = new Set([
-  'WBTC', 'BTCDOM', 'BNBDOM', 'DEFI', 'ALTDOM', 'MIDDOM', 'BVOL', 'IBVOL', 'ETHBTC',
-  'AAPL', 'AMD',  'AMZN', 'AVGO', 'BABA', 'BRKB', 'COIN', 'CSCO', 'DIS',
-  'GOOGL', 'HD',  'HOOD', 'INTC', 'JPM',  'LITE', 'META', 'MRVL', 'MSFT',
-  'MU',   'NVDA', 'ORCL', 'PLTR', 'QCOM', 'RKLB', 'SNDK', 'TSLA', 'TSM',
-  'UBER', 'V',    'WMT',  'MSTR',
-  'QQQ',  'SPY',  'EWY',  'SOXL',
-  'BZ',   'CL',   'USAR', 'XPD',  'XPT',
-  'XAU',  'XAG',  'PAXG',
-  'EWJ',  'NATGAS', 'USDC', 'BTCST',
-])
+import { STATIC_PAIRS, isExcluded } from '@/lib/pairs'
 
 function toSlash(symbol: string): string {
   return symbol.slice(0, -4) + '/USDT'
-}
-
-function isExcluded(symbol: string): boolean {
-  const base = symbol.slice(0, -4)
-  if (EXCLUDED_BASES.has(base)) return true
-  if (EXCLUDED_SUFFIXES.some(s => base.endsWith(s))) return true
-  if (base.length < 2) return true
-  if (!/^[A-Z0-9]+$/.test(base)) return true
-  return false
 }
 
 export const revalidate = 1800

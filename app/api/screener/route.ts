@@ -4,6 +4,7 @@ export const maxDuration = 60
 import { NextRequest, NextResponse } from 'next/server'
 import { calcMarketData, type Candle } from '@/lib/analysis'
 import { analyzeIndicators, analyzePriceAction, analyzeWyckoff, analyzeVolumeProfile, analyzeFunding, calcConsensus } from '@/lib/indicators'
+import { isExcluded } from '@/lib/pairs'
 
 const TOP_N = 50
 const RETURN_N = 30
@@ -16,7 +17,7 @@ async function fetchTopPairs(): Promise<{ symbol: string; volume: number }[]> {
   if (!r.ok) return []
   const data = await r.json() as { symbol: string; quoteVolume: string }[]
   return data
-    .filter(d => d.symbol.endsWith('USDT'))
+    .filter(d => d.symbol.endsWith('USDT') && !isExcluded(d.symbol))
     .map(d => ({ symbol: d.symbol, volume: parseFloat(d.quoteVolume) }))
     .sort((a, b) => b.volume - a.volume)
     .slice(0, TOP_N)
@@ -82,7 +83,7 @@ export async function GET(req: NextRequest) {
         if (confidence < 55) return null
 
         const setup: ScreenerSetup = {
-          pair: symbol,
+          pair: symbol.slice(0, -4) + '/USDT',
           signal: consensus.decision,
           confidence,
           price: market.price,

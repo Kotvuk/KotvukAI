@@ -99,7 +99,7 @@ export default function ScreenerModal({ open, onClose, onSelectPair }: Props) {
             {setups.map(s => (
               <div
                 key={s.pair}
-                onClick={() => { onSelectPair?.(s.pair.replace('USDT', '/USDT')); onClose() }}
+                onClick={() => { onSelectPair?.(s.pair); onClose() }}
                 style={{ display: 'grid', gridTemplateColumns: '1fr 52px 48px 44px 52px', gap: 6, padding: '7px 8px', background: 'var(--bg3)', borderRadius: 5, cursor: onSelectPair ? 'pointer' : 'default', borderLeft: `3px solid ${s.signal === 'LONG' ? 'var(--long)' : 'var(--short)'}`, alignItems: 'center' }}
               >
                 <span style={{ fontSize: '.65rem', fontWeight: 600 }}>{s.pair}</span>

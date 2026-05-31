@@ -483,7 +483,14 @@ Reply with ONLY one line of valid JSON (all numeric fields must be numbers, not 
 
   const rawRisk     = Number(json.r || json.risk_score || 5)
   const riskScore   = rawRisk > 0 && rawRisk < 1 ? Math.round(rawRisk * 10) : Math.round(rawRisk)
-  const leverage    = Math.min(Number(json.l || json.leverage || 2), maxLeverage)
+
+  const htfAligned     = (verdict === 'LONG' && htf === 'bullish') || (verdict === 'SHORT' && htf === 'bearish')
+  const fundingAgrees  = frResult.signal === verdict
+  const strongConsensus = verdict === 'LONG' ? consensus.long >= 4 : verdict === 'SHORT' ? consensus.short >= 4 : false
+  const convictionScore = [htfAligned, fundingAgrees, strongConsensus].filter(Boolean).length
+  const convictionFactor = convictionScore >= 3 ? 1.0 : convictionScore === 2 ? 0.65 : convictionScore === 1 ? 0.4 : 0.25
+  const aiLeverage  = Math.min(Number(json.l || json.leverage || 2), maxLeverage)
+  const leverage    = Math.max(2, Math.min(aiLeverage, Math.round(maxLeverage * convictionFactor)))
   const waitFor     = String(json.wait_for || '')
   const aiEntry     = Number(json.e || json.entry_price || price)
   const trend       = String(json.trend || 'neutral')

@@ -1,6 +1,15 @@
+const CRON_TF = {
+  '*/15 * * * *': '15m',
+  '*/30 * * * *': '30m',
+  '0 * * * *':    '1h',
+  '0 */4 * * *':  '4h',
+}
+
 export default {
   async scheduled(event, env, ctx) {
-    ctx.waitUntil(runAnalysis(env, new Date(event.scheduledTime)))
+    const tf = CRON_TF[event.cron]
+    const tfs = tf ? [tf] : []
+    ctx.waitUntil(runAnalysis(env, tfs))
   },
 
   async fetch(req, env) {
@@ -8,27 +17,15 @@ export default {
     if (url.pathname !== '/trigger') return new Response('KotvukAI Worker', { status: 200 })
 
     const tf = url.searchParams.get('tf') || ''
-    const tfs = tf === 'all' ? ['5m', '15m', '1h', '4h'] : tf ? [tf] : null
-    if (!tfs) return new Response('?tf=5m|15m|1h|4h|all required', { status: 400 })
+    const tfs = tf === 'all' ? ['15m', '30m', '1h', '4h'] : tf ? [tf] : null
+    if (!tfs) return new Response('?tf=15m|30m|1h|4h|all required', { status: 400 })
 
-    const results = await runAnalysis(env, new Date(), tfs)
+    const results = await runAnalysis(env, tfs)
     return Response.json(results)
   },
 }
 
-async function runAnalysis(env, now, forceTfs) {
-  const min  = now.getUTCMinutes()
-  const hour = now.getUTCHours()
-
-  const tfs = forceTfs ?? (() => {
-    const list = []
-    if (min === 0 && hour % 4 === 0) list.push('4h')
-    if (min === 0)      list.push('1h')
-    if (min % 30 === 0) list.push('30m')
-    if (min % 15 === 0) list.push('15m')
-    return list
-  })()
-
+async function runAnalysis(env, tfs) {
   const base   = env.APP_URL.replace(/^﻿/, '').trim().replace(/\/$/, '')
   const secret = env.AUTO_ANALYZE_SECRET.replace(/^﻿/, '').trim()
 

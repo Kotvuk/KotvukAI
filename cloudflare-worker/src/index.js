@@ -26,7 +26,6 @@ async function runAnalysis(env, now, forceTfs) {
     if (min === 0)      list.push('1h')
     if (min % 30 === 0) list.push('30m')
     if (min % 15 === 0) list.push('15m')
-    list.push('5m')
     return list
   })()
 

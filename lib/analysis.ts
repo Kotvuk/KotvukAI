@@ -458,6 +458,19 @@ Reply with ONLY one line of valid JSON (all numeric fields must be numbers, not 
     return finalize({ step1: ss1, step2: ss2, final: sf, methods: allMethods, consensus })
   }
 
+  const fundingOpposes =
+    (verdict === 'LONG'  && frResult.signal === 'SHORT' && frResult.confidence >= 60) ||
+    (verdict === 'SHORT' && frResult.signal === 'LONG'  && frResult.confidence >= 60)
+  if (fundingOpposes) {
+    const fs1: Step1Result = { signal: 'WAIT', strength: 3, trend: trendDir, summary: summary1 }
+    const fs2: Step2Result = {
+      verdict: 'WAIT', confidence: 48, risk_score: 5, leverage: 1,
+      summary: `Funding strongly opposes ${verdict} (${frResult.summary}). Funding is the most reliable filter — skipping.`,
+    }
+    const ff = makeWait(48, `Funding rate opposes the ${verdict} setup — historically the strongest contrarian signal. Waiting.`, riskUsd, balance, riskPct, allMethods, consensus)
+    return finalize({ step1: fs1, step2: fs2, final: ff, methods: allMethods, consensus })
+  }
+
   if ((verdict === 'LONG' || verdict === 'SHORT') && confidence < minConfThreshold && !consensusOverride) {
     const ws1: Step1Result = { signal: 'WAIT', strength: 3, trend: trendDir, summary: summary1 }
     const ws2: Step2Result = {

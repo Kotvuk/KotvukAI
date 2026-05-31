@@ -95,7 +95,7 @@ async function analyzeOne(
       getSignalsForPair(userId, pairFmt, 10),
       getGlobalLossPatterns(userId),
     ])
-    const { step1, step2, final } = await fullAnalysis(pairFmt, tfLabel, market, candles, memorySignals, maxLev, balance, 1.0, globalPatterns)
+    const { step1, step2, final } = await fullAnalysis(pairFmt, tfLabel, market, candles, memorySignals, maxLev, balance, 1.0, globalPatterns, false)
 
     await saveSignal(userId, {
       pair: pairFmt, timeframe: tfLabel,

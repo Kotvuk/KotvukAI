@@ -83,7 +83,7 @@ export async function GET(req: NextRequest) {
     const maxLev       = Number(user.ai_max_leverage ?? 20)
 
     const start = Date.now()
-    const { step1, step2, final } = await fullAnalysis(sym, tfLabel, market, candles, [], maxLev, balance, 1.0)
+    const { step1, step2, final } = await fullAnalysis(sym, tfLabel, market, candles, [], maxLev, balance, 1.0, '', false)
     const elapsed = ((Date.now() - start) / 1000).toFixed(1)
 
     const signal = await saveSignal(user.id, {

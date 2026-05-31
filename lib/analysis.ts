@@ -241,9 +241,12 @@ export async function fullAnalysis(
   maxLeverage = 20,
   balance = 1000,
   riskPct = 1.0,
-  globalLossPatterns = ''
+  globalLossPatterns = '',
+  translate = true
 ): Promise<{ step1: Step1Result; step2: Step2Result; final: FinalResult; methods: MethodResult[]; consensus: ConsensusResult }> {
   const keys       = loadGroqKeys()
+  const finalize = (r: { step1: Step1Result; step2: Step2Result; final: FinalResult; methods?: MethodResult[]; consensus?: ConsensusResult }) =>
+    translate ? translateResponse(keys, r) : passThroughResult(r)
   const mainModel  = getGroqModel()
   const quickModel = getGroqFastModel()
   const price      = market.price
@@ -337,7 +340,7 @@ Reply with a single-line JSON:
       const waitStep2: Step2Result = { verdict: 'WAIT', confidence: 45, risk_score: 5, leverage: 1, summary: 'Range + neutral HTF — no clear direction' }
       const rangeLevel = market.resistances[0] || market.supports[0] || 0
       const waitFinal = makeWait(45, 'Range with no HTF bias. Waiting for structure resolution.', riskUsd, balance, riskPct, allMethods, consensus, rangeLevel)
-      return translateResponse(keys, { step1: waitStep1, step2: waitStep2, final: waitFinal, methods: allMethods, consensus })
+      return finalize({ step1: waitStep1, step2: waitStep2, final: waitFinal, methods: allMethods, consensus })
     }
   }
 
@@ -379,7 +382,7 @@ Reply with a single-line JSON:
       const waitStep2: Step2Result = { verdict: 'WAIT', confidence: 48, risk_score: 5, leverage: 1, summary: `Only ${confluenceCount} factor(s) out of ${minConfluence} required. ${step2Summary}` }
       const poiLevel = Number(s2.poi_low || 0) || Number(s2.poi_high || 0)
       const waitFinal = makeWait(48, `Insufficient confluence (${confluenceCount}/${minConfluence}). ${String(s2.wait_reason || 'Wait for a cleaner setup.')}`, riskUsd, balance, riskPct, allMethods, consensus, poiLevel)
-      return translateResponse(keys, { step1: waitStep1, step2: waitStep2, final: waitFinal, methods: allMethods, consensus })
+      return finalize({ step1: waitStep1, step2: waitStep2, final: waitFinal, methods: allMethods, consensus })
     }
   }
 
@@ -452,7 +455,7 @@ Reply with ONLY one line of valid JSON (all numeric fields must be numbers, not 
       summary: 'SHORT requires bearish HTF and at least 4 methods agreeing — counter-trend shorts underperform.',
     }
     const sf = makeWait(48, 'SHORT setup not confirmed: needs bearish HTF + strong consensus. Waiting.', riskUsd, balance, riskPct, allMethods, consensus)
-    return translateResponse(keys, { step1: ss1, step2: ss2, final: sf, methods: allMethods, consensus })
+    return finalize({ step1: ss1, step2: ss2, final: sf, methods: allMethods, consensus })
   }
 
   if ((verdict === 'LONG' || verdict === 'SHORT') && confidence < minConfThreshold && !consensusOverride) {
@@ -462,7 +465,7 @@ Reply with ONLY one line of valid JSON (all numeric fields must be numbers, not 
       summary: `Confidence ${confidence}% below ${minConfThreshold}%${lowWinRate ? ` (win rate ${Math.round((pairWinRate ?? 0) * 100)}% on this pair)` : ''}`,
     }
     const wf = makeWait(48, `Confidence gate: ${confidence}% < ${minConfThreshold}% required.`, riskUsd, balance, riskPct, allMethods, consensus)
-    return translateResponse(keys, { step1: ws1, step2: ws2, final: wf, methods: allMethods, consensus })
+    return finalize({ step1: ws1, step2: ws2, final: wf, methods: allMethods, consensus })
   }
 
   const rawRisk     = Number(json.r || json.risk_score || 5)
@@ -588,7 +591,7 @@ Reply with ONLY one line of valid JSON (all numeric fields must be numbers, not 
     methods: allMethods,
     consensus,
   }
-  return translateResponse(keys, { step1, step2, final, methods: allMethods, consensus })
+  return finalize({ step1, step2, final, methods: allMethods, consensus })
 }
 
 function makeWait(confidence: number, reason: string, riskUsd: number, balance: number, riskPct: number, methods?: MethodResult[], consensus?: ConsensusResult, watchLevel?: number): FinalResult {
@@ -613,6 +616,18 @@ function makeWait(confidence: number, reason: string, riskUsd: number, balance: 
     ],
     methods,
     consensus,
+  }
+}
+
+type FinalizeResult = { step1: Step1Result; step2: Step2Result; final: FinalResult; methods: MethodResult[]; consensus: ConsensusResult }
+
+function passThroughResult(result: { step1: Step1Result; step2: Step2Result; final: FinalResult; methods?: MethodResult[]; consensus?: ConsensusResult }): FinalizeResult {
+  return {
+    step1: result.step1,
+    step2: result.step2,
+    final: result.final,
+    methods: result.methods ?? ([] as MethodResult[]),
+    consensus: result.consensus ?? { long: 0, short: 0, wait: 0, threshold: 3, decision: 'WAIT' as const, avgConfidenceLong: 0, avgConfidenceShort: 0, agreeing: [], disagreeing: [] },
   }
 }
 

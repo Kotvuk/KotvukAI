@@ -206,7 +206,17 @@ export async function setStripeCustomerId(userId: number, customerId: string): P
   await sql`UPDATE users SET stripe_customer_id = ${customerId} WHERE id = ${userId}`
 }
 
+const TF_CANON: Record<string, string> = {
+  '1м': '1m', '5м': '5m', '15м': '15m', '30м': '30m', '1ч': '1h', '4ч': '4h', '1д': '1d',
+  '1m': '1m', '5m': '5m', '15m': '15m', '30m': '30m', '1h': '1h', '4h': '4h', '1d': '1d',
+}
+
+export function normalizeTf(tf: string): string {
+  return TF_CANON[tf] ?? tf
+}
+
 export async function saveSignal(userId: number, data: Partial<Signal>) {
+  if (data.timeframe) data.timeframe = normalizeTf(data.timeframe)
   const rows = await sql`
     INSERT INTO signals (
       user_id, pair, timeframe, final_verdict, final_confidence,

@@ -7,6 +7,8 @@ import { getUser } from '@/lib/auth-helper'
 const TF_MAP: Record<string, string> = {
   '1м': '1m', '5м': '5m', '15м': '15m', '30м': '30m',
   '1ч': '1h', '4ч': '4h', '1д': '1d',
+  '1m': '1m', '5m': '5m', '15m': '15m', '30m': '30m',
+  '1h': '1h', '4h': '4h', '1d': '1d',
 }
 
 async function fetchCandlesSince(sym: string, interval: string, sinceMs: number): Promise<{ high: number; low: number; close: number }[]> {
@@ -58,14 +60,11 @@ export async function POST(req: NextRequest) {
       let hitSl = false
 
       for (const c of candles) {
-        if (hitTp || hitSl) break
-        if (isLong) {
-          if (c.high >= tp) { hitTp = true; break }
-          if (c.low  <= sl) { hitSl = true; break }
-        } else {
-          if (c.low  <= tp) { hitTp = true; break }
-          if (c.high >= sl) { hitSl = true; break }
-        }
+        const tpTouch = isLong ? c.high >= tp : c.low  <= tp
+        const slTouch = isLong ? c.low  <= sl : c.high >= sl
+        if (tpTouch && slTouch) { hitSl = true; break }
+        if (tpTouch) { hitTp = true; break }
+        if (slTouch) { hitSl = true; break }
       }
 
       if (!hitTp && !hitSl) continue

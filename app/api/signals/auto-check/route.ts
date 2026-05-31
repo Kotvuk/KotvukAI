@@ -1,12 +1,18 @@
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
 import { NextRequest, NextResponse } from 'next/server'
-import { getAllPendingSignals, getAllPendingTrades, getAllOpenTrades, expireOldSignals, setSignalOutcome, activateTrade, cancelTrade, closeTrade, adjustBalance, createNotification, getUserById, sql } from '@/lib/db'
+import { getAllPendingSignals, getAllPendingTrades, getAllOpenTrades, expireOldSignals, setSignalOutcome, activateTrade, cancelTrade, closeTrade, adjustBalance, createNotification, getUserById, normalizeTf, sql } from '@/lib/db'
 import { sendTelegram, sendTelegramToUser } from '@/lib/telegram'
 
-async function fetchCandles(sym: string, sinceMs: number): Promise<{ candles: { high: number; low: number }[]; startMs: number }> {
-  const startMs = Math.max(sinceMs, Date.now() - 196 * 3_600_000)
-  const url = `https://fapi.binance.com/fapi/v1/klines?symbol=${sym}&interval=1h&startTime=${startMs}&limit=200`
+const INTERVAL_MS: Record<string, number> = {
+  '1m': 60_000, '5m': 300_000, '15m': 900_000, '30m': 1_800_000,
+  '1h': 3_600_000, '4h': 14_400_000, '1d': 86_400_000,
+}
+
+async function fetchCandles(sym: string, sinceMs: number, interval = '1h'): Promise<{ candles: { high: number; low: number; openTime: number }[]; startMs: number }> {
+  const candleMs = INTERVAL_MS[interval] ?? 3_600_000
+  const startMs = Math.max(sinceMs, Date.now() - 196 * candleMs)
+  const url = `https://fapi.binance.com/fapi/v1/klines?symbol=${sym}&interval=${interval}&startTime=${startMs}&limit=200`
   try {
     const ctrl = new AbortController()
     const t = setTimeout(() => ctrl.abort(), 8000)
@@ -14,7 +20,7 @@ async function fetchCandles(sym: string, sinceMs: number): Promise<{ candles: { 
     clearTimeout(t)
     if (!res.ok) return { candles: [], startMs }
     const raw: number[][] = await res.json()
-    return { candles: raw.map(c => ({ high: parseFloat(String(c[2])), low: parseFloat(String(c[3])) })), startMs }
+    return { candles: raw.map(c => ({ openTime: Number(c[0]), high: parseFloat(String(c[2])), low: parseFloat(String(c[3])) })), startMs }
   } catch {
     return { candles: [], startMs }
   }
@@ -53,13 +59,11 @@ function scanTpSl(
   tp: number, sl: number, isLong: boolean,
 ): 'tp' | 'sl' | null {
   for (const c of slice) {
-    if (isLong) {
-      if (c.high >= tp) return 'tp'
-      if (c.low  <= sl) return 'sl'
-    } else {
-      if (c.low  <= tp) return 'tp'
-      if (c.high >= sl) return 'sl'
-    }
+    const hitTp = isLong ? c.high >= tp : c.low  <= tp
+    const hitSl = isLong ? c.low  <= sl : c.high >= sl
+    if (hitTp && hitSl) return 'sl'
+    if (hitTp) return 'tp'
+    if (hitSl) return 'sl'
   }
   return null
 }
@@ -90,19 +94,28 @@ export async function GET(req: NextRequest) {
   let tradesClosedSl = 0
 
   if (pending.length) {
-    const bySymbol = groupBySymbol(pending)
+    const bySymbolTf: Record<string, typeof pending> = {}
+    for (const s of pending) {
+      const sym = s.pair.replace('/', '')
+      const interval = normalizeTf(s.timeframe)
+      const key = `${sym}|${interval}`
+      if (!bySymbolTf[key]) bySymbolTf[key] = []
+      bySymbolTf[key].push(s)
+    }
 
-    for (const sym of Object.keys(bySymbol)) {
-      const signals  = bySymbol[sym]
+    for (const key of Object.keys(bySymbolTf)) {
+      const [sym, interval] = key.split('|')
+      const signals  = bySymbolTf[key]
+      const candleMs = INTERVAL_MS[interval] ?? HOUR_MS
       const oldestMs = Math.min(...signals.map(s => new Date(s.created_at).getTime()))
-      const { candles, startMs } = await fetchCandles(sym, oldestMs)
+      const { candles, startMs } = await fetchCandles(sym, oldestMs, interval)
       if (!candles.length) continue
 
       for (const signal of signals) {
         if (!signal.final_tp || !signal.final_sl || !signal.final_entry || !signal.final_verdict) continue
 
         const sigStartMs = new Date(signal.created_at).getTime()
-        const startIdx   = Math.max(0, Math.floor((sigStartMs - startMs) / HOUR_MS))
+        const startIdx   = Math.max(0, Math.floor((sigStartMs - startMs) / candleMs))
         const slice      = candles.slice(startIdx)
         if (!slice.length) continue
 

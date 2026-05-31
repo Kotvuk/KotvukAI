@@ -160,7 +160,6 @@ export async function POST(req: NextRequest) {
           const tradeLeverage = Math.min(analysis.leverage ?? 2, userMaxLev)
 
           const tradeAmount = fixedAmount > 0 ? fixedAmount : 100
-          const marginUsed  = tradeLeverage > 1 ? Math.ceil(tradeAmount / tradeLeverage) : tradeAmount
 
           if (tradeAmount > 0) {
             const isLimit = analysis.entry_type === 'limit'
@@ -180,7 +179,7 @@ export async function POST(req: NextRequest) {
               status:       isLimit ? 'pending' : 'open',
               expires_at:   isLimit ? expiresAt.toISOString() : null,
             })
-            if (balance > 0) await adjustBalance(user.id, -Math.min(marginUsed, balance))
+            if (balance > 0) await adjustBalance(user.id, -Math.min(tradeAmount, balance))
             tradeCreated = true
 
             const prec = (analysis.entry_price ?? 0) >= 100 ? 2 : 4

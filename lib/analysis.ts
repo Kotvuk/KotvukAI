@@ -269,7 +269,7 @@ export async function fullAnalysis(
     ? resolvedSignals.filter(s => s.outcome === 'win').length / resolvedSignals.length
     : null
   const lowWinRate = pairWinRate !== null && pairWinRate < 0.4
-  const minConfThreshold = strictMode ? 70 : lowWinRate ? 75 : 60
+  const minConfThreshold = 60
 
   const utcHour = new Date().getUTCHours()
   const session = utcHour < 8 ? 'Asia (00-08 UTC, low liquidity)'
@@ -329,7 +329,7 @@ Reply with a single-line JSON:
 
   const consensusOverride = !strictMode
     && consensus.decision !== 'WAIT'
-    && (consensus.long >= 3 || consensus.short >= 3)
+    && (consensus.long >= 3 || consensus.short >= 4)
 
   if (trendDir === 'ranging' && (htf === 'neutral' || htf === 'ranging') || s1.ranging_risk === true) {
     if (!consensusOverride) {
@@ -444,6 +444,16 @@ Reply with ONLY one line of valid JSON (all numeric fields must be numbers, not 
     ? consensus.decision
     : rawVerdict
   const confidence  = Number(json.c || json.confidence || 50)
+
+  if (verdict === 'SHORT' && !(htf === 'bearish' && consensus.short >= 4)) {
+    const ss1: Step1Result = { signal: 'WAIT', strength: 3, trend: trendDir, summary: summary1 }
+    const ss2: Step2Result = {
+      verdict: 'WAIT', confidence: 48, risk_score: 5, leverage: 1,
+      summary: 'SHORT requires bearish HTF and at least 4 methods agreeing — counter-trend shorts underperform.',
+    }
+    const sf = makeWait(48, 'SHORT setup not confirmed: needs bearish HTF + strong consensus. Waiting.', riskUsd, balance, riskPct, allMethods, consensus)
+    return translateResponse(keys, { step1: ss1, step2: ss2, final: sf, methods: allMethods, consensus })
+  }
 
   if ((verdict === 'LONG' || verdict === 'SHORT') && confidence < minConfThreshold && !consensusOverride) {
     const ws1: Step1Result = { signal: 'WAIT', strength: 3, trend: trendDir, summary: summary1 }

@@ -6,11 +6,12 @@ function detectTimeframes(): string[] {
   const now  = new Date()
   const min  = now.getUTCMinutes()
   const hour = now.getUTCHours()
-  const tfs  = ['5m']
-  if (min % 15 === 0) tfs.push('15m')
-  if (min % 30 === 0) tfs.push('30m')
-  if (min === 0)                        tfs.push('1h')
+  const tfs: string[] = []
   if (min === 0 && hour % 4 === 0)      tfs.push('4h')
+  if (min === 0)                        tfs.push('1h')
+  if (min % 30 === 0)                   tfs.push('30m')
+  if (min % 15 === 0)                   tfs.push('15m')
+  tfs.push('5m')
   return tfs
 }
 

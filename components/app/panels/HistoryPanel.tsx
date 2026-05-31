@@ -9,6 +9,7 @@ interface Signal {
   final_confidence: number | null; final_entry: number | null; final_tp: number | null
   final_sl: number | null; final_leverage: number | null; final_risk_score: number | null
   outcome: string | null; actual_pnl_pct: number | null; created_at: string
+  raw_response?: { analysis?: Record<string, unknown> } | null
 }
 
 function vc(v: string | null) {
@@ -224,6 +225,7 @@ export default function HistoryPanel() {
   const [hasMore, setHasMore] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false)
 
+  const [expandedId, setExpandedId] = useState<number | null>(null)
   const [filterPair, setFilterPair] = useState('all')
   const [filterTf, setFilterTf] = useState('all')
   const [filterOutcome, setFilterOutcome] = useState('all')
@@ -408,12 +410,26 @@ export default function HistoryPanel() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredSignals.length ? filteredSignals.map(s => (
+                  {filteredSignals.length ? filteredSignals.flatMap(s => {
+                    const a = s.raw_response?.analysis ?? null
+                    const why = a ? String(a.desc || a.entry_logic || '') : ''
+                    const canWhy = Boolean(why)
+                    const open = expandedId === s.id
+                    const rows = [
                     <tr key={s.id}>
                       <td>{fmtAlmaty(s.created_at)}</td>
                       <td>{s.pair}</td>
                       <td>{s.timeframe}</td>
-                      <td><span className={`tag tag-${vc(s.final_verdict)}`}>{s.final_verdict || '—'}</span></td>
+                      <td>
+                        <span className={`tag tag-${vc(s.final_verdict)}`}>{s.final_verdict || '—'}</span>
+                        {canWhy && (
+                          <button
+                            onClick={() => setExpandedId(open ? null : s.id)}
+                            title={t('why_trade')}
+                            style={{ marginLeft: 4, padding: '0 5px', fontSize: '.6rem', background: open ? 'var(--cyan)' : 'var(--bg3)', color: open ? '#000' : 'var(--muted)', border: '1px solid var(--line2)', borderRadius: 3, cursor: 'pointer' }}
+                          >?</button>
+                        )}
+                      </td>
                       <td>{s.final_confidence || '—'}%</td>
                       <td>${parseFloat(String(s.final_entry || 0)).toLocaleString()}</td>
                       <td>${parseFloat(String(s.final_tp || 0)).toLocaleString()}</td>
@@ -427,8 +443,24 @@ export default function HistoryPanel() {
                           <button className="obtn l" onClick={() => setOutcome(s.id, 'loss')}>L</button>
                         </div>
                       </td>
-                    </tr>
-                  )) : (
+                    </tr>,
+                    ]
+                    if (open && a) {
+                      rows.push(
+                        <tr key={`${s.id}-why`}>
+                          <td colSpan={12} style={{ background: 'var(--bg2)', padding: '8px 12px', fontSize: '.62rem', lineHeight: 1.6, color: 'var(--text)' }}>
+                            <div style={{ display: 'grid', gap: 4 }}>
+                              {why && <div><b style={{ color: 'var(--cyan)' }}>{t('why_trade')}:</b> {why}</div>}
+                              {a.confluence ? <div><b>Confluence:</b> {String(a.confluence)}</div> : null}
+                              {a.invalidation ? <div><b>Invalidation:</b> {String(a.invalidation)}</div> : null}
+                              {a.exit_why ? <div><b>Exit:</b> {String(a.exit_why)}</div> : null}
+                            </div>
+                          </td>
+                        </tr>
+                      )
+                    }
+                    return rows
+                  }) : (
                     <tr><td colSpan={12} style={{ textAlign: 'center', color: 'var(--dim)', padding: 18, fontSize: '.63rem' }}>{filterPair !== 'all' || filterTf !== 'all' || filterOutcome !== 'all' ? t('hist_no_filter') : t('no_history')}</td></tr>
                   )}
                 </tbody>

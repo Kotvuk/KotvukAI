@@ -46,6 +46,9 @@ export default function ScreenerModal({ open, onClose, onSelectPair }: Props) {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
           <div>
             <div style={{ fontSize: '.75rem', fontWeight: 700 }}>SCREENER</div>
+            <div style={{ fontSize: '.5rem', color: 'var(--dim)', marginTop: 1 }}>
+              алго-предфильтр · подтверди через анализ
+            </div>
             {ts > 0 && (
               <div style={{ fontSize: '.55rem', color: 'var(--muted)', marginTop: 2 }}>
                 {scanned} pairs · {new Date(ts).toLocaleTimeString()}
@@ -94,7 +97,7 @@ export default function ScreenerModal({ open, onClose, onSelectPair }: Props) {
         {!loading && setups.length > 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 52px 48px 44px 52px', gap: 6, padding: '4px 6px', fontSize: '.52rem', color: 'var(--muted)', letterSpacing: '.04em', textTransform: 'uppercase' }}>
-              <span>Pair</span><span>Signal</span><span>Conf</span><span>RSI</span><span>Methods</span>
+              <span>Pair</span><span>Lean</span><span>Conf</span><span>RSI</span><span>Methods</span>
             </div>
             {setups.map(s => (
               <div

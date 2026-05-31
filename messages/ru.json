@@ -99,6 +99,7 @@
   "passwords_no_match": "Пароли не совпадают",
   "invalid_email": "Неверный email",
   "error": "Ошибка",
+  "why_trade": "Почему этот сигнал",
   "win_marked": "Отмечено WIN",
   "loss_marked": "Отмечено LOSS",
   "position_opened": "Позиция открыта",

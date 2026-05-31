@@ -99,6 +99,7 @@
   "passwords_no_match": "Passwords do not match",
   "invalid_email": "Invalid email",
   "error": "Error",
+  "why_trade": "Why this signal",
   "win_marked": "Marked WIN",
   "loss_marked": "Marked LOSS",
   "position_opened": "Position opened",

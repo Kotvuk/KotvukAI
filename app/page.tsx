@@ -285,7 +285,7 @@ export default function LandingPage() {
   ]
 
   const STATS = [
-    { target: 1000, suffix: '+', label: t('lp_stat_pairs') },
+    { target: 500,  suffix: '+', label: t('lp_stat_pairs') },
     { target: 7,    suffix: '',  label: t('lp_stat_tfs') },
     { target: 3,    suffix: '',  label: t('lp_stat_free') },
     { target: 4,    suffix: '',  label: t('lp_stat_plans') },

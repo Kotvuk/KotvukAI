@@ -215,17 +215,21 @@ export function normalizeTf(tf: string): string {
   return TF_CANON[tf] ?? tf
 }
 
+const num = (v: number | null | undefined): number | null =>
+  v == null || !Number.isFinite(v) ? null : v
+
 export async function saveSignal(userId: number, data: Partial<Signal>) {
   if (data.timeframe) data.timeframe = normalizeTf(data.timeframe)
+  const riskScore = num(data.final_risk_score)
   const rows = await sql`
     INSERT INTO signals (
       user_id, pair, timeframe, final_verdict, final_confidence,
       final_entry, final_tp, final_sl, final_leverage, final_risk_score, raw_response
     ) VALUES (
       ${userId}, ${data.pair!}, ${data.timeframe!}, ${data.final_verdict ?? null},
-      ${data.final_confidence ?? null}, ${data.final_entry ?? null},
-      ${data.final_tp ?? null}, ${data.final_sl ?? null},
-      ${data.final_leverage ?? null}, ${data.final_risk_score != null ? Math.round(data.final_risk_score) : null},
+      ${num(data.final_confidence)}, ${num(data.final_entry)},
+      ${num(data.final_tp)}, ${num(data.final_sl)},
+      ${num(data.final_leverage)}, ${riskScore != null ? Math.round(riskScore) : null},
       ${JSON.stringify(data.raw_response ?? {})}
     ) RETURNING *
   `
@@ -481,7 +485,7 @@ export async function getPendingSignals(userId: number): Promise<Signal[]> {
 
 export async function setSignalOutcome(id: number, outcome: 'win' | 'loss', pnlPct: number, userId: number) {
   await sql`
-    UPDATE signals SET outcome = ${outcome}, actual_pnl_pct = ${pnlPct}
+    UPDATE signals SET outcome = ${outcome}, actual_pnl_pct = ${Number.isFinite(pnlPct) ? pnlPct : null}
     WHERE id = ${id} AND user_id = ${userId}
   `
 }

@@ -11,7 +11,7 @@ export function loadGroqKeys(): string[] {
 }
 
 export function getGroqModel(): string {
-  return process.env.GROQ_MODEL || 'openai/gpt-oss-120b'
+  return process.env.GROQ_MODEL || 'llama-3.3-70b-versatile'
 }
 
 export function getGroqFastModel(): string {

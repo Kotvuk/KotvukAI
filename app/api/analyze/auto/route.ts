@@ -44,12 +44,25 @@ async function analyzeOne(
   interval = '1h',
 ): Promise<{ ok: boolean; verdict?: string; confidence?: number; error?: string }> {
   const htfInterval = HTF_MAP[interval] || '1d'
+  const pairFmt = sym.endsWith('USDT') ? sym.slice(0, -4) + '/USDT' : sym
+  const userId  = Number(user.id)
 
   try {
+    const recentSignal = await sql`
+      SELECT id FROM signals
+      WHERE user_id = ${userId} AND pair = ${pairFmt} AND timeframe = ${interval}
+        AND final_verdict IN ('LONG','SHORT')
+        AND created_at > NOW() - INTERVAL '24 hours'
+      LIMIT 1
+    `
+    if (recentSignal.length > 0) {
+      return { ok: true, verdict: 'SKIP', error: 'duplicate within 24h' }
+    }
+
     const [binanceRes, htfRes, frRes] = await Promise.allSettled([
-      fetch(`https://fapi.binance.com/fapi/v1/klines?symbol=${sym}&interval=${interval}&limit=200`),
-      fetch(`https://fapi.binance.com/fapi/v1/klines?symbol=${sym}&interval=${htfInterval}&limit=100`),
-      fetch(`https://fapi.binance.com/fapi/v1/fundingRate?symbol=${sym}&limit=1`),
+      fetch(`https://fapi.binance.com/fapi/v1/klines?symbol=${sym}&interval=${interval}&limit=200`, { cache: 'no-store' }),
+      fetch(`https://fapi.binance.com/fapi/v1/klines?symbol=${sym}&interval=${htfInterval}&limit=100`, { cache: 'no-store' }),
+      fetch(`https://fapi.binance.com/fapi/v1/fundingRate?symbol=${sym}&limit=1`, { cache: 'no-store' }),
     ])
 
     if (binanceRes.status !== 'fulfilled' || !binanceRes.value.ok) {
@@ -87,10 +100,8 @@ async function analyzeOne(
     const balance      = Number(user.ai_balance ?? 1000)
     const fixedAmount  = Number(user.ai_trade_amount ?? 100)
     const maxLev       = Number(user.ai_max_leverage ?? 20)
-    const userId   = Number(user.id)
     const tfLabel  = ({ '5m': '5м', '15m': '15м', '30m': '30м', '1h': '1ч', '4h': '4ч' } as Record<string, string>)[interval] ?? interval
 
-    const pairFmt = sym.endsWith('USDT') ? sym.slice(0, -4) + '/USDT' : sym
     const [memorySignals, globalPatterns] = await Promise.all([
       getSignalsForPair(userId, pairFmt, 10),
       getGlobalLossPatterns(userId),
@@ -149,7 +160,7 @@ async function analyzeOne(
       let marketEntry = final.entry_price || null
       if (!isLimit && !marketEntry) {
         try {
-          const pr = await fetch(`https://fapi.binance.com/fapi/v1/ticker/price?symbol=${sym}`, { signal: AbortSignal.timeout(4000) })
+          const pr = await fetch(`https://fapi.binance.com/fapi/v1/ticker/price?symbol=${sym}`, { signal: AbortSignal.timeout(4000), cache: 'no-store' })
           const pd: { price?: string } = await pr.json()
           if (pd.price) marketEntry = parseFloat(pd.price)
         } catch {}

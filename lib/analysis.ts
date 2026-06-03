@@ -517,18 +517,12 @@ Reply with ONLY one line of valid JSON (all numeric fields must be numbers, not 
   const sigFigs  = entryPrice >= 1000 ? 2 : entryPrice >= 1 ? 4 : 6
 
   if (isLongV || isShortV) {
-    if (isLongV) {
-      if (!slPrice || slPrice >= entryPrice) slPrice = entryPrice - atrAbs * 1.2
-    } else {
-      if (!slPrice || slPrice <= entryPrice) slPrice = entryPrice + atrAbs * 1.2
-    }
+    const MAX_DEV = 0.20
+    const tpBad = !tpPrice || (isLongV ? tpPrice <= entryPrice : tpPrice >= entryPrice) || Math.abs(tpPrice - entryPrice) / entryPrice > MAX_DEV
+    const slBad = !slPrice || (isLongV ? slPrice >= entryPrice : slPrice <= entryPrice) || Math.abs(entryPrice - slPrice) / entryPrice > MAX_DEV
 
-    const slDist    = Math.abs(entryPrice - slPrice)
-    const minTpDist = slDist * 2
-    const tpDist    = isLongV ? tpPrice - entryPrice : entryPrice - tpPrice
-    if (!tpPrice || tpDist < minTpDist) {
-      tpPrice = isLongV ? entryPrice + minTpDist : entryPrice - minTpDist
-    }
+    if (slBad) slPrice = isLongV ? entryPrice - atrAbs * 1.2 : entryPrice + atrAbs * 1.2
+    if (tpBad) tpPrice = isLongV ? entryPrice + atrAbs * 2.5 : entryPrice - atrAbs * 2.5
 
     tpPrice = parseFloat(tpPrice.toFixed(sigFigs))
     slPrice = parseFloat(slPrice.toFixed(sigFigs))

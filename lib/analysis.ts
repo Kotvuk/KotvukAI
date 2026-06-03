@@ -516,29 +516,22 @@ Reply with ONLY one line of valid JSON (all numeric fields must be numbers, not 
   const isShortV = verdict === 'SHORT'
   const sigFigs  = entryPrice >= 1000 ? 2 : entryPrice >= 1 ? 4 : 6
 
-  let belowTarget = false
   if (isLongV || isShortV) {
-    const tpTargetMove = entryPrice * (0.08 / leverage)
-    const slMaxMove    = entryPrice * (0.04 / leverage)
-
     if (isLongV) {
-      if (!slPrice || slPrice >= entryPrice || (entryPrice - slPrice) > slMaxMove) slPrice = entryPrice - slMaxMove
+      if (!slPrice || slPrice >= entryPrice) slPrice = entryPrice - atrAbs * 1.2
     } else {
-      if (!slPrice || slPrice <= entryPrice || (slPrice - entryPrice) > slMaxMove) slPrice = entryPrice + slMaxMove
+      if (!slPrice || slPrice <= entryPrice) slPrice = entryPrice + atrAbs * 1.2
     }
 
-    const tpDist = isLongV ? tpPrice - entryPrice : entryPrice - tpPrice
-    if (!tpPrice || tpDist < tpTargetMove) belowTarget = true
+    const slDist    = Math.abs(entryPrice - slPrice)
+    const minTpDist = slDist * 2
+    const tpDist    = isLongV ? tpPrice - entryPrice : entryPrice - tpPrice
+    if (!tpPrice || tpDist < minTpDist) {
+      tpPrice = isLongV ? entryPrice + minTpDist : entryPrice - minTpDist
+    }
 
     tpPrice = parseFloat(tpPrice.toFixed(sigFigs))
     slPrice = parseFloat(slPrice.toFixed(sigFigs))
-  }
-
-  if ((isLongV || isShortV) && belowTarget) {
-    const bt1: Step1Result = { signal: 'WAIT', strength: 3, trend: trendDir, summary: summary1 }
-    const bt2: Step2Result = { verdict: 'WAIT', confidence: 48, risk_score: 5, leverage: 1, summary: `Цель не дотягивает до +8% при плече ${leverage}x — нет качественного сетапа.` }
-    const btf = makeWait(48, `Структурная цель не обеспечивает +8% профита (плечо ${leverage}x). Жду сетап с потенциалом 8%.`, riskUsd, balance, riskPct, allMethods, consensus)
-    return finalize({ step1: bt1, step2: bt2, final: btf, methods: allMethods, consensus })
   }
 
   const tp_pct = parseFloat(((tpPrice - entryPrice) / entryPrice * 100).toFixed(2))

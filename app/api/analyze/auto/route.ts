@@ -227,9 +227,9 @@ export async function GET(req: NextRequest) {
 
   const userWatchlist = await getUserWatchlist(Number(user.id))
   const rawList: string[] = userWatchlist?.length ? userWatchlist : DEFAULT_WATCHLIST
-  const watchlist = (await priceSortedWatchlist(rawList)).slice(0, 6)
+  const watchlist = (await priceSortedWatchlist(rawList)).slice(0, 12)
   const batchIndex = parseInt(req.nextUrl.searchParams.get('batch') || '0', 10)
-  const batchSize  = 3
+  const batchSize  = 4
   const start      = batchIndex * batchSize
   const pairs      = watchlist.slice(start, start + batchSize)
 

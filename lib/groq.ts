@@ -2,7 +2,7 @@ export const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions'
 
 export function loadGroqKeys(): string[] {
   const keys: string[] = []
-  for (let i = 1; i <= 40; i++) {
+  for (let i = 1; i <= 80; i++) {
     const k = process.env[`GROQ_API_KEY_${i}`]
     if (k) keys.push(k)
   }

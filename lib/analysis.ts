@@ -512,44 +512,20 @@ Reply with ONLY one line of valid JSON (all numeric fields must be numbers, not 
     (verdict === 'SHORT' && entryPrice > price * (1 + LIMIT_THRESHOLD))
   ) ? 'limit' : 'market'
 
-  const minSlAbs = atrAbs * 0.5
-  const maxSlAbs = atrAbs * 3.0
-  const MAX_DEV = 0.10
-  if (!tpPrice || tpPrice < entryPrice * (1 - MAX_DEV) || tpPrice > entryPrice * (1 + MAX_DEV)) tpPrice = 0
-  if (!slPrice || slPrice < entryPrice * (1 - MAX_DEV) || slPrice > entryPrice * (1 + MAX_DEV)) slPrice = 0
-
   const isLongV  = verdict === 'LONG'
   const isShortV = verdict === 'SHORT'
   const sigFigs  = entryPrice >= 1000 ? 2 : entryPrice >= 1 ? 4 : 6
 
   if (isLongV || isShortV) {
-    if (isLongV  && tpPrice && slPrice && tpPrice < entryPrice && slPrice > entryPrice) [tpPrice, slPrice] = [slPrice, tpPrice]
-    if (isShortV && tpPrice && slPrice && tpPrice > entryPrice && slPrice < entryPrice) [tpPrice, slPrice] = [slPrice, tpPrice]
-
+    const tpMove = entryPrice * (0.10 / leverage)
+    const slMove = entryPrice * (0.05 / leverage)
     if (isLongV) {
-      if (!slPrice || slPrice >= entryPrice) slPrice = parseFloat((entryPrice - atrAbs * 1.2).toFixed(6))
-      if (!tpPrice || tpPrice <= entryPrice) tpPrice = parseFloat((entryPrice + atrAbs * 2.5).toFixed(6))
+      tpPrice = parseFloat((entryPrice + tpMove).toFixed(sigFigs))
+      slPrice = parseFloat((entryPrice - slMove).toFixed(sigFigs))
     } else {
-      if (!slPrice || slPrice <= entryPrice) slPrice = parseFloat((entryPrice + atrAbs * 1.2).toFixed(6))
-      if (!tpPrice || tpPrice >= entryPrice) tpPrice = parseFloat((entryPrice - atrAbs * 2.5).toFixed(6))
+      tpPrice = parseFloat((entryPrice - tpMove).toFixed(sigFigs))
+      slPrice = parseFloat((entryPrice + slMove).toFixed(sigFigs))
     }
-
-    const slDist = Math.abs(slPrice - entryPrice)
-    if (slDist < minSlAbs) {
-      slPrice = isLongV ? entryPrice - minSlAbs : entryPrice + minSlAbs
-    } else if (slDist > maxSlAbs) {
-      slPrice = isLongV ? entryPrice - maxSlAbs : entryPrice + maxSlAbs
-    }
-
-    const slDistFinal = Math.abs(slPrice - entryPrice)
-    const tpDist      = Math.abs(tpPrice - entryPrice)
-    if (slDistFinal > 0 && tpDist / slDistFinal < 2.0) {
-      if (isLongV) tpPrice = entryPrice + slDistFinal * 2.0
-      else         tpPrice = entryPrice - slDistFinal * 2.0
-    }
-
-    tpPrice = parseFloat(tpPrice.toFixed(sigFigs))
-    slPrice = parseFloat(slPrice.toFixed(sigFigs))
   }
 
   const tp_pct = parseFloat(((tpPrice - entryPrice) / entryPrice * 100).toFixed(2))

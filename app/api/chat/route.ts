@@ -2,7 +2,27 @@ export const dynamic = 'force-dynamic'
 export const maxDuration = 60
 import { NextRequest, NextResponse } from 'next/server'
 import { getUser } from '@/lib/auth-helper'
+import { getDrawings } from '@/lib/db'
 import { loadGroqKeys, getGroqFastModel, GROQ_URL } from '@/lib/groq'
+
+function summarizeDrawings(drawings: unknown[]): string {
+  const lines: string[] = []
+  for (const d of drawings) {
+    const o = d as { name?: string; points?: { value?: number; timestamp?: number }[] }
+    if (!o || !Array.isArray(o.points)) continue
+    const prices = o.points.map(p => p?.value).filter((v): v is number => typeof v === 'number')
+    if (!prices.length) continue
+    const type = String(o.name || 'line')
+    if (prices.length >= 2) {
+      const a = prices[0], b = prices[prices.length - 1]
+      const dir = b > a ? 'восходящая' : b < a ? 'нисходящая' : 'горизонтальная'
+      lines.push(`${type}: ${dir}, от $${a} до $${b}`)
+    } else {
+      lines.push(`${type}: уровень $${prices[0]}`)
+    }
+  }
+  return lines.join(' | ')
+}
 
 export interface ChatAction {
   type:
@@ -46,6 +66,14 @@ export async function POST(req: NextRequest) {
   const smcFVGs = ctx.smc?.fvgs?.slice(0, 3) || []
   const smcLiqs = ctx.smc?.liquidityLevels?.slice(0, 4) || []
 
+  let drawingsSummary = ''
+  if (ctx.pair && ctx.tf) {
+    try {
+      const drawings = await getDrawings(Number(user.id), ctx.pair, ctx.tf)
+      if (drawings.length) drawingsSummary = summarizeDrawings(drawings)
+    } catch {}
+  }
+
   const prompt = `/no_think
 You are KotvukAI trading assistant. Parse the user request and respond with a JSON object.
 
@@ -56,6 +84,7 @@ CONTEXT:
 - SMC Order Blocks: ${JSON.stringify(smcOBs)}
 - SMC FVGs: ${JSON.stringify(smcFVGs)}
 - SMC Liquidity: ${JSON.stringify(smcLiqs)}
+- USER DRAWINGS on chart (trend lines / levels the user drew): ${drawingsSummary || 'none'}
 
 USER REQUEST: "${message}"
 
@@ -77,10 +106,12 @@ If user says "trades" / "сделки" / "журнал" — navigate_panel trade
 If user says "more transparent" / "прозрачнее" — set_opacity 0.15–0.3.
 If user says "clear" / "очисти" / "убери" — clear_zones.
 
+If the user asks your opinion about their drawn trend lines / levels (e.g. "я нарисовал трендовые линии, посмотри" / "что думаешь о моих линиях" / "give your opinion on my lines"), do NOT return an action. Instead analyze the USER DRAWINGS above: compare each line's prices to the current price and to the SMC Order Blocks / liquidity, say whether the trend line acts as support or resistance, whether it aligns with the market structure, and give a concrete verdict (is it a valid level to trade from or not). Put this analysis in "text" (4-6 sentences allowed) and set action to null.
+
 Respond in the same language the user used.
 
 Respond ONLY with valid JSON:
-{"text":"<response to user, 1-2 sentences>","action":{"type":"<type>","...fields"} or null if just chat}`
+{"text":"<response to user; 1-2 sentences for commands, 4-6 sentences when analyzing user's drawings>","action":{"type":"<type>","...fields"} or null if just chat or analysis}`
 
   const GROQ_KEYS = loadGroqKeys()
   const GROQ_MODEL = getGroqFastModel()
@@ -100,7 +131,7 @@ Respond ONLY with valid JSON:
           model: GROQ_MODEL,
           messages: [{ role: 'user', content: prompt }],
           temperature: 0.3,
-          max_tokens: 400,
+          max_tokens: 700,
           stream: false,
         }),
         signal: AbortSignal.timeout(30_000),

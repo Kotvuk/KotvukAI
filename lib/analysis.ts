@@ -448,13 +448,16 @@ Reply with ONLY one line of valid JSON (all numeric fields must be numbers, not 
     : rawVerdict
   const confidence  = Number(json.c || json.confidence || 50)
 
-  if (verdict === 'SHORT' && !(htf === 'bearish' && consensus.short >= 4)) {
+  const shortAllowed =
+    (htf === 'bearish' && consensus.short >= 3) ||
+    (consensus.short >= 4)
+  if (verdict === 'SHORT' && !shortAllowed) {
     const ss1: Step1Result = { signal: 'WAIT', strength: 3, trend: trendDir, summary: summary1 }
     const ss2: Step2Result = {
       verdict: 'WAIT', confidence: 48, risk_score: 5, leverage: 1,
-      summary: 'SHORT requires bearish HTF and at least 4 methods agreeing — counter-trend shorts underperform.',
+      summary: 'SHORT: требуется медвежий HTF + 3 метода, или 4+ метода без условия HTF.',
     }
-    const sf = makeWait(48, 'SHORT setup not confirmed: needs bearish HTF + strong consensus. Waiting.', riskUsd, balance, riskPct, allMethods, consensus)
+    const sf = makeWait(48, 'SHORT не подтверждён: нужен медвежий HTF + 3 метода, либо 4+ метода.', riskUsd, balance, riskPct, allMethods, consensus)
     return finalize({ step1: ss1, step2: ss2, final: sf, methods: allMethods, consensus })
   }
 

@@ -229,7 +229,7 @@ export async function GET(req: NextRequest) {
   const rawList: string[] = userWatchlist?.length ? userWatchlist : DEFAULT_WATCHLIST
   const watchlist = (await priceSortedWatchlist(rawList)).slice(0, 12)
   const batchIndex = parseInt(req.nextUrl.searchParams.get('batch') || '0', 10)
-  const batchSize  = 4
+  const batchSize  = 6
   const start      = batchIndex * batchSize
   const pairs      = watchlist.slice(start, start + batchSize)
 
@@ -240,11 +240,14 @@ export async function GET(req: NextRequest) {
   const interval  = req.nextUrl.searchParams.get('tf') || '1h'
   const startTime = Date.now()
 
-  const settled = await Promise.allSettled(pairs.map(sym => analyzeOne(sym, user, interval)))
-  const results = settled.map((r, i) => ({
-    pair: pairs[i],
-    ...(r.status === 'fulfilled' ? r.value : { ok: false, error: String(r.reason) }),
-  }))
+  const results: Array<{ pair: string; ok: boolean; verdict?: string; confidence?: number; error?: string }> = []
+  for (const sym of pairs) {
+    try {
+      results.push({ pair: sym, ...(await analyzeOne(sym, user, interval)) })
+    } catch (e) {
+      results.push({ pair: sym, ok: false, error: e instanceof Error ? e.message : String(e) })
+    }
+  }
 
   const elapsed  = ((Date.now() - startTime) / 1000).toFixed(1)
   const signals  = results.filter(r => r.verdict === 'LONG' || r.verdict === 'SHORT').length

@@ -108,6 +108,11 @@ async function analyzeOne(
     ])
     const { step1, step2, final } = await fullAnalysis(pairFmt, tfLabel, market, candles, memorySignals, maxLev, balance, 1.0, globalPatterns, false)
 
+    // не сохраняем заглушки Groq (conf=45 это признак отказа ключей)
+    if (final.confidence === 45 && final.verdict === 'WAIT') {
+      return { ok: true, verdict: 'SKIP', confidence: 45, error: 'groq fallback skipped' }
+    }
+
     await saveSignal(userId, {
       pair: pairFmt, timeframe: tfLabel,
       final_verdict:    final.verdict,

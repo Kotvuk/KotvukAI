@@ -120,10 +120,11 @@ export async function GET(req: NextRequest) {
         if (!slice.length) continue
 
         const isLong   = signal.final_verdict === 'LONG'
-        const tp       = signal.final_tp
-        const sl       = signal.final_sl
-        const entry    = signal.final_entry
-        const leverage = signal.final_leverage ?? 1
+        const tp       = Number(signal.final_tp)
+        const sl       = Number(signal.final_sl)
+        const entry    = Number(signal.final_entry)
+        const leverage = Number(signal.final_leverage ?? 1)
+        if (!Number.isFinite(tp) || !Number.isFinite(sl) || !Number.isFinite(entry)) continue
 
         const hit = scanTpSl(slice, tp, sl, isLong)
         if (!hit) continue
@@ -223,10 +224,13 @@ export async function GET(req: NextRequest) {
 
       for (const trade of group) {
         if (!trade.tp_price || !trade.sl_price || !trade.entry_price) continue
-        const tp     = trade.tp_price
-        const sl     = trade.sl_price
-        const entry  = trade.entry_price
+        const tp     = Number(trade.tp_price)
+        const sl     = Number(trade.sl_price)
+        const entry  = Number(trade.entry_price)
+        const amount = Number(trade.amount) || 0
+        const lev    = Number(trade.leverage) || 1
         const isLong = trade.direction === 'long'
+        if (!Number.isFinite(tp) || !Number.isFinite(sl) || !Number.isFinite(entry)) continue
 
         const tradeStartMs = new Date(trade.created_at).getTime()
         const startIdx     = Math.max(0, Math.floor((tradeStartMs - startMs) / HOUR_MS))
@@ -238,14 +242,14 @@ export async function GET(req: NextRequest) {
 
         const hitPrice = hit === 'tp' ? tp : sl
         const diff     = isLong ? hitPrice - entry : entry - hitPrice
-        const pnlPct   = parseFloat(((diff / entry) * trade.leverage * 100).toFixed(2))
-        const pnlUsd   = parseFloat(((trade.amount * pnlPct) / 100).toFixed(2))
+        const pnlPct   = parseFloat(((diff / entry) * lev * 100).toFixed(2))
+        const pnlUsd   = parseFloat(((amount * pnlPct) / 100).toFixed(2))
 
         const wasClosed = await closeTrade(trade.id, trade.user_id, pnlUsd, pnlPct)
         if (!wasClosed) continue
 
         if (trade.account_type === 'ai') {
-          await adjustBalance(trade.user_id, Math.max(0, trade.amount + pnlUsd))
+          await adjustBalance(trade.user_id, Math.max(0, amount + pnlUsd))
         }
 
         const emoji   = hit === 'tp' ? '✅' : '❌'

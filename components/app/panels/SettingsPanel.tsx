@@ -56,7 +56,7 @@ export default function SettingsPanel() {
     try {
       const r = await fetch('/api/settings', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nickname, email, lang, ai_balance: aiBalance, ai_trade_amount: aiTradeAmount, ai_max_leverage: aiLeverage, telegram_chat_id: tgChatId }),
+        body: JSON.stringify({ nickname, email, lang, ai_trade_amount: aiTradeAmount, ai_max_leverage: aiLeverage, telegram_chat_id: tgChatId }),
       })
       const d = await r.json()
       if (!d.ok) { showToast(d.error || t('error'), 'err'); return }

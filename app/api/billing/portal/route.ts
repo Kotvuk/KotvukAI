@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
     `
     const lsSubId = subs[0]?.ls_subscription_id
     if (!lsSubId) {
-      return NextResponse.json({ ok: false, error: 'No active subscription' }, { status: 400 })
+      return NextResponse.json({ ok: false, error: 'Подписка оформлена вручную — управление недоступно через портал. Напишите в поддержку.' }, { status: 400 })
     }
 
     const data = await lsRequest(`/subscriptions/${lsSubId}`)

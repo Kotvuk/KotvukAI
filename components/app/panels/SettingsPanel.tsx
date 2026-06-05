@@ -12,7 +12,7 @@ const TIER_LABELS: Record<string, { name: string; color: string; analyses: numbe
   elite:   { name: 'Elite',   color: '#ffd60a', analyses: 100 },
 }
 
-interface SubInfo { tier: string; analyses_today: number; remaining: number; limit: number }
+interface SubInfo { tier: string; analyses_today: number; remaining: number; limit: number; has_ls_sub?: boolean }
 
 export default function SettingsPanel() {
   const { t, lang, setLang } = useLang()
@@ -50,7 +50,7 @@ export default function SettingsPanel() {
     if (user?.displayName) setNickname(user.displayName)
 
     fetch('/api/subscription').then(r => r.json()).then(d => {
-      if (d.ok) setSub({ tier: d.subscription.tier, analyses_today: d.analyses_today, remaining: d.remaining, limit: d.limit })
+      if (d.ok) setSub({ tier: d.subscription.tier, analyses_today: d.analyses_today, remaining: d.remaining, limit: d.limit, has_ls_sub: d.subscription.has_ls_sub })
     }).catch(() => {})
   }, [user])
 
@@ -216,7 +216,7 @@ export default function SettingsPanel() {
             })}
           </div>
 
-          {sub && sub.tier !== 'free' && (
+          {sub && sub.tier !== 'free' && sub.has_ls_sub && (
             <button
               onClick={openPortal}
               disabled={portalLoading}

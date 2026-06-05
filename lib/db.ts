@@ -66,6 +66,8 @@ export interface Subscription {
   last_reset_date: string
   expires_at: string | null
   created_at: string
+  ls_subscription_id?: string | null
+  ls_customer_id?: string | null
 }
 
 export const SUBSCRIPTION_LIMITS: Record<string, number> = {

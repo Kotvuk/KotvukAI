@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
   const today = new Date().toISOString().slice(0, 10)
   const analysesToday = sub.last_reset_date === today ? sub.analyses_today : 0
 
-  const hasLsSub = !!(sub as Record<string,unknown>).ls_subscription_id
+  const hasLsSub = !!sub.ls_subscription_id
   return NextResponse.json({
     ok: true,
     subscription: { ...sub, has_ls_sub: hasLsSub },

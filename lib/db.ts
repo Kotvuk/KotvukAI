@@ -15,6 +15,7 @@ export interface User {
   telegram_chat_id?: string | null
   watchlist?: string[] | null
   auto_analyze_paused?: boolean
+  signal_direction?: string
   created_at: string
 }
 
@@ -553,17 +554,35 @@ export async function updateUserSettings(userId: number, data: {
   nickname?: string; email?: string; lang?: string
   ai_max_leverage?: number
   ai_balance?: number; ai_trade_amount?: number
+  signal_direction?: string
 }) {
   await sql`
     UPDATE users SET
-      nickname         = COALESCE(${data.nickname ?? null}, nickname),
-      email            = COALESCE(${data.email ?? null}, email),
-      lang             = COALESCE(${data.lang ?? null}, lang),
-      ai_max_leverage  = COALESCE(${data.ai_max_leverage ?? null}, ai_max_leverage),
-      ai_balance       = COALESCE(${data.ai_balance ?? null}, ai_balance),
-      ai_trade_amount  = COALESCE(${data.ai_trade_amount ?? null}, ai_trade_amount)
+      nickname          = COALESCE(${data.nickname ?? null}, nickname),
+      email             = COALESCE(${data.email ?? null}, email),
+      lang              = COALESCE(${data.lang ?? null}, lang),
+      ai_max_leverage   = COALESCE(${data.ai_max_leverage ?? null}, ai_max_leverage),
+      ai_balance        = COALESCE(${data.ai_balance ?? null}, ai_balance),
+      ai_trade_amount   = COALESCE(${data.ai_trade_amount ?? null}, ai_trade_amount),
+      signal_direction  = COALESCE(${data.signal_direction ?? null}, signal_direction)
     WHERE id = ${userId}
   `
+}
+
+export async function getMarketTrend(): Promise<'bullish' | 'bearish' | 'neutral'> {
+  try {
+    const r = await fetch('https://fapi.binance.com/fapi/v1/klines?symbol=BTCUSDT&interval=1d&limit=14', { signal: AbortSignal.timeout(6000) })
+    if (!r.ok) return 'neutral'
+    const data: number[][] = await r.json()
+    if (data.length < 7) return 'neutral'
+    const closes = data.map(c => parseFloat(String(c[4])))
+    const first7avg = closes.slice(0, 7).reduce((a, b) => a + b, 0) / 7
+    const last7avg  = closes.slice(7).reduce((a, b) => a + b, 0) / closes.slice(7).length
+    const pct = (last7avg - first7avg) / first7avg * 100
+    if (pct > 3) return 'bullish'
+    if (pct < -3) return 'bearish'
+    return 'neutral'
+  } catch { return 'neutral' }
 }
 
 export async function getSubscription(userId: number): Promise<Subscription> {

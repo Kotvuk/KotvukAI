@@ -43,6 +43,9 @@ async function analyzeOne(
   user: User,
   interval = '1h',
 ): Promise<{ ok: boolean; verdict?: string; confidence?: number; error?: string }> {
+  if (['1m', '5m', '1м', '5м'].includes(interval)) {
+    return { ok: true, verdict: 'SKIP', error: '1m/5m excluded — no edge' }
+  }
   const htfInterval = HTF_MAP[interval] || '1d'
   const pairFmt = sym.endsWith('USDT') ? sym.slice(0, -4) + '/USDT' : sym
   const userId  = Number(user.id)
@@ -86,6 +89,7 @@ async function analyzeOne(
     const market = calcMarketData(candles, fundingRate)
     if (htfBias) market.htfBias = htfBias
 
+    const signalDirection = String(user.signal_direction ?? 'both')
     const balance      = Number(user.ai_balance ?? 1000)
     const fixedAmount  = Number(user.ai_trade_amount ?? 100)
     const maxLev       = Number(user.ai_max_leverage ?? 20)
@@ -108,6 +112,10 @@ async function analyzeOne(
       getGlobalLossPatterns(userId),
     ])
     const { step1, step2, final } = await fullAnalysis(pairFmt, tfLabel, market, candles, memorySignals, maxLev, balance, 1.0, globalPatterns, false)
+
+    // фильтр направления по настройке пользователя
+    if (final.verdict === 'LONG'  && signalDirection === 'short') return { ok: true, verdict: 'SKIP', error: 'direction=short only' }
+    if (final.verdict === 'SHORT' && signalDirection === 'long')  return { ok: true, verdict: 'SKIP', error: 'direction=long only' }
 
     // не сохраняем заглушки Groq (conf=45 это признак отказа ключей)
     if (final.confidence === 45 && final.verdict === 'WAIT') {

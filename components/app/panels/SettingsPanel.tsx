@@ -28,8 +28,10 @@ export default function SettingsPanel() {
   const [aiBalance, setAiBalance]       = useState(1000)
   const [aiTradeAmount, setAiTradeAmount] = useState(100)
   const [aiLeverage, setAiLeverage] = useState(20)
-  const [tgChatId, setTgChatId]     = useState('')
-  const [tgSaving, setTgSaving]     = useState(false)
+  const [tgChatId, setTgChatId]         = useState('')
+  const [tgSaving, setTgSaving]         = useState(false)
+  const [signalDir, setSignalDir]       = useState<'long'|'short'|'both'>('both')
+  const [marketTrend, setMarketTrend]   = useState<'bullish'|'bearish'|'neutral'>('neutral')
 
   useEffect(() => {
     fetch('/api/settings').then(r => r.json()).then(d => {
@@ -40,6 +42,8 @@ export default function SettingsPanel() {
         if (d.settings.ai_trade_amount != null) setAiTradeAmount(d.settings.ai_trade_amount)
         if (d.settings.ai_max_leverage != null)    setAiLeverage(d.settings.ai_max_leverage)
         if (d.settings.telegram_chat_id)           setTgChatId(d.settings.telegram_chat_id)
+        if (d.settings.signal_direction)           setSignalDir(d.settings.signal_direction as 'long'|'short'|'both')
+        if (d.settings.market_trend)               setMarketTrend(d.settings.market_trend as 'bullish'|'bearish'|'neutral')
       }
     }).catch(() => {})
     if (user?.email) setEmail(user.email)
@@ -56,7 +60,7 @@ export default function SettingsPanel() {
     try {
       const r = await fetch('/api/settings', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nickname, email, lang, ai_trade_amount: aiTradeAmount, ai_max_leverage: aiLeverage, telegram_chat_id: tgChatId }),
+        body: JSON.stringify({ nickname, email, lang, ai_trade_amount: aiTradeAmount, ai_max_leverage: aiLeverage, telegram_chat_id: tgChatId, signal_direction: signalDir }),
       })
       const d = await r.json()
       if (!d.ok) { showToast(d.error || t('error'), 'err'); return }
@@ -289,6 +293,32 @@ export default function SettingsPanel() {
           <p style={{ fontSize: '.58rem', color: 'var(--dim)', marginTop: 6 }}>
             {t('paper_trading_note')}
           </p>
+
+          <div style={{ marginTop: 16, padding: '12px 14px', background: 'var(--bg3)', borderRadius: 8, border: '1px solid var(--line2)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+              <span style={{ fontSize: '.65rem', fontWeight: 700 }}>Направление сигналов</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ fontSize: '.58rem', color: 'var(--muted)' }}>Тренд BTC:</span>
+                <span style={{ fontSize: '.62rem', fontWeight: 700, color: marketTrend === 'bullish' ? 'var(--long)' : marketTrend === 'bearish' ? 'var(--short)' : 'var(--wait)' }}>
+                  {marketTrend === 'bullish' ? '▲ БЫЧИЙ' : marketTrend === 'bearish' ? '▼ МЕДВЕЖИЙ' : '— НЕЙТРАЛЬНЫЙ'}
+                </span>
+              </div>
+            </div>
+            <p style={{ fontSize: '.58rem', color: 'var(--muted)', marginBottom: 10 }}>
+              {marketTrend === 'bullish' ? 'Рынок растёт — рекомендуется торговать только LONG.' : marketTrend === 'bearish' ? 'Рынок падает — рекомендуется торговать только SHORT.' : 'Боковой рынок — можно торговать в обе стороны.'}
+            </p>
+            <div style={{ display: 'flex', gap: 6 }}>
+              {(['long','both','short'] as const).map(d => (
+                <button key={d} onClick={() => setSignalDir(d)} style={{
+                  flex: 1, padding: '7px 0', fontSize: '.62rem', fontWeight: signalDir === d ? 700 : 400, borderRadius: 6, border: 'none', cursor: 'pointer',
+                  background: signalDir === d ? (d === 'long' ? 'var(--long)' : d === 'short' ? 'var(--short)' : 'var(--cyan)') : 'var(--bg2)',
+                  color: signalDir === d ? '#000' : 'var(--muted)',
+                }}>
+                  {d === 'long' ? '▲ LONG' : d === 'short' ? '▼ SHORT' : '⇅ ВСЕ'}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
         <div className="sb2">

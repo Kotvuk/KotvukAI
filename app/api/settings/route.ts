@@ -1,11 +1,12 @@
 export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { getUser } from '@/lib/auth-helper'
-import { updateUserSettings, updateUserTelegramChatId } from '@/lib/db'
+import { updateUserSettings, updateUserTelegramChatId, getMarketTrend } from '@/lib/db'
 
 export async function GET(req: NextRequest) {
   const user = await getUser(req)
   if (!user) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 })
+  const marketTrend = await getMarketTrend()
   return NextResponse.json({
     ok: true,
     settings: {
@@ -16,6 +17,8 @@ export async function GET(req: NextRequest) {
       ai_balance: Number(user.ai_balance ?? 10000),
       ai_trade_amount: Number(user.ai_trade_amount ?? 100),
       telegram_chat_id: user.telegram_chat_id ?? null,
+      signal_direction: user.signal_direction ?? 'both',
+      market_trend: marketTrend,
     },
   })
 }
@@ -23,12 +26,13 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const user = await getUser(req)
   if (!user) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 })
-  const { nickname, email, lang, ai_max_leverage, ai_trade_amount, telegram_chat_id } = await req.json()
+  const { nickname, email, lang, ai_max_leverage, ai_trade_amount, telegram_chat_id, signal_direction } = await req.json()
 
-  const leverage    = ai_max_leverage != null ? Math.max(1,  Math.min(125,      Number(ai_max_leverage))) : undefined
-  const tradeAmount = ai_trade_amount != null ? Math.max(1,  Math.min(1_000_000, Number(ai_trade_amount))) : undefined
+  const leverage    = ai_max_leverage   != null ? Math.max(1, Math.min(125, Number(ai_max_leverage))) : undefined
+  const tradeAmount = ai_trade_amount   != null ? Math.max(1, Math.min(1_000_000, Number(ai_trade_amount))) : undefined
+  const direction   = ['long','short','both'].includes(signal_direction) ? signal_direction : undefined
 
-  await updateUserSettings(user.id, { nickname, email, lang, ai_max_leverage: leverage, ai_trade_amount: tradeAmount })
+  await updateUserSettings(user.id, { nickname, email, lang, ai_max_leverage: leverage, ai_trade_amount: tradeAmount, signal_direction: direction })
 
   if (telegram_chat_id !== undefined) {
     const raw = String(telegram_chat_id || '').trim()

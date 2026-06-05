@@ -448,8 +448,13 @@ Reply with ONLY one line of valid JSON (all numeric fields must be numbers, not 
     : rawVerdict
   const confidence  = Number(json.c || json.confidence || 50)
 
-  // единственное правило: 3+ метода должны согласиться (calcConsensus threshold=3 уже это обеспечивает)
-  // все дополнительные гейты убраны
+  // conf >65 исторически хуже conf 50-65 — Groq переуверен → отсекаем
+  if ((verdict === 'LONG' || verdict === 'SHORT') && confidence > 65) {
+    const cg1: Step1Result = { signal: 'WAIT', strength: 3, trend: trendDir, summary: summary1 }
+    const cg2: Step2Result = { verdict: 'WAIT', confidence: 55, risk_score: 5, leverage: 1, summary: `Уверенность ${confidence}% выше 65% — исторически хуже. Жду сетап с conf 50–65.` }
+    const cgf = makeWait(55, `Confidence ${confidence}% > 65%: high confidence correlated with lower winrate. Waiting.`, riskUsd, balance, riskPct, allMethods, consensus)
+    return finalize({ step1: cg1, step2: cg2, final: cgf, methods: allMethods, consensus })
+  }
 
   const rawRisk     = Number(json.r || json.risk_score || 5)
   const riskScore   = rawRisk > 0 && rawRisk < 1 ? Math.round(rawRisk * 10) : Math.round(rawRisk)

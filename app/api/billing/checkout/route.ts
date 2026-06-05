@@ -42,19 +42,23 @@ export async function POST(req: NextRequest) {
             },
           },
           relationships: {
-            store: { data: { type: 'stores', id: storeId } },
-            variant: { data: { type: 'variants', id: variantId } },
+            store:   { data: { type: 'stores',   id: String(storeId) } },
+            variant: { data: { type: 'variants',  id: String(variantId) } },
           },
         },
       }),
     })
 
     const url = data?.data?.attributes?.url
-    if (!url) return NextResponse.json({ ok: false, error: 'No checkout URL' }, { status: 500 })
+    if (!url) {
+      console.error('[checkout] no url, response:', JSON.stringify(data).slice(0, 300))
+      return NextResponse.json({ ok: false, error: 'No checkout URL from Lemon Squeezy' }, { status: 500 })
+    }
 
     return NextResponse.json({ ok: true, url })
   } catch (e) {
-    console.error('[checkout]', e)
-    return NextResponse.json({ ok: false, error: 'Server error' }, { status: 500 })
+    const msg = e instanceof Error ? e.message : String(e)
+    console.error('[checkout]', msg)
+    return NextResponse.json({ ok: false, error: msg.slice(0, 200) }, { status: 500 })
   }
 }

@@ -1,9 +1,9 @@
 export const LS_API_URL = 'https://api.lemonsqueezy.com/v1'
 
 export const LS_VARIANT_IDS: Record<string, string> = {
-  starter: process.env.LS_VARIANT_STARTER || '1118265',
-  pro:     process.env.LS_VARIANT_PRO     || '1118278',
-  elite:   process.env.LS_VARIANT_ELITE   || '1118284',
+  starter: process.env.LS_VARIANT_STARTER || '1750838',
+  pro:     process.env.LS_VARIANT_PRO     || '1750855',
+  elite:   process.env.LS_VARIANT_ELITE   || '1750864',
 }
 
 export const VARIANT_ID_TO_TIER: Record<string, string> = Object.fromEntries(

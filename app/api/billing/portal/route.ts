@@ -2,25 +2,30 @@ export const dynamic = 'force-dynamic'
 export const maxDuration = 60
 import { NextRequest, NextResponse } from 'next/server'
 import { getUser } from '@/lib/auth-helper'
-import { stripe } from '@/lib/stripe'
-
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://kotvuk.asia'
+import { lsRequest } from '@/lib/lemonsqueezy'
+import { sql } from '@/lib/db'
 
 export async function POST(req: NextRequest) {
   try {
     const dbUser = await getUser(req)
     if (!dbUser) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 })
 
-    if (!dbUser.stripe_customer_id) {
+    // find active LS subscription for user
+    const subs = await sql`
+      SELECT ls_subscription_id FROM subscriptions
+      WHERE user_id = ${dbUser.id} AND tier != 'free'
+      LIMIT 1
+    `
+    const lsSubId = subs[0]?.ls_subscription_id
+    if (!lsSubId) {
       return NextResponse.json({ ok: false, error: 'No active subscription' }, { status: 400 })
     }
 
-    const session = await stripe.billingPortal.sessions.create({
-      customer: dbUser.stripe_customer_id,
-      return_url: `${SITE_URL}/dashboard`,
-    })
+    const data = await lsRequest(`/subscriptions/${lsSubId}`)
+    const portalUrl = data?.data?.attributes?.urls?.customer_portal
+    if (!portalUrl) return NextResponse.json({ ok: false, error: 'No portal URL' }, { status: 500 })
 
-    return NextResponse.json({ ok: true, url: session.url })
+    return NextResponse.json({ ok: true, url: portalUrl })
   } catch {
     return NextResponse.json({ ok: false, error: 'Server error' }, { status: 500 })
   }

@@ -2,8 +2,7 @@ export const dynamic = 'force-dynamic'
 export const maxDuration = 60
 import { NextRequest, NextResponse } from 'next/server'
 import { getUser } from '@/lib/auth-helper'
-import { setStripeCustomerId } from '@/lib/db'
-import { stripe, TIER_PRICE_IDS } from '@/lib/stripe'
+import { lsRequest, LS_VARIANT_IDS } from '@/lib/lemonsqueezy'
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://kotvuk.asia'
 
@@ -13,35 +12,49 @@ export async function POST(req: NextRequest) {
     if (!dbUser) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 })
 
     const { tier } = await req.json()
-    const priceId = TIER_PRICE_IDS[tier]
-    if (!priceId) return NextResponse.json({ ok: false, error: 'Invalid tier' }, { status: 400 })
+    const variantId = LS_VARIANT_IDS[tier]
+    if (!variantId) return NextResponse.json({ ok: false, error: 'Invalid tier' }, { status: 400 })
 
-    let customerId = dbUser.stripe_customer_id
-    if (!customerId) {
-      const customer = await stripe.customers.create({
-        email: dbUser.email || undefined,
-        metadata: { firebase_uid: dbUser.firebase_uid, user_id: String(dbUser.id) },
-      })
-      customerId = customer.id
-      await setStripeCustomerId(dbUser.id, customerId)
-    }
+    const storeId = process.env.LS_STORE_ID
+    if (!storeId) return NextResponse.json({ ok: false, error: 'Store not configured' }, { status: 500 })
 
-    const session = await stripe.checkout.sessions.create({
-      customer: customerId,
-      mode: 'subscription',
-      payment_method_types: ['card'],
-      line_items: [{ price: priceId, quantity: 1 }],
-      success_url: `${SITE_URL}/dashboard?payment=success&tier=${tier}`,
-      cancel_url:  `${SITE_URL}/dashboard?payment=cancelled`,
-      subscription_data: {
-        metadata: { firebase_uid: dbUser.firebase_uid, user_id: String(dbUser.id), tier },
-      },
-      allow_promotion_codes: true,
-      billing_address_collection: 'auto',
+    const data = await lsRequest('/checkouts', {
+      method: 'POST',
+      body: JSON.stringify({
+        data: {
+          type: 'checkouts',
+          attributes: {
+            checkout_options: {
+              embed: false,
+              media: false,
+              button_color: '#00d4ff',
+            },
+            checkout_data: {
+              email: dbUser.email || undefined,
+              custom: {
+                user_id: String(dbUser.id),
+                firebase_uid: dbUser.firebase_uid,
+                tier,
+              },
+            },
+            product_options: {
+              redirect_url: `${SITE_URL}/dashboard?payment=success&tier=${tier}`,
+            },
+          },
+          relationships: {
+            store: { data: { type: 'stores', id: storeId } },
+            variant: { data: { type: 'variants', id: variantId } },
+          },
+        },
+      }),
     })
 
-    return NextResponse.json({ ok: true, url: session.url })
-  } catch {
+    const url = data?.data?.attributes?.url
+    if (!url) return NextResponse.json({ ok: false, error: 'No checkout URL' }, { status: 500 })
+
+    return NextResponse.json({ ok: true, url })
+  } catch (e) {
+    console.error('[checkout]', e)
     return NextResponse.json({ ok: false, error: 'Server error' }, { status: 500 })
   }
 }

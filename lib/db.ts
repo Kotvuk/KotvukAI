@@ -11,7 +11,7 @@ export interface User {
   ai_max_leverage: number
   ai_balance?: number
   ai_trade_amount?: number
-  stripe_customer_id?: string | null
+  stripe_customer_id?: string | null  // legacy, kept for migration
   telegram_chat_id?: string | null
   watchlist?: string[] | null
   auto_analyze_paused?: boolean

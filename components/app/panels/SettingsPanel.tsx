@@ -172,9 +172,9 @@ export default function SettingsPanel() {
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 12 }}>
             {([
-              { tier: 'starter', price: '$9', analyses: 10,  color: '#0a84ff', features: [`10 ${t('analyses_today_lbl')}`, 'SMC signals', t('nav_history')] },
-              { tier: 'pro',     price: '$29', analyses: 30, color: '#30d158', features: [`30 ${t('analyses_today_lbl')}`, t('priority'), 'CSV Export'] },
-              { tier: 'elite',   price: '$79', analyses: 100, color: '#ffd60a', features: [`100 ${t('analyses_today_lbl')}`, t('unlimited'), 'VIP Support'] },
+              { tier: 'starter', price: '$9.9',  color: '#0a84ff', features: ['30 AI-анализов/день', 'Авто-сканер', 'Telegram-сигналы'] },
+              { tier: 'pro',     price: '$29',   color: '#30d158', features: ['Безлимит анализов', '6 методов + плечо', 'Приоритет'] },
+              { tier: 'elite',   price: '$99',   color: '#ffd60a', features: ['Всё из Pro', 'Ранний доступ', 'API'] },
             ] as const).map(({ tier, price, color, features }) => {
               const isCurrent = sub?.tier === tier
               const isLoading = purchasing === tier

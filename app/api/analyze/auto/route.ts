@@ -48,19 +48,6 @@ async function analyzeOne(
   const userId  = Number(user.id)
 
   try {
-    const tfLabel = ({ '5m': '5м', '15m': '15м', '30m': '30м', '1h': '1ч', '4h': '4ч' } as Record<string,string>)[interval] ?? interval
-    const recentSignal = await sql`
-      SELECT id FROM signals
-      WHERE user_id = ${userId} AND pair = ${pairFmt}
-        AND timeframe IN (${interval}, ${tfLabel})
-        AND final_verdict IN ('LONG','SHORT')
-        AND created_at > NOW() - INTERVAL '24 hours'
-      LIMIT 1
-    `
-    if (recentSignal.length > 0) {
-      return { ok: true, verdict: 'SKIP', error: 'duplicate within 24h' }
-    }
-
     const [binanceRes, htfRes, frRes] = await Promise.allSettled([
       fetch(`https://fapi.binance.com/fapi/v1/klines?symbol=${sym}&interval=${interval}&limit=200`, { cache: 'no-store' }),
       fetch(`https://fapi.binance.com/fapi/v1/klines?symbol=${sym}&interval=${htfInterval}&limit=100`, { cache: 'no-store' }),
@@ -103,6 +90,18 @@ async function analyzeOne(
     const fixedAmount  = Number(user.ai_trade_amount ?? 100)
     const maxLev       = Number(user.ai_max_leverage ?? 20)
     const tfLabel  = ({ '5m': '5м', '15m': '15м', '30m': '30м', '1h': '1ч', '4h': '4ч' } as Record<string, string>)[interval] ?? interval
+
+    const recentSignal = await sql`
+      SELECT id FROM signals
+      WHERE user_id = ${userId} AND pair = ${pairFmt}
+        AND timeframe IN (${interval}, ${tfLabel})
+        AND final_verdict IN ('LONG','SHORT')
+        AND created_at > NOW() - INTERVAL '24 hours'
+      LIMIT 1
+    `
+    if (recentSignal.length > 0) {
+      return { ok: true, verdict: 'SKIP', error: 'duplicate within 24h' }
+    }
 
     const [memorySignals, globalPatterns] = await Promise.all([
       getSignalsForPair(userId, pairFmt, 10),

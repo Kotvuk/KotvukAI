@@ -456,6 +456,19 @@ Reply with ONLY one line of valid JSON (all numeric fields must be numbers, not 
     return finalize({ step1: cg1, step2: cg2, final: cgf, methods: allMethods, consensus })
   }
 
+  // Funding Rate — обязательное подтверждение (86% когда согласен, 4% когда против)
+  // Входим только если FR нейтральный (WAIT) ИЛИ согласен с направлением
+  if (verdict === 'LONG' || verdict === 'SHORT') {
+    const frSignal = frResult.signal
+    const frOpposes = (verdict === 'LONG' && frSignal === 'SHORT') || (verdict === 'SHORT' && frSignal === 'LONG')
+    if (frOpposes) {
+      const fr1: Step1Result = { signal: 'WAIT', strength: 3, trend: trendDir, summary: summary1 }
+      const fr2: Step2Result = { verdict: 'WAIT', confidence: 48, risk_score: 5, leverage: 1, summary: `Funding Rate противоречит ${verdict}: ${frResult.summary}. FR = лучший предиктор (86%/4%).` }
+      const frf = makeWait(48, `Funding Rate opposes ${verdict}. FR is the strongest predictor — 4% winrate when opposing. Waiting.`, riskUsd, balance, riskPct, allMethods, consensus)
+      return finalize({ step1: fr1, step2: fr2, final: frf, methods: allMethods, consensus })
+    }
+  }
+
   const rawRisk     = Number(json.r || json.risk_score || 5)
   const riskScore   = rawRisk > 0 && rawRisk < 1 ? Math.round(rawRisk * 10) : Math.round(rawRisk)
 

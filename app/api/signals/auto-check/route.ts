@@ -177,10 +177,11 @@ export async function GET(req: NextRequest) {
         const wasCancelled = await cancelTrade(trade.id, trade.user_id)
         if (wasCancelled) {
           if (trade.account_type === 'ai') await adjustBalance(trade.user_id, Number(trade.amount))
-          const msg = `🗑️ Limit order <b>${trade.direction.toUpperCase()} ${trade.pair}</b> cancelled — expired (7 days)`
+          // автоудаление отменённых сделок из истории
+          await sql`DELETE FROM trades WHERE id = ${trade.id}`
           const tgChatId = await getTgChatId(trade.user_id)
           await Promise.allSettled([
-            tgChatId ? sendTelegramToUser(tgChatId, msg) : sendTelegram(msg),
+            tgChatId ? sendTelegramToUser(tgChatId, `🗑️ Limit order <b>${trade.direction.toUpperCase()} ${trade.pair}</b> cancelled (expired)`) : sendTelegram(`🗑️ ${trade.pair} cancelled`),
             createNotification(trade.user_id, `🗑️ Limit order ${trade.direction.toUpperCase()} ${trade.pair} cancelled (expired)`),
           ])
           tradesCancelled++

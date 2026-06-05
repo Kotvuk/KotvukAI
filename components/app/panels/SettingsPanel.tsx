@@ -172,10 +172,10 @@ export default function SettingsPanel() {
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 12 }}>
             {([
-              { tier: 'starter', price: '$9.9',  color: '#0a84ff', features: ['30 AI-анализов/день', 'Авто-сканер', 'Telegram-сигналы'] },
-              { tier: 'pro',     price: '$29',   color: '#30d158', features: ['Безлимит анализов', '6 методов + плечо', 'Приоритет'] },
-              { tier: 'elite',   price: '$99',   color: '#ffd60a', features: ['Всё из Pro', 'Ранний доступ', 'API'] },
-            ] as const).map(({ tier, price, color, features }) => {
+              { tier: 'starter', price: '$9.90',   period: '/мес',  color: '#0a84ff', features: ['30 AI-анализов/день', 'Авто-сканер', 'Telegram-сигналы'] },
+              { tier: 'pro',     price: '$29.90',  period: '/мес',  color: '#30d158', features: ['Безлимит анализов', '6 методов + плечо', 'Приоритет'] },
+              { tier: 'elite',   price: '$79.90',  period: '/год',  color: '#ffd60a', features: ['Всё из Pro', 'Ранний доступ', 'API'] },
+            ] as const).map(({ tier, price, period, color, features }) => {
               const isCurrent = sub?.tier === tier
               const isLoading = purchasing === tier
               return (
@@ -188,7 +188,7 @@ export default function SettingsPanel() {
                     {tier}
                   </div>
                   <div style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text)', marginBottom: 8 }}>
-                    {price}<span style={{ fontSize: '.55rem', color: 'var(--dim)', fontWeight: 400 }}>{t('per_month')}</span>
+                    {price}<span style={{ fontSize: '.55rem', color: 'var(--dim)', fontWeight: 400 }}>{period}</span>
                   </div>
                   <div style={{ marginBottom: 10 }}>
                     {features.map(f => (

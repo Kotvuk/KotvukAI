@@ -263,18 +263,18 @@ export async function getStats(userId: number) {
     SELECT
       COUNT(*) AS total,
       COUNT(*) FILTER (WHERE outcome IS NOT NULL) AS resolved,
-      AVG(final_confidence)::int AS avg_confidence,
+      AVG(final_confidence) FILTER (WHERE outcome IS NOT NULL)::int AS avg_confidence,
       COUNT(*) FILTER (WHERE outcome = 'win')::float /
         NULLIF(COUNT(*) FILTER (WHERE outcome IS NOT NULL), 0) * 100 AS win_rate,
-      AVG(actual_pnl_pct) AS avg_pnl_pct
-    FROM signals WHERE user_id = ${userId}
+      AVG(actual_pnl_pct) FILTER (WHERE outcome IS NOT NULL AND actual_pnl_pct <> 'NaN'::numeric) AS avg_pnl_pct
+    FROM signals WHERE user_id = ${userId} AND final_verdict IN ('LONG','SHORT')
   `
   const byPair = await sql`
     SELECT pair,
       COUNT(*) AS total,
       COUNT(*) FILTER (WHERE outcome = 'win')::float /
         NULLIF(COUNT(*) FILTER (WHERE outcome IS NOT NULL), 0) * 100 AS win_rate
-    FROM signals WHERE user_id = ${userId}
+    FROM signals WHERE user_id = ${userId} AND final_verdict IN ('LONG','SHORT')
     GROUP BY pair ORDER BY total DESC LIMIT 10
   `
   const resolved = Number(statsRow.resolved ?? 0)

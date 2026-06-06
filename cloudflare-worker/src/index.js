@@ -1,21 +1,23 @@
-const CRON_TF = {
-  '*/15 * * * *': '15m',
-  '*/30 * * * *': '30m',
-  '0 * * * *':    '1h',
-  '0 */4 * * *':  '4h',
-}
-
 function isWeekend() {
   const day = new Date().getUTCDay()
   return day === 0 || day === 6
 }
 
+function detectTfs() {
+  const now  = new Date()
+  const min  = now.getUTCMinutes()
+  const hour = now.getUTCHours()
+  const tfs  = ['15m']
+  if (min % 30 === 0) tfs.push('30m')
+  if (min === 0)      tfs.push('1h')
+  if (min === 0 && hour % 4 === 0) tfs.push('4h')
+  return tfs
+}
+
 export default {
   async scheduled(event, env, ctx) {
     if (isWeekend()) return
-    const tf = CRON_TF[event.cron]
-    const tfs = tf ? [tf] : []
-    ctx.waitUntil(runAnalysis(env, tfs))
+    ctx.waitUntil(runAnalysis(env, detectTfs()))
   },
 
   async fetch(req, env) {

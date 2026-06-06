@@ -118,7 +118,6 @@ async function analyzeOne(
       SELECT id FROM signals
       WHERE user_id = ${userId} AND pair = ${pairFmt}
         AND timeframe IN (${interval}, ${tfLabel})
-        AND final_verdict IN ('LONG','SHORT')
         AND created_at > NOW() - INTERVAL '24 hours'
       LIMIT 1
     `

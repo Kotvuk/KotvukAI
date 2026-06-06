@@ -47,7 +47,6 @@ const TICKER_SYMS = [
   { sym: 'TRX/USDT', key: 'TRXUSDT' },
   { sym: 'LTC/USDT', key: 'LTCUSDT' },
   { sym: 'ATOM/USDT', key: 'ATOMUSDT' },
-  { sym: 'INJ/USDT', key: 'INJUSDT' },
   { sym: 'POL/USDT', key: 'POLUSDT' },
 ]
 type TickerMap = Record<string, { price: number; change: number }>
@@ -255,28 +254,28 @@ export default function LandingPage() {
 
   const PLANS = [
     {
-      name: 'Free', price: '$0', popular: false,
+      name: 'Free', price: '$0', period: t('lp_per_mo'), popular: false,
       desc: t('lp_p1_desc'),
       features: [t('lp_p1_f1'), t('lp_p1_f2'), t('lp_p1_f3'), t('lp_p1_f4')],
       noFeatures: [t('lp_p1_f5')],
       btn: t('lp_p1_btn'), primary: false,
     },
     {
-      name: 'Starter', price: '$9', popular: false,
+      name: 'Starter', price: '$9.90', period: t('lp_per_mo'), popular: false,
       desc: t('lp_p2_desc'),
       features: [t('lp_p2_f1'), t('lp_p2_f2'), t('lp_p2_f3'), t('lp_p2_f4')],
       noFeatures: [t('lp_p2_f5')],
       btn: t('lp_p_choose'), primary: false,
     },
     {
-      name: 'Pro', price: '$29', popular: true,
+      name: 'Pro', price: '$29.90', period: t('lp_per_mo'), popular: true,
       desc: t('lp_p3_desc'),
       features: [t('lp_p3_f1'), t('lp_p3_f2'), t('lp_p3_f3'), t('lp_p3_f4'), t('lp_p3_f5')],
       noFeatures: [],
       btn: t('lp_p_choose'), primary: true,
     },
     {
-      name: 'Elite', price: '$79', popular: false,
+      name: 'Elite', price: '$79.90', period: t('lp_per_yr'), popular: false,
       desc: t('lp_p4_desc'),
       features: [t('lp_p4_f1'), t('lp_p4_f2'), t('lp_p4_f3'), t('lp_p4_f4'), t('lp_p4_f5')],
       noFeatures: [],
@@ -523,7 +522,7 @@ export default function LandingPage() {
                     <div style={{ position: 'relative', zIndex: 1, background: '#0d1630', borderRadius: 12, padding: '28px 24px', display: 'flex', flexDirection: 'column', height: '100%' }}>
                       <div style={{ fontSize: '.58rem', fontWeight: 700, letterSpacing: '.12em', background: 'linear-gradient(135deg,#00d4ff,#a855f7)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', marginBottom: 16, textTransform: 'uppercase' }}>{t('lp_popular_badge')}</div>
                       <div style={{ fontFamily: "'Syne',sans-serif", fontSize: '1.3rem', fontWeight: 800, color: '#fff', marginBottom: 4 }}>{plan.name}</div>
-                      <div style={{ fontFamily: "'Syne',sans-serif", fontSize: '2.6rem', fontWeight: 800, color: '#fff', lineHeight: 1, marginBottom: 4 }}>{plan.price}<span style={{ fontSize: '1rem', color: '#4a5568', fontWeight: 400 }}>{t('lp_per_mo')}</span></div>
+                      <div style={{ fontFamily: "'Syne',sans-serif", fontSize: '2.6rem', fontWeight: 800, color: '#fff', lineHeight: 1, marginBottom: 4 }}>{plan.price}<span style={{ fontSize: '1rem', color: '#4a5568', fontWeight: 400 }}>{plan.period}</span></div>
                       <div style={{ fontSize: '.72rem', color: '#4a5568', marginBottom: 24, lineHeight: 1.6 }}>{plan.desc}</div>
                       <div style={{ height: 1, background: border, marginBottom: 20 }} />
                       <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 28, flex: 1 }}>
@@ -543,7 +542,7 @@ export default function LandingPage() {
                   onMouseLeave={e => { e.currentTarget.style.transform = pricingSection.visible ? 'translateY(0)' : 'translateY(24px)'; e.currentTarget.style.boxShadow = ''; e.currentTarget.style.borderColor = border }}
                 >
                   <div style={{ fontFamily: "'Syne',sans-serif", fontSize: '1.3rem', fontWeight: 800, color: '#fff', marginBottom: 4 }}>{plan.name}</div>
-                  <div style={{ fontFamily: "'Syne',sans-serif", fontSize: '2.6rem', fontWeight: 800, color: '#fff', lineHeight: 1, marginBottom: 4 }}>{plan.price}<span style={{ fontSize: '1rem', color: '#4a5568', fontWeight: 400 }}>{t('lp_per_mo')}</span></div>
+                  <div style={{ fontFamily: "'Syne',sans-serif", fontSize: '2.6rem', fontWeight: 800, color: '#fff', lineHeight: 1, marginBottom: 4 }}>{plan.price}<span style={{ fontSize: '1rem', color: '#4a5568', fontWeight: 400 }}>{plan.period}</span></div>
                   <div style={{ fontSize: '.72rem', color: '#4a5568', marginBottom: 24, lineHeight: 1.6 }}>{plan.desc}</div>
                   <div style={{ height: 1, background: border, marginBottom: 20 }} />
                   <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 28, flex: 1 }}>

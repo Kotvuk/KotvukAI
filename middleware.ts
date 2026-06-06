@@ -19,7 +19,8 @@ export async function middleware(req: NextRequest) {
     !pathname.startsWith('/api/signals/auto-check') &&
     !pathname.startsWith('/api/profile/') &&
     !pathname.startsWith('/api/telegram/webhook') &&
-    !pathname.startsWith('/api/billing/webhook')
+    !pathname.startsWith('/api/billing/webhook') &&
+    !pathname.startsWith('/api/admin/cleanup-weekend')
 
   if ((isProtected || isApiProtected) && !token) {
     if (isApiProtected) {

@@ -2,6 +2,7 @@ name = "kotvukai-analyzer"
 main = "src/index.js"
 compatibility_date = "2024-09-23"
 workers_dev = true
+account_id = "f53c4b4e5566462334d8104ee1307f0f"
 
 [triggers]
 crons = ["*/15 * * * *"]

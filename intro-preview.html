@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>KotvukAI — Превью интро</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --bg:#06080f; --cyan:#00d4ff; --purple:#a855f7; --green:#00e676; --red:#ff3d57;
+    --txt:#e8f0fb; --muted:#7a8aa0; --dim:#3a4a5a; --line:rgba(255,255,255,.08);
+  }
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--txt);font-family:'JetBrains Mono',monospace;overflow-x:hidden}
+  h1,h2,h3,.syne{font-family:'Syne',sans-serif}
+  a{text-decoration:none;color:inherit}
+
+  .aurora{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+  .blob{position:absolute;border-radius:50%;filter:blur(60px)}
+  .b1{top:-10%;left:10%;width:560px;height:560px;background:radial-gradient(circle,rgba(0,212,255,.18),transparent 60%);animation:float1 18s ease-in-out infinite}
+  .b2{top:20%;right:5%;width:480px;height:480px;background:radial-gradient(circle,rgba(168,85,247,.18),transparent 60%);animation:float2 22s ease-in-out infinite}
+  .b3{bottom:-5%;left:40%;width:420px;height:420px;background:radial-gradient(circle,rgba(0,230,118,.12),transparent 60%);animation:float3 20s ease-in-out infinite}
+  @keyframes float1{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(60px,40px) scale(1.15)}}
+  @keyframes float2{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(-50px,60px) scale(1.2)}}
+  @keyframes float3{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(40px,-40px) scale(1.1)}}
+  .grid-bg{position:fixed;inset:0;z-index:0;pointer-events:none;
+    background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+    background-size:60px 60px;mask-image:radial-gradient(ellipse 80% 50% at 50% 0%,#000 40%,transparent 100%);opacity:.4}
+  .wrap{position:relative;z-index:1}
+
+  nav{position:fixed;top:0;left:0;right:0;z-index:50;display:flex;align-items:center;justify-content:space-between;
+    padding:14px 40px;backdrop-filter:blur(16px);background:rgba(6,8,15,.6);border-bottom:1px solid var(--line)}
+  .logo{display:flex;align-items:center;gap:11px;font-family:'Syne';font-weight:800;font-size:1.05rem;letter-spacing:-.02em}
+  .logo svg{width:30px;height:30px;display:block}
+  .navlinks{display:flex;gap:6px}
+  .navlinks a{color:var(--muted);font-size:.66rem;letter-spacing:.08em;padding:6px 14px;transition:color .2s}
+  .navlinks a:hover{color:var(--txt)}
+  .navright{display:flex;gap:10px;align-items:center}
+  .lang{display:flex;gap:2px;border:1px solid var(--line);border-radius:8px;padding:2px;background:rgba(255,255,255,.02)}
+  .lang button{background:none;border:none;color:var(--muted);font-family:inherit;font-size:.62rem;letter-spacing:.06em;padding:5px 9px;border-radius:6px;cursor:pointer;transition:.2s}
+  .lang button.on{background:linear-gradient(135deg,var(--cyan),var(--purple));color:#fff;font-weight:700}
+  .btn{padding:8px 20px;font-size:.7rem;letter-spacing:.05em;border-radius:8px;transition:transform .2s,box-shadow .2s,border-color .2s,color .2s;cursor:pointer;display:inline-block}
+  .btn-ghost{border:1px solid #2c3340;color:var(--muted)}
+  .btn-ghost:hover{color:var(--txt);border-color:rgba(255,255,255,.25)}
+  .btn-fill{background:linear-gradient(135deg,var(--cyan),var(--purple));color:#fff;font-weight:700}
+
+  .ticker{margin-top:59px;border-bottom:1px solid var(--line);overflow:hidden;white-space:nowrap;background:rgba(10,15,30,.4)}
+  .ticker-track{display:inline-block;padding:9px 0;animation:scroll 40s linear infinite}
+  .ticker-track span{font-size:.66rem;margin:0 22px;color:var(--muted)}
+  .ticker-track b{color:var(--txt);font-weight:600}
+  .up{color:var(--green)} .down{color:var(--red)}
+  @keyframes scroll{to{transform:translateX(-50%)}}
+
+  .hero{min-height:92vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:80px 24px 70px}
+  .badge{display:inline-flex;align-items:center;gap:9px;font-size:.64rem;letter-spacing:.2em;color:var(--cyan);text-transform:uppercase;
+    padding:7px 16px;border:1px solid rgba(0,212,255,.25);border-radius:100px;background:rgba(0,212,255,.04);margin-bottom:30px}
+  .dot{width:6px;height:6px;border-radius:50%;background:var(--cyan);animation:pulse 2s infinite}
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(.7)}}
+  .hero h1{font-weight:800;font-size:clamp(3rem,8.5vw,6.8rem);line-height:.98;letter-spacing:-.05em;max-width:1000px;margin-bottom:26px;perspective:800px}
+  .hero h1 .line{display:block;overflow:hidden}
+  .hero h1 .word{display:inline-block;transform-origin:bottom;margin:0 .12em}
+  .l1 .word{background:linear-gradient(120deg,#fff,#dceeff);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  .l2 .word{background:linear-gradient(120deg,var(--cyan),var(--purple));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  .hero p.sub{font-size:clamp(.9rem,2vw,1.1rem);color:var(--muted);max-width:560px;line-height:1.75;margin-bottom:42px}
+  .hero-cta{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin-bottom:54px}
+  .btn-lg{padding:16px 44px;font-size:.9rem;border-radius:10px}
+  .mag{will-change:transform}
+  .chips{display:flex;gap:14px;flex-wrap:wrap;justify-content:center}
+  .chip{padding:14px 26px;border:1px solid var(--line);border-radius:12px;background:rgba(10,15,30,.5);backdrop-filter:blur(14px);min-width:120px;transition:transform .25s,border-color .25s}
+  .chip:hover{transform:translateY(-5px) scale(1.03);border-color:rgba(0,212,255,.4)}
+  .chip .v{font-family:'Syne';font-size:1.8rem;font-weight:800;line-height:1;background:linear-gradient(135deg,#fff,var(--cyan));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  .chip .l{font-size:.58rem;color:var(--dim);text-transform:uppercase;letter-spacing:.1em;margin-top:6px}
+
+  /* hero entrance: 3D flip-up words */
+  .word{opacity:0;transform:translateY(110%) rotateX(-70deg)}
+  .hero.go .word{animation:flipUp .85s cubic-bezier(.16,1,.3,1) forwards}
+  @keyframes flipUp{to{opacity:1;transform:none}}
+  .he{opacity:0;animation:fadeScale .8s cubic-bezier(.16,1,.3,1) forwards}
+  @keyframes fadeScale{from{opacity:0;transform:translateY(18px) scale(.96)}to{opacity:1;transform:none}}
+
+  /* varied reveals */
+  .r-up{opacity:0;transform:translateY(40px)}
+  .r-left{opacity:0;transform:translateX(-60px)}
+  .r-right{opacity:0;transform:translateX(60px)}
+  .r-scale{opacity:0;transform:scale(.8)}
+  .r-rot{opacity:0;transform:translateY(40px) rotate(-4deg)}
+  .r-up,.r-left,.r-right,.r-scale,.r-rot{transition:opacity .8s cubic-bezier(.16,1,.3,1),transform .8s cubic-bezier(.16,1,.3,1)}
+  .in{opacity:1!important;transform:none!important}
+  .stag>*{transition-delay:calc(var(--i,0)*.08s)}
+
+  section.blk{max-width:1100px;margin:0 auto;padding:100px 32px}
+  .eyebrow{font-size:.64rem;color:var(--cyan);letter-spacing:.2em;text-transform:uppercase;margin-bottom:14px}
+  .blk h2{font-size:clamp(2rem,4.5vw,3.2rem);font-weight:800;letter-spacing:-.03em;line-height:1.05;margin-bottom:18px;max-width:620px}
+  .blk .lead{color:var(--muted);max-width:540px;line-height:1.7;font-size:.92rem;margin-bottom:48px}
+  .feat{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+  .card{padding:28px;border:1px solid var(--line);border-radius:16px;background:rgba(12,18,32,.5);backdrop-filter:blur(12px);transition:border-color .3s,background .3s;transform-style:preserve-3d;will-change:transform}
+  .card:hover{border-color:rgba(0,212,255,.3);background:rgba(14,22,40,.7)}
+  .card .ico{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;margin-bottom:18px;border:1px solid var(--line);transform:translateZ(30px)}
+  .card h3{font-size:1.05rem;font-weight:700;margin-bottom:10px;transform:translateZ(20px)}
+  .card p{color:var(--muted);font-size:.82rem;line-height:1.6;transform:translateZ(10px)}
+
+  .steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px}
+  .step{position:relative;padding:28px;border:1px solid var(--line);border-radius:16px;background:rgba(12,18,32,.4)}
+  .step .n{font-family:'Syne';font-size:2.6rem;font-weight:800;line-height:1;opacity:.25;margin-bottom:14px}
+  .step h3{font-size:1.05rem;margin-bottom:8px}.step p{color:var(--muted);font-size:.82rem;line-height:1.6}
+
+  .metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+  .metric{background:var(--bg);padding:34px 20px;text-align:center}
+  .metric .v{font-family:'Syne';font-size:2.6rem;font-weight:800;line-height:1;background:linear-gradient(135deg,#fff,var(--cyan));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  .metric .l{font-size:.62rem;color:var(--dim);text-transform:uppercase;letter-spacing:.1em;margin-top:8px}
+
+  .finalcta{text-align:center;padding:120px 24px}
+  .finalcta h2{font-size:clamp(2.2rem,5vw,3.6rem);font-weight:800;letter-spacing:-.03em;margin-bottom:20px}
+  .finalcta p{color:var(--muted);max-width:460px;margin:0 auto 36px;line-height:1.7}
+  footer{border-top:1px solid var(--line);padding:30px 40px;text-align:center;color:var(--dim);font-size:.66rem}
+  @media(max-width:680px){nav{padding:12px 16px}.navlinks{display:none}section.blk{padding:70px 20px}}
+</style>
+</head>
+<body>
+  <div class="aurora"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div></div>
+  <div class="grid-bg"></div>
+
+  <div class="wrap">
+    <nav>
+      <div class="logo">
+        <svg viewBox="0 0 40 40" fill="none">
+          <defs>
+            <linearGradient id="lg" x1="0" y1="0" x2="40" y2="40">
+              <stop offset="0" stop-color="#00d4ff"/><stop offset="1" stop-color="#a855f7"/>
+            </linearGradient>
+          </defs>
+          <rect x="2" y="2" width="36" height="36" rx="11" stroke="url(#lg)" stroke-width="2"/>
+          <g class="logo-bars" stroke-linecap="round">
+            <line x1="13" y1="27" x2="13" y2="20" stroke="#00e676" stroke-width="3"/>
+            <line x1="20" y1="29" x2="20" y2="13" stroke="url(#lg)" stroke-width="3"/>
+            <line x1="27" y1="24" x2="27" y2="17" stroke="#00d4ff" stroke-width="3"/>
+          </g>
+        </svg>
+        KOTVUK<span style="color:var(--cyan)">AI</span>
+      </div>
+      <div class="navlinks">
+        <a href="#feat" data-i18n="nav_feat"></a><a href="#how" data-i18n="nav_how"></a>
+        <a href="#metrics" data-i18n="nav_res"></a><a href="#price" data-i18n="nav_price"></a>
+      </div>
+      <div class="navright">
+        <div class="lang">
+          <button data-l="ru" class="on">RU</button><button data-l="en">EN</button><button data-l="kz">KZ</button>
+        </div>
+        <a class="btn btn-ghost mag" data-i18n="login"></a>
+        <a class="btn btn-fill mag" data-i18n="start"></a>
+      </div>
+    </nav>
+
+    <div class="ticker">
+      <div class="ticker-track" id="tk">
+        <span><b>BTC/USDT</b> $104,230 <i class="up">+2.14%</i></span><span><b>ETH/USDT</b> $3,910 <i class="up">+1.02%</i></span>
+        <span><b>SOL/USDT</b> $238 <i class="down">-0.84%</i></span><span><b>BNB/USDT</b> $712 <i class="up">+0.43%</i></span>
+        <span><b>XRP/USDT</b> $2.41 <i class="up">+3.10%</i></span><span><b>LINK/USDT</b> $28.7 <i class="down">-1.22%</i></span>
+        <span><b>AVAX/USDT</b> $41.2 <i class="up">+0.91%</i></span><span><b>DOGE/USDT</b> $0.39 <i class="up">+4.55%</i></span>
+      </div>
+    </div>
+
+    <header class="hero" id="hero">
+      <div class="badge he" style="animation-delay:.05s"><span class="dot"></span><span data-i18n="badge"></span></div>
+      <h1>
+        <span class="line l1"><span class="word" data-i18n="h1a"></span> <span class="word" data-i18n="h1b"></span></span>
+        <span class="line l2"><span class="word" data-i18n="h2a"></span> <span class="word" data-i18n="h2b"></span></span>
+      </h1>
+      <p class="sub he" style="animation-delay:.55s" data-i18n="sub"></p>
+      <div class="hero-cta he" style="animation-delay:.68s">
+        <a class="btn btn-fill btn-lg mag" data-i18n="cta1"></a>
+        <a class="btn btn-ghost btn-lg mag" data-i18n="cta2"></a>
+      </div>
+      <div class="chips he" style="animation-delay:.8s">
+        <div class="chip"><div class="v">500+</div><div class="l" data-i18n="c_pairs"></div></div>
+        <div class="chip"><div class="v">6</div><div class="l" data-i18n="c_methods"></div></div>
+        <div class="chip"><div class="v">4 TF</div><div class="l" data-i18n="c_tf"></div></div>
+        <div class="chip"><div class="v">24/7</div><div class="l" data-i18n="c_scan"></div></div>
+      </div>
+    </header>
+
+    <section class="blk" id="feat">
+      <div class="r-up"><div class="eyebrow" data-i18n="feat_eye"></div><h2 data-i18n="feat_h"></h2><p class="lead" data-i18n="feat_lead"></p></div>
+      <div class="feat">
+        <div class="card r-left tilt"><div class="ico" style="color:var(--cyan)">◈</div><h3 data-i18n="f1h"></h3><p data-i18n="f1d"></p></div>
+        <div class="card r-up tilt"><div class="ico" style="color:var(--green)">◉</div><h3 data-i18n="f2h"></h3><p data-i18n="f2d"></p></div>
+        <div class="card r-right tilt"><div class="ico" style="color:#ffb300">▦</div><h3 data-i18n="f3h"></h3><p data-i18n="f3d"></p></div>
+        <div class="card r-left tilt"><div class="ico" style="color:var(--red)">◉</div><h3 data-i18n="f4h"></h3><p data-i18n="f4d"></p></div>
+        <div class="card r-up tilt"><div class="ico" style="color:var(--purple)">◇</div><h3 data-i18n="f5h"></h3><p data-i18n="f5d"></p></div>
+        <div class="card r-right tilt"><div class="ico" style="color:#34d399">◈</div><h3 data-i18n="f6h"></h3><p data-i18n="f6d"></p></div>
+      </div>
+    </section>
+
+    <section class="blk" id="how">
+      <div class="r-up"><div class="eyebrow" data-i18n="how_eye"></div><h2 data-i18n="how_h"></h2></div>
+      <div class="steps">
+        <div class="step r-scale"><div class="n" style="color:var(--cyan)">01</div><h3 data-i18n="s1h"></h3><p data-i18n="s1d"></p></div>
+        <div class="step r-scale"><div class="n" style="color:var(--green)">02</div><h3 data-i18n="s2h"></h3><p data-i18n="s2d"></p></div>
+        <div class="step r-scale"><div class="n" style="color:var(--purple)">03</div><h3 data-i18n="s3h"></h3><p data-i18n="s3d"></p></div>
+      </div>
+    </section>
+
+    <section class="blk" id="metrics">
+      <div class="r-up"><div class="eyebrow" data-i18n="res_eye"></div><h2 data-i18n="res_h"></h2><p class="lead" data-i18n="res_lead"></p></div>
+      <div class="metrics r-scale">
+        <div class="metric"><div class="v count" data-to="147">0</div><div class="l" data-i18n="m1"></div></div>
+        <div class="metric"><div class="v">+1.29%</div><div class="l" data-i18n="m2"></div></div>
+        <div class="metric"><div class="v count" data-to="86" data-suf="%">0</div><div class="l" data-i18n="m3"></div></div>
+        <div class="metric"><div class="v count" data-to="6">0</div><div class="l" data-i18n="m4"></div></div>
+      </div>
+    </section>
+
+    <section class="blk" id="price">
+      <div class="r-up"><div class="eyebrow" data-i18n="pr_eye"></div><h2 data-i18n="pr_h"></h2><p class="lead" data-i18n="pr_lead"></p></div>
+      <div class="feat">
+        <div class="card r-up tilt"><div class="eyebrow" data-i18n="pl1n"></div><div class="v" style="font-family:'Syne';font-size:2rem;font-weight:800;margin:6px 0 4px">$0</div><p style="margin-bottom:16px" data-i18n="pl1d"></p><a class="btn btn-ghost mag" data-i18n="pl_try"></a></div>
+        <div class="card r-up tilt"><div class="eyebrow" data-i18n="pl2n"></div><div class="v" style="font-family:'Syne';font-size:2rem;font-weight:800;margin:6px 0 4px">$9</div><p style="margin-bottom:16px" data-i18n="pl2d"></p><a class="btn btn-ghost mag" data-i18n="pl_choose"></a></div>
+        <div class="card r-up tilt" style="border-color:rgba(0,212,255,.4)"><div class="eyebrow" style="color:var(--green)" data-i18n="pl3n"></div><div class="v" style="font-family:'Syne';font-size:2rem;font-weight:800;margin:6px 0 4px">$29</div><p style="margin-bottom:16px" data-i18n="pl3d"></p><a class="btn btn-fill mag" data-i18n="pl_choose"></a></div>
+        <div class="card r-up tilt"><div class="eyebrow" style="color:var(--purple)" data-i18n="pl4n"></div><div class="v" style="font-family:'Syne';font-size:2rem;font-weight:800;margin:6px 0 4px">$99</div><p style="margin-bottom:16px" data-i18n="pl4d"></p><a class="btn btn-ghost mag" data-i18n="pl_choose"></a></div>
+      </div>
+    </section>
+
+    <section class="finalcta r-rot">
+      <h2 data-i18n="final_h"></h2>
+      <p data-i18n="final_p"></p>
+      <a class="btn btn-fill btn-lg mag" data-i18n="final_btn"></a>
+    </section>
+
+    <footer data-i18n="footer"></footer>
+  </div>
+
+<script>
+  const I18N={
+    ru:{nav_feat:'Возможности',nav_how:'Как работает',nav_res:'Результаты',nav_price:'Тарифы',login:'Войти',start:'Начать',
+      badge:'AI-анализ по Smart Money',h1a:'Видеть',h1b:'рынок',h2a:'как',h2b:'институционалы',
+      sub:'Шесть методов анализа, ИИ и Smart Money Concepts в одном инструменте. Сигнал с входом, TP и SL за секунды.',
+      cta1:'Начать бесплатно →',cta2:'У меня есть аккаунт',c_pairs:'торговых пар',c_methods:'методов',c_tf:'таймфрейма',c_scan:'авто-сканер',
+      feat_eye:'Возможности',feat_h:'Не индикаторы. Логика крупного игрока.',feat_lead:'Каждый метод раскрывает свой аспект рынка, а ИИ сводит их в единый вердикт.',
+      f1h:'Smart Money Concepts',f1d:'Order Blocks, FVG, ликвидность, BOS и CHoCH автоматически на графике.',
+      f2h:'AI-пайплайн',f2d:'Трёхшаговый анализ: структура → риск → итоговый сигнал с уровнями.',
+      f3h:'Мультиметодный консенсус',f3d:'SMC, индикаторы, Wyckoff, Volume Profile и Funding голосуют за решение.',
+      f4h:'Funding-фильтр',f4d:'Самый надёжный предиктор — отсекает входы против настроений рынка.',
+      f5h:'Авто-сканер 24/7',f5d:'Сканирует рынок на 15м/30м/1ч/4ч и шлёт сигналы в Telegram.',
+      f6h:'Умное плечо',f6d:'Размер позиции растёт только на сделках высшей уверенности.',
+      how_eye:'Как работает',how_h:'Три шага до сигнала',
+      s1h:'Выбери пару',s1d:'Любая из 500+ пар Binance Futures и таймфрейм.',
+      s2h:'Запусти анализ',s2d:'ИИ читает структуру, ликвидность и настроения за секунды.',
+      s3h:'Получи сигнал',s3d:'Направление, вход, TP, SL и плечо — с обоснованием.',
+      res_eye:'Результаты',res_h:'Измеримо, а не на словах',res_lead:'Система отслеживает исход каждого сигнала и учится на нём.',
+      m1:'сделок измерено',m2:'средний PnL',m3:'точность Funding',m4:'методов',
+      pr_eye:'Тарифы',pr_h:'Начни бесплатно, расти по мере роста',pr_lead:'Без карты на старте. Меняй тариф когда захочешь.',
+      pl1n:'FREE',pl1d:'3 анализа в день, базовые методы, ручной режим.',pl2n:'STARTER',pl2d:'30 анализов в день, авто-сканер, Telegram-сигналы.',
+      pl3n:'PRO',pl3d:'Безлимит анализов, все 6 методов, умное плечо, приоритет.',pl4n:'ELITE',pl4d:'Всё из PRO + ранний доступ к новым методам и API.',
+      pl_try:'Попробовать',pl_choose:'Выбрать',
+      final_h:'Начни видеть то,<br>что видят другие.',final_p:'Бесплатный доступ к AI-анализу. Без карты, за минуту.',final_btn:'Создать аккаунт →',
+      footer:'KotvukAI · Превью интро (локальный файл, не связан с продакшеном)'},
+    en:{nav_feat:'Features',nav_how:'How it works',nav_res:'Results',nav_price:'Pricing',login:'Log in',start:'Start',
+      badge:'AI analysis by Smart Money',h1a:'See the',h1b:'market',h2a:'like',h2b:'institutions',
+      sub:'Six analysis methods, AI and Smart Money Concepts in one tool. A signal with entry, TP and SL in seconds.',
+      cta1:'Start free →',cta2:'I have an account',c_pairs:'trading pairs',c_methods:'methods',c_tf:'timeframes',c_scan:'auto-scanner',
+      feat_eye:'Features',feat_h:'Not indicators. The logic of the big player.',feat_lead:'Each method reveals its own aspect of the market, and AI merges them into one verdict.',
+      f1h:'Smart Money Concepts',f1d:'Order Blocks, FVG, liquidity, BOS and CHoCH automatically on the chart.',
+      f2h:'AI pipeline',f2d:'Three-step analysis: structure → risk → final signal with levels.',
+      f3h:'Multi-method consensus',f3d:'SMC, indicators, Wyckoff, Volume Profile and Funding vote for the decision.',
+      f4h:'Funding filter',f4d:'The most reliable predictor — cuts entries against market sentiment.',
+      f5h:'24/7 auto-scanner',f5d:'Scans the market on 15m/30m/1h/4h and sends signals to Telegram.',
+      f6h:'Smart leverage',f6d:'Position size grows only on the highest-conviction trades.',
+      how_eye:'How it works',how_h:'Three steps to a signal',
+      s1h:'Pick a pair',s1d:'Any of 500+ Binance Futures pairs and a timeframe.',
+      s2h:'Run analysis',s2d:'AI reads structure, liquidity and sentiment in seconds.',
+      s3h:'Get a signal',s3d:'Direction, entry, TP, SL and leverage — with reasoning.',
+      res_eye:'Results',res_h:'Measured, not claimed',res_lead:'The system tracks the outcome of every signal and learns from it.',
+      m1:'trades measured',m2:'avg PnL',m3:'Funding accuracy',m4:'methods',
+      pr_eye:'Pricing',pr_h:'Start free, grow as you grow',pr_lead:'No card to start. Switch plans anytime.',
+      pl1n:'FREE',pl1d:'3 analyses per day, basic methods, manual mode.',pl2n:'STARTER',pl2d:'30 analyses per day, auto-scanner, Telegram signals.',
+      pl3n:'PRO',pl3d:'Unlimited analyses, all 6 methods, smart leverage, priority.',pl4n:'ELITE',pl4d:'Everything in PRO + early access to new methods and API.',
+      pl_try:'Try it',pl_choose:'Choose',
+      final_h:'Start seeing what<br>others see.',final_p:'Free access to AI analysis. No card, in a minute.',final_btn:'Create account →',
+      footer:'KotvukAI · Intro preview (local file, not connected to production)'},
+    kz:{nav_feat:'Мүмкіндіктер',nav_how:'Қалай жұмыс істейді',nav_res:'Нәтижелер',nav_price:'Тарифтер',login:'Кіру',start:'Бастау',
+      badge:'Smart Money бойынша AI-талдау',h1a:'Нарықты',h1b:'көр',h2a:'институттар',h2b:'сияқты',
+      sub:'Алты талдау әдісі, AI және Smart Money Concepts бір құралда. Кіру, TP және SL бар сигнал бірнеше секундта.',
+      cta1:'Тегін бастау →',cta2:'Аккаунтым бар',c_pairs:'сауда жұбы',c_methods:'әдіс',c_tf:'таймфрейм',c_scan:'авто-сканер',
+      feat_eye:'Мүмкіндіктер',feat_h:'Индикатор емес. Ірі ойыншының логикасы.',feat_lead:'Әр әдіс нарықтың өз қырын ашады, ал AI оларды бір шешімге біріктіреді.',
+      f1h:'Smart Money Concepts',f1d:'Order Blocks, FVG, өтімділік, BOS және CHoCH графикте автоматты.',
+      f2h:'AI-құбыр',f2d:'Үш қадамды талдау: құрылым → тәуекел → деңгейлермен қорытынды сигнал.',
+      f3h:'Көпәдісті консенсус',f3d:'SMC, индикаторлар, Wyckoff, Volume Profile және Funding шешімге дауыс береді.',
+      f4h:'Funding сүзгісі',f4d:'Ең сенімді болжаушы — нарық көңіл-күйіне қарсы кірулерді кеседі.',
+      f5h:'24/7 авто-сканер',f5d:'Нарықты 15м/30м/1с/4с сканерлеп, Telegram-ға сигнал жібереді.',
+      f6h:'Ақылды иық',f6d:'Позиция мөлшері тек ең сенімді мәмілелерде өседі.',
+      how_eye:'Қалай жұмыс істейді',how_h:'Сигналға дейін үш қадам',
+      s1h:'Жұп таңда',s1d:'Binance Futures 500+ жұбының кез келгені және таймфрейм.',
+      s2h:'Талдауды іске қос',s2d:'AI құрылым, өтімділік пен көңіл-күйді секундтарда оқиды.',
+      s3h:'Сигнал ал',s3d:'Бағыт, кіру, TP, SL және иық — негіздемесімен.',
+      res_eye:'Нәтижелер',res_h:'Сөзбен емес, өлшеммен',res_lead:'Жүйе әр сигналдың нәтижесін бақылап, одан үйренеді.',
+      m1:'мәміле өлшенді',m2:'орташа PnL',m3:'Funding дәлдігі',m4:'әдіс',
+      pr_eye:'Тарифтер',pr_h:'Тегін баста, өскен сайын өс',pr_lead:'Бастауда картасыз. Тарифті қалаған кезде ауыстыр.',
+      pl1n:'FREE',pl1d:'Күніне 3 талдау, негізгі әдістер, қолмен режим.',pl2n:'STARTER',pl2d:'Күніне 30 талдау, авто-сканер, Telegram сигналдары.',
+      pl3n:'PRO',pl3d:'Шексіз талдау, барлық 6 әдіс, ақылды иық, басымдық.',pl4n:'ELITE',pl4d:'PRO-дағының бәрі + жаңа әдістер мен API-ге ерте қол жеткізу.',
+      pl_try:'Көру',pl_choose:'Таңдау',
+      final_h:'Басқалар көретінді<br>көре баста.',final_p:'AI-талдауға тегін қол жеткізу. Картасыз, бір минутта.',final_btn:'Аккаунт құру →',
+      footer:'KotvukAI · Интро алдын ала қарау (жергілікті файл, продакшнмен байланыссыз)'},
+  };
+
+  function setLang(l){
+    document.querySelectorAll('[data-i18n]').forEach(el=>{const k=el.getAttribute('data-i18n');if(I18N[l][k]!=null)el.innerHTML=I18N[l][k]});
+    document.querySelectorAll('.lang button').forEach(b=>b.classList.toggle('on',b.dataset.l===l));
+    document.documentElement.lang=l;
+  }
+  document.querySelectorAll('.lang button').forEach(b=>b.addEventListener('click',()=>setLang(b.dataset.l)));
+  setLang('ru');
+
+  // hero word flip
+  requestAnimationFrame(()=>{
+    const hero=document.getElementById('hero'); hero.classList.add('go');
+    hero.querySelectorAll('.word').forEach((w,i)=>w.style.animationDelay=(.15+i*.1)+'s');
+  });
+
+  // scroll reveals with stagger
+  const io=new IntersectionObserver((es)=>{es.forEach(e=>{if(e.isIntersecting){
+    const sib=[...e.target.parentElement.children].filter(c=>c.matches('.r-up,.r-left,.r-right,.r-scale,.r-rot'));
+    e.target.style.transitionDelay=(sib.indexOf(e.target)*0.08)+'s';
+    e.target.classList.add('in');io.unobserve(e.target);
+    if(e.target.querySelector('.count'))e.target.querySelectorAll('.count').forEach(countUp);
+  }})},{threshold:.16});
+  document.querySelectorAll('.r-up,.r-left,.r-right,.r-scale,.r-rot').forEach(el=>io.observe(el));
+
+  // count-up
+  function countUp(el){const to=+el.dataset.to,suf=el.dataset.suf||'';let c=0;const st=Math.max(1,Math.ceil(to/40));
+    const id=setInterval(()=>{c+=st;if(c>=to){el.textContent=to+suf;clearInterval(id)}else el.textContent=c+suf},28)}
+
+  // 3D tilt cards
+  document.querySelectorAll('.tilt').forEach(card=>{
+    card.addEventListener('mousemove',e=>{const r=card.getBoundingClientRect();const x=(e.clientX-r.left)/r.width-.5,y=(e.clientY-r.top)/r.height-.5;
+      card.style.transform=`perspective(700px) rotateY(${x*10}deg) rotateX(${-y*10}deg) translateY(-6px)`});
+    card.addEventListener('mouseleave',()=>card.style.transform='');
+  });
+
+  // magnetic buttons
+  document.querySelectorAll('.mag').forEach(btn=>{
+    btn.addEventListener('mousemove',e=>{const r=btn.getBoundingClientRect();btn.style.transform=`translate(${(e.clientX-r.left-r.width/2)*.25}px,${(e.clientY-r.top-r.height/2)*.4}px)`});
+    btn.addEventListener('mouseleave',()=>btn.style.transform='');
+  });
+
+  // ticker loop
+  const tk=document.getElementById('tk');tk.innerHTML+=tk.innerHTML;
+</script>
+</body>
+</html>

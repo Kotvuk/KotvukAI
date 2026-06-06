@@ -5,7 +5,26 @@ import { fullAnalysis, calcMarketData, type Candle } from '@/lib/analysis'
 import { calcEnhancedSMC } from '@/lib/smc'
 import { sql, saveSignal, createTrade, createNotification, getUserWatchlist, getSignalsForPair, getGlobalLossPatterns, adjustBalance, type User } from '@/lib/db'
 import { sendTelegram, sendTelegramToUser } from '@/lib/telegram'
-import { DEFAULT_WATCHLIST } from '@/lib/pairs'
+import { DEFAULT_WATCHLIST, BAD_PAIRS } from '@/lib/pairs'
+
+function isAllowedTradingTime(): boolean {
+  const now = new Date()
+  const dow = now.getUTCDay()
+  if (dow === 0 || dow === 6) return false
+
+  const h = now.getUTCHours()
+  const m = now.getUTCMinutes()
+  const t = h * 60 + m
+
+  // Алматы UTC+5: окна 10:00-12:00, 15:00-21:00, 22:00-00:00
+  // В UTC: 05:00-07:00, 10:00-16:00, 17:00-19:00
+  const windows = [
+    [5 * 60, 7 * 60],
+    [10 * 60, 16 * 60],
+    [17 * 60, 19 * 60],
+  ]
+  return windows.some(([s, e]) => t >= s && t < e)
+}
 
 const HTF_MAP: Record<string, string> = {
   '5m': '1h', '15m': '4h', '30m': '4h', '1h': '1d', '4h': '1d',
@@ -252,8 +271,14 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ ok: true, message: 'Auto-analysis is paused', paused: true })
   }
 
+  if (!isAllowedTradingTime()) {
+    const now = new Date()
+    return NextResponse.json({ ok: true, message: `Outside trading hours (UTC ${now.getUTCHours()}:${String(now.getUTCMinutes()).padStart(2,'0')}, day ${now.getUTCDay()})`, skipped: true })
+  }
+
   const userWatchlist = await getUserWatchlist(Number(user.id))
-  const rawList: string[] = userWatchlist?.length ? userWatchlist : DEFAULT_WATCHLIST
+  const rawList: string[] = (userWatchlist?.length ? userWatchlist : DEFAULT_WATCHLIST)
+    .filter(s => !BAD_PAIRS.has(s))
   const watchlist = (await priceSortedWatchlist(rawList)).slice(0, 12)
   const batchIndex = parseInt(req.nextUrl.searchParams.get('batch') || '0', 10)
   const batchSize  = 6

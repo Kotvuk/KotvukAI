@@ -1,0 +1,7 @@
+release-*
+dist-electron*
+agent-browser
+*.exe
+*.AppImage
+*.dmg
+*.blockmap

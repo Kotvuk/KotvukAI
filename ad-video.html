@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<title>KotvukAI Ad</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;background:#111;display:flex;align-items:center;justify-content:center;font-family:'Segoe UI',system-ui,sans-serif}
+
+.phone{
+  width:390px;height:844px;
+  background:#06080f;
+  position:relative;overflow:hidden;
+  display:flex;flex-direction:column;align-items:center;
+}
+
+/* grid */
+.phone::before{
+  content:'';position:absolute;inset:0;
+  background-image:linear-gradient(rgba(0,212,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,.03) 1px,transparent 1px);
+  background-size:44px 44px;pointer-events:none;
+}
+
+/* === LOGO === */
+.logo{
+  margin-top:52px;
+  display:flex;align-items:center;gap:10px;
+  opacity:0;animation:up .7s .2s cubic-bezier(.16,1,.3,1) forwards;
+}
+.logo-icon{width:40px;height:40px}
+.logo-name{font-size:1.45rem;font-weight:800;letter-spacing:-.02em;color:#fff}
+.logo-name em{color:#00d4ff;font-style:normal}
+
+/* === PAIR ROW === */
+.pair-row{
+  margin-top:24px;width:350px;
+  display:flex;align-items:center;justify-content:space-between;
+  opacity:0;animation:up .7s .5s cubic-bezier(.16,1,.3,1) forwards;
+}
+.pair-name{font-size:.78rem;font-weight:700;color:#c8d4e0;letter-spacing:.04em}
+.signal-pill{
+  padding:5px 14px;border-radius:5px;
+  background:rgba(0,230,118,.12);color:#00e676;
+  border:1px solid rgba(0,230,118,.35);
+  font-size:.68rem;font-weight:700;letter-spacing:.08em;
+}
+
+/* === CHART === */
+.chart-box{
+  margin-top:12px;width:350px;height:200px;
+  background:rgba(255,255,255,.025);
+  border:1px solid rgba(255,255,255,.07);
+  border-radius:10px;padding:12px;position:relative;overflow:hidden;
+  opacity:0;animation:up .7s .7s cubic-bezier(.16,1,.3,1) forwards;
+}
+.candles{display:flex;align-items:flex-end;gap:4px;height:150px}
+.c{flex:1;border-radius:2px;transform:scaleY(0);transform-origin:bottom;animation:grow .5s ease forwards}
+@keyframes grow{to{transform:scaleY(1)}}
+
+.hline{position:absolute;left:10px;right:10px;height:1px}
+.hline .htag{
+  position:absolute;right:0;top:-9px;
+  font-size:.48rem;font-weight:700;padding:1px 5px;border-radius:2px;
+}
+.line-entry{background:rgba(0,230,118,.5);bottom:62px}
+.line-entry .htag{color:#00e676;background:rgba(0,230,118,.15)}
+.line-tp{background:rgba(0,212,255,.4);bottom:110px;border-top:1px dashed rgba(0,212,255,.4);background:none}
+.line-tp .htag{color:#00d4ff;background:rgba(0,212,255,.12)}
+.line-sl{background:rgba(255,61,87,.4);bottom:22px}
+.line-sl .htag{color:#ff3d57;background:rgba(255,61,87,.12)}
+
+.ai-scan{
+  position:absolute;left:0;right:0;height:2px;bottom:0;
+  background:linear-gradient(90deg,transparent,#00d4ff 40%,#a855f7 60%,transparent);
+  animation:scan 2.5s 1.5s ease-in-out infinite;opacity:0;
+}
+@keyframes scan{0%{bottom:0;opacity:0}10%{opacity:1}90%{opacity:1}100%{bottom:152px;opacity:0}}
+
+/* === METRICS === */
+.metrics{
+  margin-top:16px;width:350px;
+  display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;
+  opacity:0;animation:up .7s 1.1s cubic-bezier(.16,1,.3,1) forwards;
+}
+.met{
+  background:rgba(255,255,255,.035);
+  border:1px solid rgba(255,255,255,.07);
+  border-radius:10px;padding:12px 6px;text-align:center;
+}
+.met .v{font-size:1.25rem;font-weight:800;line-height:1;margin-bottom:4px}
+.met .l{font-size:.48rem;color:#4a5a6a;text-transform:uppercase;letter-spacing:.1em}
+.v1{background:linear-gradient(135deg,#00e676,#00d4ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.v2{color:#fff}
+.v3{background:linear-gradient(135deg,#00d4ff,#a855f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+
+/* === METHODS === */
+.methods{
+  margin-top:14px;width:350px;
+  opacity:0;animation:up .7s 1.4s cubic-bezier(.16,1,.3,1) forwards;
+}
+.mhead{font-size:.52rem;color:#3a4a5a;text-transform:uppercase;letter-spacing:.14em;margin-bottom:9px}
+.mrow{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+.mn{font-size:.58rem;color:#6a7a8a;width:88px;flex-shrink:0}
+.mtrack{flex:1;height:4px;background:rgba(255,255,255,.05);border-radius:2px;overflow:hidden}
+.mfill{height:100%;border-radius:2px;transform:scaleX(0);transform-origin:left;animation:barw .7s ease forwards}
+@keyframes barw{to{transform:scaleX(1)}}
+.ms{font-size:.55rem;font-weight:700;width:34px;text-align:right}
+
+/* === HEADLINE === */
+.headline{
+  margin-top:20px;width:350px;
+  opacity:0;animation:up .7s 1.8s cubic-bezier(.16,1,.3,1) forwards;
+}
+.headline h2{font-size:1.5rem;font-weight:800;line-height:1.1;letter-spacing:-.03em;color:#fff;margin-bottom:8px}
+.headline h2 span{background:linear-gradient(120deg,#00d4ff,#a855f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.headline p{font-size:.65rem;color:#6a7a8a;line-height:1.55;margin-bottom:16px}
+.btn{
+  display:block;text-align:center;
+  padding:15px;
+  background:linear-gradient(135deg,#00d4ff,#a855f7);
+  color:#fff;font-weight:700;font-size:.82rem;letter-spacing:.05em;
+  border-radius:10px;
+}
+.domain{text-align:center;font-size:.55rem;color:#2a3a4a;margin-top:7px;letter-spacing:.08em}
+
+@keyframes up{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+<div class="phone">
+
+  <!-- Logo -->
+  <div class="logo">
+    <svg class="logo-icon" viewBox="0 0 40 40" fill="none">
+      <defs>
+        <linearGradient id="g" x1="0" y1="0" x2="40" y2="40">
+          <stop offset="0" stop-color="#00d4ff"/>
+          <stop offset="1" stop-color="#a855f7"/>
+        </linearGradient>
+      </defs>
+      <rect x="2" y="2" width="36" height="36" rx="11" stroke="url(#g)" stroke-width="2"/>
+      <line x1="13" y1="27" x2="13" y2="20" stroke="#00e676" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="20" y1="28" x2="20" y2="13" stroke="url(#g)" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="27" y1="24" x2="27" y2="17" stroke="#00d4ff" stroke-width="2.5" stroke-linecap="round"/>
+    </svg>
+    <span class="logo-name">KOTVUK<em>AI</em></span>
+  </div>
+
+  <!-- Pair -->
+  <div class="pair-row">
+    <span class="pair-name">BTC / USDT &nbsp;·&nbsp; 1H</span>
+    <span class="signal-pill">▲ LONG</span>
+  </div>
+
+  <!-- Chart -->
+  <div class="chart-box">
+    <div class="candles" id="cv"></div>
+    <div class="hline line-tp"><span class="htag">TP</span></div>
+    <div class="hline line-entry"><span class="htag">ENTRY</span></div>
+    <div class="hline line-sl"><span class="htag">SL</span></div>
+    <div class="ai-scan"></div>
+  </div>
+
+  <!-- Metrics -->
+  <div class="metrics">
+    <div class="met"><div class="v v1" id="wr">0%</div><div class="l">Win Rate</div></div>
+    <div class="met"><div class="v v2" id="sg">0</div><div class="l">Signals</div></div>
+    <div class="met"><div class="v v3">+18.2%</div><div class="l">Avg PnL</div></div>
+  </div>
+
+  <!-- Methods -->
+  <div class="methods">
+    <div class="mhead">6-Method AI Consensus</div>
+    <div class="mrow">
+      <span class="mn">Funding Rate</span>
+      <div class="mtrack"><div class="mfill" style="width:86%;background:linear-gradient(90deg,#00e676,#00d4ff);animation-delay:1.5s"></div></div>
+      <span class="ms" style="color:#00e676">LONG</span>
+    </div>
+    <div class="mrow">
+      <span class="mn">Price Action</span>
+      <div class="mtrack"><div class="mfill" style="width:72%;background:linear-gradient(90deg,#00d4ff,#a855f7);animation-delay:1.6s"></div></div>
+      <span class="ms" style="color:#00d4ff">LONG</span>
+    </div>
+    <div class="mrow">
+      <span class="mn">SMC Analysis</span>
+      <div class="mtrack"><div class="mfill" style="width:65%;background:linear-gradient(90deg,#a855f7,#00d4ff);animation-delay:1.7s"></div></div>
+      <span class="ms" style="color:#a855f7">LONG</span>
+    </div>
+  </div>
+
+  <!-- Headline + CTA -->
+  <div class="headline">
+    <h2>Trade like<br><span>institutions.</span></h2>
+    <p>AI-powered crypto signals. 6-method consensus.<br>Real edge, real results.</p>
+    <div class="btn">Start Free → kotvuk.asia</div>
+    <div class="domain">kotvuk.asia</div>
+  </div>
+
+</div>
+
+<script>
+const data=[30,42,25,52,38,60,44,68,50,56,38,72,46,62,36,76,52,65,42,70,46,80,54,68,40,75,50,85,58,74]
+const cv=document.getElementById('cv')
+data.forEach((h,i)=>{
+  const d=document.createElement('div')
+  const bull=Math.sin(i*0.55+1.2)>0
+  d.className='c'
+  d.style.cssText=`height:${h*0.78}px;background:${bull?'rgba(0,230,118,.75)':'rgba(255,61,87,.55)'};border-top:2px solid ${bull?'#00e676':'#ff3d57'};animation-delay:${.75+i*.028}s`
+  cv.appendChild(d)
+})
+function count(el,to,sfx,dur,delay){
+  setTimeout(()=>{
+    let v=0,step=to/50
+    const t=setInterval(()=>{
+      v+=step; if(v>=to){el.textContent=to+sfx;clearInterval(t)}
+      else el.textContent=Math.floor(v)+sfx
+    },dur/50)
+  },delay)
+}
+count(document.getElementById('wr'),71,'%',1000,1200)
+count(document.getElementById('sg'),212,'',1000,1300)
+</script>
+</body>
+</html>

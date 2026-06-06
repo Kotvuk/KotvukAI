@@ -139,6 +139,19 @@ async function analyzeOne(
     })
 
     if ((final.verdict === 'LONG' || final.verdict === 'SHORT') && final.confidence >= 60) {
+      // кулдаун 24ч — не входим если последняя сделка по паре была убыточной
+      const lastLoss = await sql`
+        SELECT id FROM trades
+        WHERE user_id = ${userId} AND pair = ${pairFmt}
+          AND account_type = 'ai' AND status = 'closed'
+          AND pnl_pct < 0
+          AND closed_at > NOW() - INTERVAL '24 hours'
+        LIMIT 1
+      `
+      if (lastLoss.length > 0) {
+        return { ok: true, verdict: final.verdict, confidence: final.confidence, error: 'cooldown: last trade was a loss within 24h' }
+      }
+
       const existing = await sql`
         SELECT id FROM trades
         WHERE user_id = ${userId} AND pair = ${pairFmt}

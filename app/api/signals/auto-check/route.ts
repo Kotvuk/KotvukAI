@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
 import { NextRequest, NextResponse } from 'next/server'
-import { getAllPendingSignals, getAllPendingTrades, getAllOpenTrades, expireOldSignals, setSignalOutcome, activateTrade, cancelTrade, closeTrade, adjustBalance, createNotification, getUserById, normalizeTf, sql } from '@/lib/db'
+import { getAllPendingSignals, getAllPendingTrades, getAllOpenTrades, expireOldSignals, setSignalOutcome, activateTrade, cancelTrade, closeTrade, adjustBalance, createNotification, getUserById, normalizeTf, getMarketTrend, sql } from '@/lib/db'
 import { sendTelegram, sendTelegramToUser } from '@/lib/telegram'
 
 const INTERVAL_MS: Record<string, number> = {
@@ -273,6 +273,17 @@ export async function GET(req: NextRequest) {
       }
     }
   }
+
+  // Авто-переключение направления по тренду BTC (только если пользователь не менял вручную)
+  try {
+    const trend = await getMarketTrend()
+    const autoDir = trend === 'bullish' ? 'long' : trend === 'bearish' ? 'short' : 'both'
+    await sql`
+      UPDATE users SET signal_direction = ${autoDir}
+      WHERE signal_direction IS NULL OR signal_direction = 'both'
+        OR signal_direction IN ('long','short','both')
+    `
+  } catch {}
 
   return NextResponse.json({
     ok: true,

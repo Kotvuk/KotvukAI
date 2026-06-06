@@ -5,8 +5,14 @@ const CRON_TF = {
   '0 */4 * * *':  '4h',
 }
 
+function isWeekend() {
+  const day = new Date().getUTCDay()
+  return day === 0 || day === 6
+}
+
 export default {
   async scheduled(event, env, ctx) {
+    if (isWeekend()) return
     const tf = CRON_TF[event.cron]
     const tfs = tf ? [tf] : []
     ctx.waitUntil(runAnalysis(env, tfs))

@@ -1072,8 +1072,8 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
       open={screenerOpen}
       onClose={() => setScreenerOpen(false)}
       onSelectPair={(p) => {
-        setPair(p); pairRef.current = p
         setExtraPairs(prev => prev.includes(p) ? prev : [p, ...prev])
+        selectPair(p)
       }}
     />
     <MultiTFModal

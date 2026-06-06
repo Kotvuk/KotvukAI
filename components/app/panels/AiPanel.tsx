@@ -57,7 +57,14 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
     polyline:               t('draw_polyline_lbl'),
     fibRetracement:         t('draw_fibonacci_lbl'),
   }), [t])
-  const { pairs: allPairs } = usePairs()
+  const { pairs: basePairs } = usePairs()
+  const [extraPairs, setExtraPairs] = React.useState<string[]>([])
+  const allPairs = React.useMemo(() => {
+    if (!extraPairs.length) return basePairs
+    const seen = new Set(basePairs)
+    const extra = extraPairs.filter(p => !seen.has(p))
+    return extra.length ? [...extra, ...basePairs] : basePairs
+  }, [basePairs, extraPairs])
   const chartRef = useRef<KLineChartHandle>(null)
   const [pair, setPair] = useState('BTC/USDT')
   const [tf, setTf] = useState('1ч')
@@ -1064,7 +1071,10 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
     <ScreenerModal
       open={screenerOpen}
       onClose={() => setScreenerOpen(false)}
-      onSelectPair={(p) => { setPair(p); pairRef.current = p }}
+      onSelectPair={(p) => {
+        setPair(p); pairRef.current = p
+        setExtraPairs(prev => prev.includes(p) ? prev : [p, ...prev])
+      }}
     />
     <MultiTFModal
       open={multiTFOpen}

@@ -74,9 +74,9 @@ export async function POST(req: NextRequest) {
   }
 
   const start = Date.now()
+  const interval = TF_MAP[timeframe] || '1h'
 
   try {
-    const interval    = TF_MAP[timeframe] || '1h'
     const htfInterval = HTF_MAP[interval] || '1d'
 
     const toCandles = (rows: number[][]): Candle[] => rows.map(c => ({
@@ -144,7 +144,11 @@ export async function POST(req: NextRequest) {
     let tradeCreated = false
     let tradeSkipped = ''
 
-    if (analysis.verdict === 'LONG' || analysis.verdict === 'SHORT') {
+    const isShortTf = ['1m', '5m'].includes(interval)
+    const utcDay = new Date().getUTCDay()
+    const isWeekend = utcDay === 0 || utcDay === 6
+
+    if ((analysis.verdict === 'LONG' || analysis.verdict === 'SHORT') && !isShortTf && !isWeekend) {
       try {
         const existing = await sql`
           SELECT id FROM trades

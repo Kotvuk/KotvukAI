@@ -20,7 +20,16 @@ export async function GET(req: NextRequest) {
         AND created_at < NOW() - INTERVAL '3 days'
       RETURNING id, pair, direction, status
     `
-    return NextResponse.json({ ok: true, fixed_signals: sigs, fixed_trades: trades })
+    const sigsById = await sql`
+      UPDATE signals SET outcome = 'loss', actual_pnl_pct = -6
+      WHERE id = 554
+      RETURNING id, pair, outcome
+    `
+    const tradesById = await sql`
+      DELETE FROM trades WHERE id IN (51, 52)
+      RETURNING id, pair, status
+    `
+    return NextResponse.json({ ok: true, fixed_signals: sigs, fixed_trades: trades, fixed_signals_by_id: sigsById, fixed_trades_by_id: tradesById })
   }
 
   const [pending, pendingTrades, openTrades] = await Promise.all([

@@ -1,6 +1,8 @@
 import { neon, type NeonQueryFunction } from '@neondatabase/serverless'
 
-export const sql: NeonQueryFunction<false, false> = neon(process.env.DATABASE_URL!)
+export const sql: NeonQueryFunction<false, false> = neon(process.env.DATABASE_URL!, {
+  fetchOptions: { cache: 'no-store' },
+})
 
 export interface User {
   id: number

@@ -8,6 +8,21 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
+  if (req.nextUrl.searchParams.get('fix') === '1') {
+    const sigs = await sql`
+      UPDATE signals SET outcome = 'loss', actual_pnl_pct = 0
+      WHERE outcome IS NULL AND created_at < NOW() - INTERVAL '7 days'
+      RETURNING id, pair, timeframe
+    `
+    const trades = await sql`
+      DELETE FROM trades
+      WHERE account_type = 'ai' AND status IN ('pending','open')
+        AND created_at < NOW() - INTERVAL '3 days'
+      RETURNING id, pair, direction, status
+    `
+    return NextResponse.json({ ok: true, fixed_signals: sigs, fixed_trades: trades })
+  }
+
   const [pending, pendingTrades, openTrades] = await Promise.all([
     getAllPendingSignals(),
     getAllPendingTrades(),

@@ -136,6 +136,18 @@ export async function GET(req: NextRequest) {
 
         await setSignalOutcome(signal.id, outcome, pnlPct, signal.user_id)
 
+        const staleLimitTrades = await sql`
+          SELECT id, amount FROM trades
+          WHERE user_id = ${signal.user_id} AND pair = ${signal.pair}
+            AND account_type = 'ai' AND status = 'pending'
+            AND created_at > NOW() - INTERVAL '8 days'
+        `
+        for (const t of staleLimitTrades) {
+          await cancelTrade(t.id, signal.user_id)
+          await adjustBalance(signal.user_id, Number(t.amount))
+          await sql`DELETE FROM trades WHERE id = ${t.id}`
+        }
+
         const hasTrade = await sql`
           SELECT id FROM trades
           WHERE user_id = ${signal.user_id} AND pair = ${signal.pair}

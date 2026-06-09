@@ -15,17 +15,21 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ ok: true, deleted })
   }
 
-  const rows = await sql`
-    SELECT id, user_id, pair, direction, status, account_type, pnl, pnl_pct, closed_at, created_at
-    FROM trades
-    WHERE status = 'closed'
-      AND (
-        (pair = 'LTC/USDT' AND direction = 'long') OR
-        (pair = 'BTC/USDT' AND direction = 'long') OR
-        (pair = 'DOGE/USDT' AND direction = 'short')
-      )
-    ORDER BY closed_at DESC
-    LIMIT 50
-  `
-  return NextResponse.json({ ok: true, candidates: rows })
+  const [all, dupes] = await Promise.all([
+    sql`
+      SELECT id, user_id, pair, direction, status, account_type, pnl, pnl_pct, closed_at, created_at
+      FROM trades
+      ORDER BY created_at DESC
+      LIMIT 100
+    `,
+    sql`
+      SELECT pair, direction, DATE_TRUNC('minute', created_at) AS minute, COUNT(*) AS cnt,
+             ARRAY_AGG(id ORDER BY id) AS ids
+      FROM trades
+      GROUP BY pair, direction, DATE_TRUNC('minute', created_at)
+      HAVING COUNT(*) > 1
+    `,
+  ])
+
+  return NextResponse.json({ ok: true, all, dupes })
 }

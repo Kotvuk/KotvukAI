@@ -388,6 +388,7 @@ export default function HistoryPanel() {
                 <option value="all">{t('hist_all')}</option>
                 <option value="win">Win</option>
                 <option value="loss">Loss</option>
+                <option value="expired">{t('hist_expired')}</option>
                 <option value="pending">{t('hist_pending')}</option>
               </select>
               <span style={{ fontSize: '.6rem', color: 'var(--dim)', marginLeft: 2 }}>

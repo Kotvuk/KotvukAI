@@ -165,7 +165,7 @@ interface MemorySignal {
   pair: string; timeframe: string; final_verdict: string | null
   final_confidence: number | null; final_entry: number | null
   final_tp: number | null; final_sl: number | null
-  outcome: 'win' | 'loss' | null; actual_pnl_pct: number | null
+  outcome: 'win' | 'loss' | 'expired' | null; actual_pnl_pct: number | null
   raw_response?: Record<string, unknown> | null
   created_at: string
 }

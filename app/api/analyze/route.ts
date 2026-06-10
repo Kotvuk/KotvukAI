@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getUser } from '@/lib/auth-helper'
 import { fullAnalysis, calcMarketData, type Candle } from '@/lib/analysis'
 import { calcEnhancedSMC } from '@/lib/smc'
-import { saveSignal, createNotification, createTrade, getSignalsForPair, getGlobalLossPatterns, checkAndIncrementAnalysis, SUBSCRIPTION_LIMITS, adjustBalance, sql } from '@/lib/db'
+import { saveSignal, createNotification, createTrade, getSignalsForPair, getGlobalLossPatterns, checkAndIncrementAnalysis, SUBSCRIPTION_LIMITS, adjustBalance, normalizeTf, sql } from '@/lib/db'
 
 const TF_MAP: Record<string, string> = {
   '1м': '1m', '5м': '5m', '15м': '15m', '30м': '30m',
@@ -182,6 +182,7 @@ export async function POST(req: NextRequest) {
               account_type: 'ai',
               status:       isLimit ? 'pending' : 'open',
               expires_at:   isLimit ? expiresAt.toISOString() : null,
+              timeframe:    normalizeTf(timeframe),
             })
             if (balance > 0) await adjustBalance(user.id, -Math.min(tradeAmount, balance))
             tradeCreated = true

@@ -44,12 +44,14 @@ async function fetchPrices(symbols: string[]): Promise<Record<string, number>> {
 
 const HOUR_MS = 3_600_000
 
-function groupBySymbol<T extends { pair: string }>(items: T[]): Record<string, T[]> {
+function groupBySymbolTf<T extends { pair: string; timeframe?: string | null }>(items: T[]): Record<string, T[]> {
   const result: Record<string, T[]> = {}
   for (const item of items) {
     const sym = item.pair.replace('/', '')
-    if (!result[sym]) result[sym] = []
-    result[sym].push(item)
+    const tf  = normalizeTf(item.timeframe || '1h')
+    const key = `${sym}|${tf}`
+    if (!result[key]) result[key] = []
+    result[key].push(item)
   }
   return result
 }
@@ -66,6 +68,25 @@ function scanTpSl(
     if (hitSl) return 'sl'
   }
   return null
+}
+
+function findEntryTouchIdx(
+  slice: { high: number; low: number }[],
+  entry: number, isLong: boolean,
+): number {
+  for (let i = 0; i < slice.length; i++) {
+    const c = slice[i]
+    const touched = isLong ? c.low <= entry : c.high >= entry
+    if (touched) return i
+  }
+  return -1
+}
+
+function getEntryType(signal: { raw_response: Record<string, unknown> | null }): 'market' | 'limit' {
+  const raw = signal.raw_response
+  if (!raw) return 'market'
+  const final = (raw.final || raw.analysis) as Record<string, unknown> | undefined
+  return final?.entry_type === 'limit' ? 'limit' : 'market'
 }
 
 export async function GET(req: NextRequest) {
@@ -126,7 +147,14 @@ export async function GET(req: NextRequest) {
         const leverage = Number(signal.final_leverage ?? 1)
         if (!Number.isFinite(tp) || !Number.isFinite(sl) || !Number.isFinite(entry)) continue
 
-        const hit = scanTpSl(slice, tp, sl, isLong)
+        let scanSlice = slice
+        if (getEntryType(signal) === 'limit') {
+          const touchIdx = findEntryTouchIdx(slice, entry, isLong)
+          if (touchIdx === -1) continue
+          scanSlice = slice.slice(touchIdx)
+        }
+
+        const hit = scanTpSl(scanSlice, tp, sl, isLong)
         if (!hit) continue
 
         const outcome: 'win' | 'loss' = hit === 'tp' ? 'win' : 'loss'
@@ -134,12 +162,14 @@ export async function GET(req: NextRequest) {
         const diff     = isLong ? hitPrice - entry : entry - hitPrice
         const pnlPct   = parseFloat(((diff / entry) * leverage * 100).toFixed(2))
 
-        await setSignalOutcome(signal.id, outcome, pnlPct, signal.user_id)
+        const outcomeRows = await setSignalOutcome(signal.id, outcome, pnlPct, signal.user_id)
+        if (!outcomeRows.length) continue
 
         const staleLimitTrades = await sql`
           SELECT id, amount FROM trades
           WHERE user_id = ${signal.user_id} AND pair = ${signal.pair}
             AND account_type = 'ai' AND status = 'pending'
+            AND (created_at < ${signal.created_at} OR expires_at < NOW())
             AND created_at > NOW() - INTERVAL '8 days'
         `
         for (const t of staleLimitTrades) {
@@ -227,12 +257,14 @@ export async function GET(req: NextRequest) {
   const openTrades = await getAllOpenTrades()
 
   if (openTrades.length) {
-    const bySymbol = groupBySymbol(openTrades)
+    const bySymbolTf = groupBySymbolTf(openTrades)
 
-    for (const sym of Object.keys(bySymbol)) {
-      const group    = bySymbol[sym]
+    for (const key of Object.keys(bySymbolTf)) {
+      const [sym, interval] = key.split('|')
+      const group    = bySymbolTf[key]
+      const candleMs = INTERVAL_MS[interval] ?? HOUR_MS
       const oldestMs = Math.min(...group.map(t => new Date(t.created_at).getTime()))
-      const { candles, startMs } = await fetchCandles(sym, oldestMs)
+      const { candles, startMs } = await fetchCandles(sym, oldestMs, interval)
       if (!candles.length) continue
 
       for (const trade of group) {
@@ -246,7 +278,7 @@ export async function GET(req: NextRequest) {
         if (!Number.isFinite(tp) || !Number.isFinite(sl) || !Number.isFinite(entry)) continue
 
         const tradeStartMs = new Date(trade.created_at).getTime()
-        const startIdx     = Math.max(0, Math.floor((tradeStartMs - startMs) / HOUR_MS))
+        const startIdx     = Math.max(0, Math.floor((tradeStartMs - startMs) / candleMs))
         const slice        = candles.slice(startIdx)
         if (!slice.length) continue
 
@@ -258,7 +290,7 @@ export async function GET(req: NextRequest) {
         const pnlPct   = parseFloat(((diff / entry) * lev * 100).toFixed(2))
         const pnlUsd   = parseFloat(((amount * pnlPct) / 100).toFixed(2))
 
-        const wasClosed = await closeTrade(trade.id, trade.user_id, pnlUsd, pnlPct)
+        const wasClosed = await closeTrade(trade.id, trade.user_id, pnlUsd, pnlPct, hitPrice)
         if (!wasClosed) continue
 
         if (trade.account_type === 'ai') {

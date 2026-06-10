@@ -4,6 +4,7 @@ import { useLang } from '@/contexts/LangContext'
 import { showToast } from '@/components/ui/Toast'
 import { usePairs } from '@/hooks/usePairs'
 import { fmtAlmaty } from '@/lib/fmt'
+import TradePathModal from './TradePathModal'
 
 
 interface Trade {
@@ -11,7 +12,8 @@ interface Trade {
   amount: number; entry_price: number | null; tp_price: number | null
   sl_price: number | null; leverage: number; status: string
   account_type: string; limit_price: number | null; expires_at: string | null
-  pnl: number | null; pnl_pct: number | null; closed_at: string | null; created_at: string
+  pnl: number | null; pnl_pct: number | null; exit_price: number | null
+  closed_at: string | null; created_at: string
 }
 
 interface EditState {
@@ -48,6 +50,7 @@ export default function TradesPanel({ defaultAccount = 'user', onTabMounted }: T
   const [balanceType, setBalanceType] = useState<'add' | 'subtract'>('add')
   const [balanceInput, setBalanceInput] = useState('')
   const [balanceSaving, setBalanceSaving] = useState(false)
+  const [pathTrade, setPathTrade] = useState<Trade | null>(null)
   const openRef = useRef<Trade[]>([])
 
   useEffect(() => { loadTrades() }, [account])
@@ -176,7 +179,7 @@ export default function TradesPanel({ defaultAccount = 'user', onTabMounted }: T
     try {
       const r = await fetch(`/api/trades/${id}/close`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) })
       const d = await r.json()
-      if (!d.ok) throw new Error(d.error)
+      if (!d.ok) throw new Error(d.error || t('error'))
       showToast(t('position_closed'))
       loadTrades()
     } catch (e: unknown) { showToast(e instanceof Error ? e.message : t('error'), 'err') }
@@ -212,9 +215,9 @@ export default function TradesPanel({ defaultAccount = 'user', onTabMounted }: T
 
   const todayStr = new Date().toDateString()
   const closedToday = closed.filter(tr => tr.status === 'closed' && new Date(tr.closed_at || tr.created_at).toDateString() === todayStr)
-  const pnlToday = closedToday.reduce((s, tr) => s + (tr.pnl ?? 0), 0)
+  const pnlToday = closedToday.reduce((s, tr) => s + (Number(tr.pnl) || 0), 0)
   const closedReal = closed.filter(tr => tr.status === 'closed' && tr.pnl !== null)
-  const wins = closedReal.filter(tr => (tr.pnl ?? 0) > 0).length
+  const wins = closedReal.filter(tr => (Number(tr.pnl) || 0) > 0).length
   const winRate = closedReal.length > 0 ? Math.round(wins / closedReal.length * 100) : null
   const displayBalance = account === 'ai' ? (aiBalance ?? '…') : null
 
@@ -453,7 +456,7 @@ export default function TradesPanel({ defaultAccount = 'user', onTabMounted }: T
         <div className="tbox">
           <div className="twrap">
             <table className="tbl">
-              <thead><tr><th>{t('pair')}</th><th>Dir</th><th>{t('result')}</th><th>{t('date')}</th></tr></thead>
+              <thead><tr><th>{t('pair')}</th><th>Dir</th><th>{t('result')}</th><th>{t('date')}</th><th></th></tr></thead>
               <tbody>
                 {closed.length ? closed.slice(0, 20).map(tr => (
                   <tr key={tr.id}>
@@ -464,8 +467,8 @@ export default function TradesPanel({ defaultAccount = 'user', onTabMounted }: T
                         ? <span className="tag tag-cancelled">{t('status_cancelled')}</span>
                         : (tr.pnl !== null || tr.pnl_pct !== null)
                           ? (() => {
-                              const val = tr.pnl ?? 0
-                              const pct = tr.pnl_pct ?? 0
+                              const val = Number(tr.pnl) || 0
+                              const pct = Number(tr.pnl_pct) || 0
                               const pos = tr.pnl !== null ? val > 0 : pct > 0
                               return (
                                 <span className={pos ? 'pnl-p' : 'pnl-n'}>
@@ -479,9 +482,16 @@ export default function TradesPanel({ defaultAccount = 'user', onTabMounted }: T
                           : '—'}
                     </td>
                     <td>{fmtAlmaty(tr.closed_at || tr.created_at)}</td>
+                    <td>
+                      {tr.status === 'closed' && (
+                        <button className="obtn" style={{ fontSize: '.58rem' }} onClick={() => setPathTrade(tr)} title={t('trade_path_btn')}>
+                          📈
+                        </button>
+                      )}
+                    </td>
                   </tr>
                 )) : (
-                  <tr><td colSpan={4} style={{ textAlign: 'center', color: 'var(--dim)', padding: 14, fontSize: '.63rem' }}>{t('no_trades')}</td></tr>
+                  <tr><td colSpan={5} style={{ textAlign: 'center', color: 'var(--dim)', padding: 14, fontSize: '.63rem' }}>{t('no_trades')}</td></tr>
                 )}
               </tbody>
             </table>
@@ -532,6 +542,8 @@ export default function TradesPanel({ defaultAccount = 'user', onTabMounted }: T
           </div>
         </div>
       )}
+
+      {pathTrade && <TradePathModal trade={pathTrade} onClose={() => setPathTrade(null)} />}
     </div>
   )
 }

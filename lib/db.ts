@@ -33,7 +33,7 @@ export interface Signal {
   final_sl: number | null
   final_leverage: number | null
   final_risk_score: number | null
-  outcome: 'win' | 'loss' | null
+  outcome: 'win' | 'loss' | 'expired' | null
   actual_pnl_pct: number | null
   raw_response: Record<string, unknown> | null
   created_at: string
@@ -56,6 +56,8 @@ export interface Trade {
   account_type: 'user' | 'ai'
   pnl: number | null
   pnl_pct: number | null
+  exit_price: number | null
+  timeframe: string | null
   closed_at: string | null
   created_at: string
 }
@@ -178,7 +180,7 @@ export async function getPublicProfile(userId: number) {
       u.created_at,
       s.tier,
       COUNT(sig.id)                                                         AS total_signals,
-      COUNT(sig.id) FILTER (WHERE sig.outcome IS NOT NULL)                  AS resolved,
+      COUNT(sig.id) FILTER (WHERE sig.outcome IN ('win','loss'))            AS resolved,
       COUNT(sig.id) FILTER (WHERE sig.outcome = 'win')                      AS wins,
       ROUND(AVG(sig.final_confidence) FILTER (WHERE sig.outcome IS NOT NULL)) AS avg_confidence,
       ROUND(AVG(sig.actual_pnl_pct)  FILTER (WHERE sig.outcome = 'win'))    AS avg_pnl
@@ -264,18 +266,18 @@ export async function getStats(userId: number) {
   const [statsRow] = await sql`
     SELECT
       COUNT(*) AS total,
-      COUNT(*) FILTER (WHERE outcome IS NOT NULL) AS resolved,
+      COUNT(*) FILTER (WHERE outcome IN ('win','loss')) AS resolved,
       AVG(final_confidence) FILTER (WHERE outcome IS NOT NULL)::int AS avg_confidence,
       COUNT(*) FILTER (WHERE outcome = 'win')::float /
-        NULLIF(COUNT(*) FILTER (WHERE outcome IS NOT NULL), 0) * 100 AS win_rate,
-      AVG(actual_pnl_pct) FILTER (WHERE outcome IS NOT NULL AND actual_pnl_pct <> 'NaN'::numeric) AS avg_pnl_pct
+        NULLIF(COUNT(*) FILTER (WHERE outcome IN ('win','loss')), 0) * 100 AS win_rate,
+      AVG(actual_pnl_pct) FILTER (WHERE outcome IN ('win','loss') AND actual_pnl_pct <> 'NaN'::numeric) AS avg_pnl_pct
     FROM signals WHERE user_id = ${userId} AND final_verdict IN ('LONG','SHORT')
   `
   const byPair = await sql`
     SELECT pair,
       COUNT(*) AS total,
       COUNT(*) FILTER (WHERE outcome = 'win')::float /
-        NULLIF(COUNT(*) FILTER (WHERE outcome IS NOT NULL), 0) * 100 AS win_rate
+        NULLIF(COUNT(*) FILTER (WHERE outcome IN ('win','loss')), 0) * 100 AS win_rate
     FROM signals WHERE user_id = ${userId} AND final_verdict IN ('LONG','SHORT')
     GROUP BY pair ORDER BY total DESC LIMIT 10
   `
@@ -360,11 +362,12 @@ export async function getTradeById(id: number, userId: number): Promise<Trade | 
 export async function createTrade(userId: number, data: Partial<Trade>): Promise<Trade> {
   const rows = await sql`
     INSERT INTO trades (user_id, pair, direction, order_type, amount, entry_price, tp_price, sl_price,
-                        leverage, account_type, status, limit_price, expires_at)
+                        leverage, account_type, status, limit_price, expires_at, timeframe)
     VALUES (${userId}, ${data.pair!}, ${data.direction!}, ${data.order_type ?? 'market'},
             ${data.amount!}, ${data.entry_price ?? null}, ${data.tp_price ?? null},
             ${data.sl_price ?? null}, ${data.leverage ?? 1}, ${data.account_type ?? 'user'},
-            ${data.status ?? 'open'}, ${data.limit_price ?? null}, ${data.expires_at ?? null})
+            ${data.status ?? 'open'}, ${data.limit_price ?? null}, ${data.expires_at ?? null},
+            ${data.timeframe ?? null})
     RETURNING *
   `
   return rows[0] as Trade
@@ -379,9 +382,9 @@ export async function updateTrade(id: number, userId: number, data: { tp_price?:
   `
 }
 
-export async function closeTrade(id: number, userId: number, pnl: number | null, pnlPct: number | null): Promise<boolean> {
+export async function closeTrade(id: number, userId: number, pnl: number | null, pnlPct: number | null, exitPrice: number | null = null): Promise<boolean> {
   const rows = await sql`
-    UPDATE trades SET status = 'closed', pnl = ${pnl}, pnl_pct = ${pnlPct}, closed_at = NOW()
+    UPDATE trades SET status = 'closed', pnl = ${pnl}, pnl_pct = ${pnlPct}, exit_price = ${exitPrice}, closed_at = NOW()
     WHERE id = ${id} AND user_id = ${userId} AND status = 'open'
     RETURNING id
   `
@@ -489,10 +492,12 @@ export async function getPendingSignals(userId: number): Promise<Signal[]> {
 }
 
 export async function setSignalOutcome(id: number, outcome: 'win' | 'loss', pnlPct: number, userId: number) {
-  await sql`
+  const rows = await sql`
     UPDATE signals SET outcome = ${outcome}, actual_pnl_pct = ${Number.isFinite(pnlPct) ? pnlPct : null}
-    WHERE id = ${id} AND user_id = ${userId}
+    WHERE id = ${id} AND user_id = ${userId} AND outcome IS NULL
+    RETURNING id
   `
+  return rows
 }
 
 export async function getAllPendingSignals(): Promise<Signal[]> {
@@ -512,7 +517,7 @@ export async function getAllPendingSignals(): Promise<Signal[]> {
 export async function expireOldSignals(): Promise<number> {
   const [r1, r2] = await Promise.all([
     sql`
-      UPDATE signals SET outcome = 'loss', actual_pnl_pct = 0
+      UPDATE signals SET outcome = 'expired', actual_pnl_pct = NULL
       WHERE outcome IS NULL
         AND final_verdict IN ('LONG', 'SHORT')
         AND created_at < NOW() - INTERVAL '7 days'
@@ -829,6 +834,8 @@ export async function initDB() {
   await sql`ALTER TABLE trades ADD COLUMN IF NOT EXISTS account_type TEXT DEFAULT 'user'`
   await sql`ALTER TABLE trades ADD COLUMN IF NOT EXISTS limit_price NUMERIC`
   await sql`ALTER TABLE trades ADD COLUMN IF NOT EXISTS expires_at TIMESTAMPTZ`
+  await sql`ALTER TABLE trades ADD COLUMN IF NOT EXISTS exit_price NUMERIC`
+  await sql`ALTER TABLE trades ADD COLUMN IF NOT EXISTS timeframe TEXT`
   await sql`
     CREATE TABLE IF NOT EXISTS chart_drawings (
       id SERIAL PRIMARY KEY,

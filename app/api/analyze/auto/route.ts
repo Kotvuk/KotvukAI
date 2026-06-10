@@ -118,11 +118,11 @@ async function analyzeOne(
       SELECT id FROM signals
       WHERE user_id = ${userId} AND pair = ${pairFmt}
         AND timeframe IN (${interval}, ${tfLabel})
-        AND created_at > NOW() - INTERVAL '24 hours'
+        AND created_at > NOW() - INTERVAL '6 hours'
       LIMIT 1
     `
     if (recentSignal.length > 0) {
-      return { ok: true, verdict: 'SKIP', error: 'duplicate within 24h' }
+      return { ok: true, verdict: 'SKIP', error: 'duplicate within 6h' }
     }
 
     const [memorySignals, globalPatterns] = await Promise.all([
@@ -156,7 +156,7 @@ async function analyzeOne(
       },
     })
 
-    if ((final.verdict === 'LONG' || final.verdict === 'SHORT') && final.confidence >= 60) {
+    if ((final.verdict === 'LONG' || final.verdict === 'SHORT') && final.confidence >= 50) {
       // кулдаун 24ч — не входим если последняя сделка по паре была убыточной
       const lastLoss = await sql`
         SELECT id FROM trades
@@ -184,9 +184,11 @@ async function analyzeOne(
         SELECT id FROM trades
         WHERE user_id = ${userId} AND pair = ${pairFmt}
           AND account_type = 'ai'
+          AND status IN ('closed', 'cancelled')
+          AND closed_at > NOW() - INTERVAL '24 hours'
           AND (
-            (status = 'closed' AND closed_at > NOW() - INTERVAL '24 hours')
-            OR (status = 'cancelled' AND closed_at > NOW() - INTERVAL '24 hours')
+            COALESCE(pnl_pct, 0) < 0
+            OR closed_at > NOW() - INTERVAL '6 hours'
           )
         LIMIT 1
       `
@@ -224,6 +226,7 @@ async function analyzeOne(
         account_type: 'ai',
         status:      isLimit ? 'pending' : 'open',
         expires_at:  isLimit ? expiresAt.toISOString() : null,
+        timeframe:   interval,
       })
       await adjustBalance(userId, -tradeAmount)
 
@@ -278,7 +281,7 @@ export async function GET(req: NextRequest) {
   const userWatchlist = await getUserWatchlist(Number(user.id))
   const rawList: string[] = (userWatchlist?.length ? userWatchlist : DEFAULT_WATCHLIST)
     .filter(s => !BAD_PAIRS.has(s))
-  const watchlist = (await priceSortedWatchlist(rawList)).slice(0, 12)
+  const watchlist = (await priceSortedWatchlist(rawList)).slice(0, 24)
   const batchIndex = parseInt(req.nextUrl.searchParams.get('batch') || '0', 10)
   const batchSize  = 6
   const start      = batchIndex * batchSize

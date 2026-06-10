@@ -74,7 +74,8 @@ export async function POST(req: NextRequest) {
       const priceDiff = isLong ? price - entry : entry - price
       const pnlPct   = parseFloat(((priceDiff / entry) * leverage * 100).toFixed(2))
 
-      await setSignalOutcome(signal.id, outcome, pnlPct, user.id)
+      const outcomeRows = await setSignalOutcome(signal.id, outcome, pnlPct, user.id)
+      if (!outcomeRows.length) continue
 
       const emoji  = outcome === 'win' ? '✅' : '❌'
       const pnlStr = pnlPct > 0 ? `+${pnlPct}%` : `${pnlPct}%`

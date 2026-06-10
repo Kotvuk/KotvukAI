@@ -120,6 +120,7 @@ export async function GET(req: NextRequest) {
         account_type: 'ai',
         status:      isLimit ? 'pending' : 'open',
         expires_at:  isLimit ? expiresAt.toISOString() : null,
+        timeframe:   interval,
       })
       if (tradeAmount > 0) await adjustBalance(user.id, -tradeAmount)
 

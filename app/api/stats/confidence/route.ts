@@ -25,12 +25,12 @@ export async function GET(req: NextRequest) {
       COUNT(*) FILTER (WHERE outcome = 'loss')                            AS losses,
       ROUND(
         COUNT(*) FILTER (WHERE outcome = 'win')::numeric
-        / NULLIF(COUNT(*) FILTER (WHERE outcome IS NOT NULL), 0) * 100
+        / NULLIF(COUNT(*) FILTER (WHERE outcome IN ('win','loss')), 0) * 100
       )                                                                    AS win_rate,
       ROUND(AVG(actual_pnl_pct)::numeric, 1)                             AS avg_pnl
     FROM signals
     WHERE user_id = ${user.id}
-      AND outcome IS NOT NULL
+      AND outcome IN ('win','loss')
       AND final_confidence IS NOT NULL
     GROUP BY bucket
     ORDER BY bucket

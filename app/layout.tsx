@@ -64,7 +64,7 @@ const jsonLd = {
   applicationCategory: 'FinanceApplication',
   operatingSystem: 'Web Browser',
   url: SITE_URL,
-  description: 'AI-аналитик криптовалютных графиков. 6-метод анализ: SMC, индикаторы, Price Action, Wyckoff, Volume Profile, Funding Rate. Консенсус 3/6 методов.',
+  description: 'AI-аналитик криптовалютных графиков. 6-метод анализ: SMC, индикаторы, Price Action, Derivatives, Volume Profile, Funding Rate. Консенсус 3/6 методов.',
   offers: [
     { '@type': 'Offer', name: 'Free',    price: '0',   priceCurrency: 'USD' },
     { '@type': 'Offer', name: 'Starter', price: '9',   priceCurrency: 'USD' },
@@ -72,7 +72,7 @@ const jsonLd = {
     { '@type': 'Offer', name: 'Elite',   price: '79',  priceCurrency: 'USD' },
   ],
   featureList: [
-    '6-метод анализ с консенсусом 3/6 (SMC + индикаторы + Price Action + Wyckoff + Volume Profile + Funding Rate)',
+    '6-метод анализ с консенсусом 3/6 (SMC + индикаторы + Price Action + Derivatives + Volume Profile + Funding Rate)',
     'AI-синтез — финальный сигнал LONG/SHORT/WAIT',
     'Smart Money Concepts: Order Blocks, Fair Value Gaps, Liquidity',
     'Break of Structure / Change of Character',

@@ -16,6 +16,11 @@ const HTF_MAP: Record<string, string> = {
   '1h': '1d', '4h': '1d', '1d': '1d',
 }
 
+const OI_PERIOD_MAP: Record<string, string> = {
+  '1m': '5m', '5m': '5m', '15m': '15m', '30m': '30m',
+  '1h': '1h', '4h': '4h', '1d': '4h',
+}
+
 const PAIR_RE = /^[A-Z]{2,12}(USDT?|BTC|ETH|BNB)$/
 
 const BINANCE_ENDPOINTS = [
@@ -91,9 +96,13 @@ export async function POST(req: NextRequest) {
     const raw = await fetchKlines(sym, interval, 200)
     const candles = toCandles(raw)
 
-    const [htfRes, frRes] = await Promise.allSettled([
+    const oiPeriod = OI_PERIOD_MAP[interval] || '15m'
+
+    const [htfRes, frRes, oiRes, lsRes] = await Promise.allSettled([
       fetchKlines(sym, htfInterval, 100),
       fetch(`https://fapi.binance.com/fapi/v1/fundingRate?symbol=${sym}&limit=1`, { cache: 'no-store' }),
+      fetch(`https://fapi.binance.com/futures/data/openInterestHist?symbol=${sym}&period=${oiPeriod}&limit=12`, { cache: 'no-store' }),
+      fetch(`https://fapi.binance.com/futures/data/topLongShortPositionRatio?symbol=${sym}&period=${oiPeriod}&limit=4`, { cache: 'no-store' }),
     ])
 
     let htfBias: string | undefined
@@ -113,7 +122,27 @@ export async function POST(req: NextRequest) {
       } catch {}
     }
 
-    const market = calcMarketData(candles, fundingRate)
+    let openInterestHist: { sumOpenInterest: number; timestamp: number }[] | null = null
+    if (oiRes.status === 'fulfilled' && oiRes.value.ok) {
+      try {
+        const oid: { sumOpenInterest: string; timestamp: number }[] = await oiRes.value.json()
+        if (Array.isArray(oid) && oid.length > 0) {
+          openInterestHist = oid.map(p => ({ sumOpenInterest: parseFloat(p.sumOpenInterest), timestamp: p.timestamp }))
+        }
+      } catch {}
+    }
+
+    let longShortRatio: { longShortRatio: number; timestamp: number }[] | null = null
+    if (lsRes.status === 'fulfilled' && lsRes.value.ok) {
+      try {
+        const lsd: { longShortRatio: string; timestamp: number }[] = await lsRes.value.json()
+        if (Array.isArray(lsd) && lsd.length > 0) {
+          longShortRatio = lsd.map(p => ({ longShortRatio: parseFloat(p.longShortRatio), timestamp: p.timestamp }))
+        }
+      } catch {}
+    }
+
+    const market = calcMarketData(candles, fundingRate, openInterestHist, longShortRatio)
     if (htfBias) market.htfBias = htfBias
 
     const [memorySignals, globalPatterns, pairTier] = await Promise.all([

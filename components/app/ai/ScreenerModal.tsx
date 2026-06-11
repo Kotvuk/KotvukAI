@@ -118,7 +118,7 @@ export default function ScreenerModal({ open, onClose, onSelectPair }: Props) {
         {!loading && setups.length === 0 && ts === 0 && (
           <div style={{ textAlign: 'center', padding: '30px 0' }}>
             <div style={{ fontSize: '.6rem', color: 'var(--dim)', lineHeight: 1.8 }}>
-              Pure algorithmic scan (SMC + Indicators + Price Action + Wyckoff + Volume).
+              Pure algorithmic scan (SMC + Indicators + Price Action + Derivatives + Volume).
               <br />Instant market-wide results.
             </div>
           </div>

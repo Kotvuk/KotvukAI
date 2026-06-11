@@ -222,81 +222,80 @@ export function analyzePriceAction(candles: Candle[]): MethodResult {
   }
 }
 
-export function analyzeWyckoff(candles: Candle[]): MethodResult {
-  if (candles.length < 50) {
-    return { method: 'Wyckoff', signal: 'WAIT', confidence: 30, factors: ['Insufficient data'], summary: 'Not enough candles for Wyckoff' }
+export interface OpenInterestPoint {
+  sumOpenInterest: number
+  timestamp: number
+}
+
+export interface LongShortRatioPoint {
+  longShortRatio: number
+  timestamp: number
+}
+
+export function analyzeDerivatives(
+  oiHist: OpenInterestPoint[] | null,
+  lsRatio: LongShortRatioPoint[] | null,
+  candles: Candle[],
+): MethodResult {
+  if (!oiHist || oiHist.length < 2) {
+    return { method: 'Derivatives', signal: 'WAIT', confidence: 25, factors: ['Open interest data unavailable'], summary: 'No OI data' }
   }
 
-  const price    = candles[candles.length - 1].close
-  const lookback = candles.slice(-50)
-  const rangeHigh = Math.max(...lookback.map(c => c.high))
-  const rangeLow  = Math.min(...lookback.map(c => c.low))
-  const rangeSize = rangeHigh - rangeLow
+  const oiFirst = oiHist[0].sumOpenInterest
+  const oiLast  = oiHist[oiHist.length - 1].sumOpenInterest
+  const oiDeltaPct = oiFirst > 0 ? ((oiLast - oiFirst) / oiFirst) * 100 : 0
 
-  const recentHigh  = Math.max(...candles.slice(-10).map(c => c.high))
-  const recentLow   = Math.min(...candles.slice(-10).map(c => c.low))
-  const recentRange = recentHigh - recentLow
-  const totalRange  = Math.max(...candles.slice(-30).map(c => c.high)) - Math.min(...candles.slice(-30).map(c => c.low))
+  const periodMs = oiHist.length > 1 ? oiHist[1].timestamp - oiHist[0].timestamp : 15 * 60 * 1000
+  const spanMs = oiHist[oiHist.length - 1].timestamp - oiHist[0].timestamp
+  const candlesInSpan = Math.max(2, Math.round(spanMs / Math.max(1, periodMs)) + 1)
+  const priceSlice = candles.slice(-candlesInSpan)
+  const priceFirst = priceSlice[0]?.close ?? candles[0].close
+  const priceLast  = priceSlice[priceSlice.length - 1]?.close ?? candles[candles.length - 1].close
+  const priceDeltaPct = priceFirst > 0 ? ((priceLast - priceFirst) / priceFirst) * 100 : 0
 
-  const compression = recentRange < totalRange * 0.35
-
-  const avgVol      = lookback.slice(0, 40).map(c => c.volume).reduce((a, b) => a + b, 0) / 40
-  const recentAvgVol = lookback.slice(-10).map(c => c.volume).reduce((a, b) => a + b, 0) / 10
-  const volDecline  = recentAvgVol < avgVol * 0.7
-
-  const last5Low   = Math.min(...candles.slice(-5).map(c => c.low))
-  const last5Close = candles[candles.length - 1].close
-  const prevLows   = candles.slice(-20, -5).map(c => c.low)
-  const prevLowMin = Math.min(...prevLows)
-
-  const springDetected   = last5Low < prevLowMin * 0.995 && last5Close > prevLowMin && volDecline
-  const upthrustDetected = Math.max(...candles.slice(-5).map(c => c.high)) > Math.max(...candles.slice(-20, -5).map(c => c.high)) * 1.005
-    && last5Close < Math.max(...candles.slice(-20, -5).map(c => c.high)) && volDecline
-
-  const posInRange = rangeSize > 0 ? (price - rangeLow) / rangeSize : 0.5
   const factors: string[] = []
   let signal: 'LONG' | 'SHORT' | 'WAIT' = 'WAIT'
-  let confidence = 35
 
-  if (springDetected) {
-    factors.push('Spring detected (Phase C — Wyckoff)')
-    factors.push(`Price broke support $${prevLowMin.toFixed(2)} and recovered`)
-    signal = 'LONG'; confidence = 72
-  } else if (upthrustDetected) {
-    factors.push('Upthrust detected (Phase C — Wyckoff)')
-    factors.push('Price broke resistance and returned')
-    signal = 'SHORT'; confidence = 70
-  } else if (compression && volDecline) {
-    if (posInRange < 0.35) {
-      factors.push('Accumulation Phase (B) — price in lower range')
-      factors.push('Volatility compression + volume decline')
-      signal = 'LONG'; confidence = 55
-    } else if (posInRange > 0.65) {
-      factors.push('Distribution Phase (B) — price in upper range')
-      factors.push('Volatility compression + volume decline')
-      signal = 'SHORT'; confidence = 55
-    } else {
-      factors.push('Wyckoff: sideways consolidation, no clear direction')
-    }
+  const absDelta = Math.abs(oiDeltaPct)
+  let confidence = absDelta > 3 ? 65 : absDelta > 1 ? 50 : 35
+
+  factors.push(`OI ${oiDeltaPct >= 0 ? '+' : ''}${oiDeltaPct.toFixed(2)}% | Price ${priceDeltaPct >= 0 ? '+' : ''}${priceDeltaPct.toFixed(2)}%`)
+
+  if (oiDeltaPct > 1 && priceDeltaPct > 0) {
+    factors.push('Open interest rising with price — fresh money entering the trend')
+    signal = 'LONG'
+  } else if (oiDeltaPct > 1 && priceDeltaPct < 0) {
+    factors.push('Open interest rising while price falls — new shorts pressuring the market')
+    signal = 'SHORT'
+  } else if (oiDeltaPct < -1 && priceDeltaPct > 0) {
+    factors.push('Open interest falling while price rises — short squeeze, weak move')
+    signal = 'WAIT'
+    confidence = Math.min(confidence, 35)
+  } else if (oiDeltaPct < -1 && priceDeltaPct < 0) {
+    factors.push('Open interest falling with price — longs capitulating, position unwind')
+    signal = 'WAIT'
+    confidence = Math.min(confidence, 35)
   } else {
-    const closes30  = candles.slice(-30).map(c => c.close)
-    const firstHalf = closes30.slice(0, 15).reduce((a, b) => a + b, 0) / 15
-    const secondHalf = closes30.slice(15).reduce((a, b) => a + b, 0) / 15
-    if (secondHalf > firstHalf * 1.02) {
-      factors.push('Wyckoff Markup Phase — uptrend')
-      signal = 'LONG'; confidence = 58
-    } else if (secondHalf < firstHalf * 0.98) {
-      factors.push('Wyckoff Markdown Phase — downtrend')
-      signal = 'SHORT'; confidence = 58
-    } else {
-      factors.push('Wyckoff: no clear phase')
+    factors.push('Open interest roughly flat — no clear positioning shift')
+  }
+
+  if (lsRatio && lsRatio.length > 0) {
+    const avgRatio = lsRatio.reduce((a, p) => a + p.longShortRatio, 0) / lsRatio.length
+    factors.push(`Top traders L/S ratio avg ${avgRatio.toFixed(2)}`)
+
+    if (avgRatio > 2.2) {
+      factors.push('Top traders heavily long — contrarian bias toward shorts')
+      if (signal === 'LONG') { signal = 'WAIT'; confidence = Math.min(confidence, 40) }
+      else if (signal === 'WAIT') { signal = 'SHORT'; confidence = Math.max(confidence, 45) }
+    } else if (avgRatio < 0.7) {
+      factors.push('Top traders heavily short — contrarian bias toward longs')
+      if (signal === 'SHORT') { signal = 'WAIT'; confidence = Math.min(confidence, 40) }
+      else if (signal === 'WAIT') { signal = 'LONG'; confidence = Math.max(confidence, 45) }
     }
   }
 
-  factors.push(`Range: $${rangeLow.toFixed(2)}–$${rangeHigh.toFixed(2)} | Position: ${(posInRange * 100).toFixed(0)}%`)
-
   return {
-    method: 'Wyckoff',
+    method: 'Derivatives',
     signal,
     confidence,
     factors,

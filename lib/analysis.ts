@@ -1,6 +1,6 @@
 import { calcEnhancedSMC, scoreOrderBlock, type SMCData, type OrderBlock, type Candle } from './smc'
 import { loadGroqKeys, getGroqModel, getGroqFastModel, groqGenerate } from './groq'
-import { analyzeIndicators, analyzePriceAction, analyzeWyckoff, analyzeVolumeProfile, analyzeFunding, calcConsensus, type MethodResult, type ConsensusResult } from './indicators'
+import { analyzeIndicators, analyzePriceAction, analyzeDerivatives, analyzeVolumeProfile, analyzeFunding, calcConsensus, type MethodResult, type ConsensusResult, type OpenInterestPoint, type LongShortRatioPoint } from './indicators'
 export type { SMCData, Candle }
 
 function extractJSON(text: string): Record<string, unknown> {
@@ -258,7 +258,7 @@ export async function fullAnalysis(
 
   const indResult = analyzeIndicators(candles)
   const paResult  = analyzePriceAction(candles)
-  const wyResult  = analyzeWyckoff(candles)
+  const drResult  = analyzeDerivatives(market.openInterestHist, market.longShortRatio, candles)
   const vpResult  = analyzeVolumeProfile(candles)
   const frResult  = analyzeFunding(market.fundingRate)
 
@@ -317,7 +317,7 @@ Reply with a single-line JSON:
     summary: `Trend: ${trendDir}, HTF: ${htf}`,
   }
 
-  const allMethods = [smcMethod, indResult, paResult, wyResult, vpResult, frResult]
+  const allMethods = [smcMethod, indResult, paResult, drResult, vpResult, frResult]
   const consensus  = calcConsensus(allMethods, 3)
 
   const consensusCtx = [
@@ -697,6 +697,8 @@ export interface MarketData {
   volSignal: string
   fundingRate: number | null
   fundingSignal: string | null
+  openInterestHist: OpenInterestPoint[] | null
+  longShortRatio: LongShortRatioPoint[] | null
   supports: number[]
   resistances: number[]
   recentCandles: { o: number; h: number; l: number; c: number; v: number }[]
@@ -705,7 +707,12 @@ export interface MarketData {
   htfBias?: string
 }
 
-export function calcMarketData(candles: Candle[], fundingRate: number | null): MarketData {
+export function calcMarketData(
+  candles: Candle[],
+  fundingRate: number | null,
+  openInterestHist: OpenInterestPoint[] | null = null,
+  longShortRatio: LongShortRatioPoint[] | null = null,
+): MarketData {
   const closes = candles.map(c => c.close)
   const price  = closes[closes.length - 1]
 
@@ -751,6 +758,8 @@ export function calcMarketData(candles: Candle[], fundingRate: number | null): M
     fundingSignal: fundingRate !== null
       ? (fundingRate > 0.05 ? 'overheated' : fundingRate < -0.01 ? 'bearish' : 'neutral')
       : null,
+    openInterestHist,
+    longShortRatio,
     supports,
     resistances,
     recentCandles,

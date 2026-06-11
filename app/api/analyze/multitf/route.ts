@@ -3,7 +3,7 @@ export const maxDuration = 60
 
 import { NextRequest, NextResponse } from 'next/server'
 import { calcMarketData, type Candle } from '@/lib/analysis'
-import { analyzeIndicators, analyzePriceAction, analyzeWyckoff, analyzeVolumeProfile, analyzeFunding, calcConsensus } from '@/lib/indicators'
+import { analyzeIndicators, analyzePriceAction, analyzeDerivatives, analyzeVolumeProfile, analyzeFunding, calcConsensus } from '@/lib/indicators'
 
 const TF_MAP: Record<string, string> = {
   '5m': '5m', '15m': '15m', '1h': '1h', '4h': '4h',
@@ -55,7 +55,7 @@ export async function GET(req: NextRequest) {
       const methods = [
         analyzeIndicators(candles),
         analyzePriceAction(candles),
-        analyzeWyckoff(candles),
+        analyzeDerivatives(null, null, candles),
         analyzeVolumeProfile(candles),
         analyzeFunding(null),
       ]

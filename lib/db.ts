@@ -477,6 +477,49 @@ export async function getGlobalLossPatterns(userId: number): Promise<string> {
   return `\n⛔ LEARNED RULES (from ${n} losses in 30 days):\n${rules.map(r => `  • ${r}`).join('\n')}\n`
 }
 
+export interface PairTier {
+  tier: 'white' | 'grey' | 'black'
+  resolved: number
+  wins: number
+  losses: number
+  winRate: number | null
+  consecutiveLosses: number
+}
+
+export async function getPairTier(pair: string, userId?: number): Promise<PairTier> {
+  const rows = userId != null
+    ? await sql`
+        SELECT outcome FROM signals
+        WHERE pair = ${pair} AND user_id = ${userId} AND outcome IN ('win','loss')
+        ORDER BY created_at DESC LIMIT 10
+      `
+    : await sql`
+        SELECT outcome FROM signals
+        WHERE pair = ${pair} AND outcome IN ('win','loss')
+        ORDER BY created_at DESC LIMIT 10
+      `
+
+  const resolved = rows.length
+  const wins = rows.filter(r => r.outcome === 'win').length
+  const losses = resolved - wins
+  const winRate = resolved > 0 ? wins / resolved : null
+
+  let consecutiveLosses = 0
+  for (const r of rows) {
+    if (r.outcome === 'loss') consecutiveLosses++
+    else break
+  }
+
+  let tier: PairTier['tier'] = 'white'
+  if (consecutiveLosses >= 4 || (resolved >= 6 && winRate !== null && winRate < 0.3)) {
+    tier = 'black'
+  } else if (consecutiveLosses >= 2 || (resolved >= 6 && winRate !== null && winRate < 0.4)) {
+    tier = 'grey'
+  }
+
+  return { tier, resolved, wins, losses, winRate, consecutiveLosses }
+}
+
 export async function getPendingSignals(userId: number): Promise<Signal[]> {
   const rows = await sql`
     SELECT * FROM signals

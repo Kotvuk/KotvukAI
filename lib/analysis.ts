@@ -242,11 +242,14 @@ export async function fullAnalysis(
   balance = 1000,
   riskPct = 1.0,
   globalLossPatterns = '',
-  translate = true
+  translate = true,
+  tier: 'white' | 'grey' | 'black' = 'white'
 ): Promise<{ step1: Step1Result; step2: Step2Result; final: FinalResult; methods: MethodResult[]; consensus: ConsensusResult }> {
   const keys       = loadGroqKeys()
-  const finalize = (r: { step1: Step1Result; step2: Step2Result; final: FinalResult; methods?: MethodResult[]; consensus?: ConsensusResult }) =>
-    translate ? translateResponse(keys, r) : passThroughResult(r)
+  const finalize = (r: { step1: Step1Result; step2: Step2Result; final: FinalResult; methods?: MethodResult[]; consensus?: ConsensusResult }) => {
+    r.final.tier = tier
+    return translate ? translateResponse(keys, r) : passThroughResult(r)
+  }
   const mainModel  = getGroqModel()
   const quickModel = getGroqFastModel()
   const price      = market.price
@@ -265,14 +268,8 @@ export async function fullAnalysis(
 
   const recentOutcomes = memorySignals.slice(0, 3).map(s => s.outcome)
   const consecutiveLosses = recentOutcomes.filter(o => o === 'loss').length
-  const strictMode = consecutiveLosses >= 2
-
-  const resolvedSignals = memorySignals.filter(s => s.outcome !== null)
-  const pairWinRate = resolvedSignals.length >= 3
-    ? resolvedSignals.filter(s => s.outcome === 'win').length / resolvedSignals.length
-    : null
-  const lowWinRate = pairWinRate !== null && pairWinRate < 0.4
-  const minConfThreshold = 60
+  const strictMode = tier === 'grey' || tier === 'black'
+  const minConfluence = tier === 'black' ? 5 : tier === 'grey' ? 4 : 3
 
   const utcHour = new Date().getUTCHours()
   const session = utcHour < 8 ? 'Asia (00-08 UTC, low liquidity)'
@@ -344,7 +341,7 @@ Reply with a single-line JSON:
     }
   }
 
-  const strictWarning = strictMode ? `\n⚠️ STRICT MODE (${consecutiveLosses} consecutive losses): require at least 4 confluence factors, confluence_count≥4, else WAIT.\n` : ''
+  const strictWarning = strictMode ? `\n⚠️ TIER ${tier.toUpperCase()}: require at least ${minConfluence} confluence factors, confluence_count≥${minConfluence}, else WAIT.\n` : ''
 
   const prompt2 = `/no_think
 You are an SMC analyst. Identify the best POI for ${pair} (${tf}).${strictWarning}
@@ -359,7 +356,7 @@ Without a liquidity sweep — WAIT only or very high confidence required.
 
 Min R:R (risk:reward): A+/BB → 1:3; A OB → 1:2; B OB → 1:1.5; no POI → WAIT.
 confluence_count = number of confirmed factors (OB, FVG, BOS, CHoCH, sweep, HTF, volume, RSI, session).
-Minimum 3 factors for LONG/SHORT. Strict mode — minimum 4.
+Minimum ${minConfluence} factors for LONG/SHORT.
 
 Reply with a single-line JSON:
 {"poi_type":"OB|BB|FVG|none","poi_dir":"bullish|bearish","poi_quality":"A+|A|B|C","poi_high":0,"poi_low":0,"confluence_score":<0-100>,"confluence_count":<1-9>,"sweep_confirmed":true|false,"fvg_target":true|false,"liq_target":true|false,"entry_zone":"<POI description with price range>","wait_reason":"<WAIT reason>","min_rr":<1.5-5.0>}`
@@ -372,7 +369,6 @@ Reply with a single-line JSON:
   const confluenceCount = Number(s2.confluence_count || 0)
   const sweepConfirmed  = Boolean(s2.sweep_confirmed)
 
-  const minConfluence = strictMode ? 4 : 3
   const confluenceOk = confluenceCount >= minConfluence
   const sweepOk = sweepConfirmed || Boolean(s1.sweep_ssl) || Boolean(s1.sweep_bsl)
 
@@ -391,7 +387,7 @@ Reply with a single-line JSON:
   const sweepWarn = !sweepOk ? '⚠️ SWEEP NOT CONFIRMED — require WAIT unless there are strong grounds' : '✅ Sweep confirmed'
 
   const prompt3 = `Final signal for ${pair} (${tf}). Confluence: ${confluenceCount} factors. ${sweepWarn}.
-${strictMode ? `⚠️ STRICT MODE: ${consecutiveLosses} consecutive losses — require confidence≥70% or WAIT.` : ''}
+${strictMode ? `⚠️ TIER ${tier.toUpperCase()}: require confidence≥70% or WAIT.` : ''}
 ${consensusCtx}
 ${histCtx}
 
@@ -865,4 +861,5 @@ export interface FinalResult {
   }
   methods?: MethodResult[]
   consensus?: ConsensusResult
+  tier?: 'white' | 'grey' | 'black'
 }

@@ -3,7 +3,7 @@ export const maxDuration = 60
 import { NextRequest, NextResponse } from 'next/server'
 import { fullAnalysis, calcMarketData, type Candle } from '@/lib/analysis'
 import { calcEnhancedSMC } from '@/lib/smc'
-import { sql, saveSignal, createTrade, createNotification, getUserWatchlist, getSignalsForPair, getGlobalLossPatterns, adjustBalance, type User } from '@/lib/db'
+import { sql, saveSignal, createTrade, createNotification, getUserWatchlist, getSignalsForPair, getGlobalLossPatterns, getPairTier, adjustBalance, type User } from '@/lib/db'
 import { sendTelegram, sendTelegramToUser } from '@/lib/telegram'
 import { DEFAULT_WATCHLIST, BAD_PAIRS } from '@/lib/pairs'
 
@@ -125,11 +125,12 @@ async function analyzeOne(
       return { ok: true, verdict: 'SKIP', error: 'duplicate within 6h' }
     }
 
-    const [memorySignals, globalPatterns] = await Promise.all([
+    const [memorySignals, globalPatterns, pairTier] = await Promise.all([
       getSignalsForPair(userId, pairFmt, 10),
       getGlobalLossPatterns(userId),
+      getPairTier(pairFmt),
     ])
-    const { step1, step2, final } = await fullAnalysis(pairFmt, tfLabel, market, candles, memorySignals, maxLev, balance, 1.0, globalPatterns, false)
+    const { step1, step2, final } = await fullAnalysis(pairFmt, tfLabel, market, candles, memorySignals, maxLev, balance, 1.0, globalPatterns, false, pairTier.tier)
 
     // фильтр направления по настройке пользователя
     if (final.verdict === 'LONG'  && signalDirection === 'short') return { ok: true, verdict: 'SKIP', error: 'direction=short only' }
@@ -153,10 +154,27 @@ async function analyzeOne(
         final,
         market: { price: market.price, rsi: market.rsi, atr14pct: market.atr14pct },
         pipeline: { step1, step2 },
+        tier: pairTier.tier,
       },
     })
 
+    const tierMark = pairTier.tier === 'grey' ? '🟡' : pairTier.tier === 'black' ? '⚫' : ''
+
     if ((final.verdict === 'LONG' || final.verdict === 'SHORT') && final.confidence >= 50) {
+      if (pairTier.tier === 'black') {
+        const dir   = final.verdict === 'LONG' ? '📈' : '📉'
+        const msg   = `${tierMark} <b>AUTO ${final.verdict}</b> ${pairFmt} ${tfLabel} ${dir}\n`
+          + `Confidence: <b>${final.confidence}%</b>\n`
+          + `⚫ Пара в чёрном списке — сделка не открыта (${pairTier.consecutiveLosses} лоссов подряд)`
+
+        const tgChatId = String(user.telegram_chat_id || '')
+        await Promise.allSettled([
+          tgChatId ? sendTelegramToUser(tgChatId, msg) : sendTelegram(msg),
+          createNotification(userId, `${tierMark} AUTO ${final.verdict} ${pairFmt} — confidence ${final.confidence}% (черный список, без сделки)`),
+        ])
+        return { ok: true, verdict: final.verdict, confidence: final.confidence, error: 'pair tier black: trade skipped' }
+      }
+
       // кулдаун 24ч — не входим если последняя сделка по паре была убыточной
       const lastLoss = await sql`
         SELECT id FROM trades
@@ -236,7 +254,8 @@ async function analyzeOne(
       const tp    = final.tp_price    ? final.tp_price.toFixed(prec)    : '—'
       const sl    = final.sl_price    ? final.sl_price.toFixed(prec)    : '—'
       const rr    = final.rr && isFinite(final.rr) ? final.rr.toFixed(1) : '?'
-      const msg   = `${dir} <b>AUTO ${final.verdict}</b> ${pairFmt} ${tfLabel}\n`
+      const tierPrefix = tierMark ? `${tierMark} ` : ''
+      const msg   = `${tierPrefix}${dir} <b>AUTO ${final.verdict}</b> ${pairFmt} ${tfLabel}\n`
         + `Confidence: <b>${final.confidence}%</b>\n`
         + `Entry: $${entry} | TP: $${tp} | SL: $${sl}\n`
         + `Leverage: ${final.leverage}x | R:R: 1:${rr}`

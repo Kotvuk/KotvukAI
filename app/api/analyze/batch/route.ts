@@ -3,7 +3,7 @@ export const maxDuration = 60
 import { NextRequest, NextResponse } from 'next/server'
 import { fullAnalysis, calcMarketData, type Candle } from '@/lib/analysis'
 import { calcEnhancedSMC } from '@/lib/smc'
-import { sql, saveSignal, createTrade, createNotification, adjustBalance, type User } from '@/lib/db'
+import { sql, saveSignal, createTrade, createNotification, getPairTier, adjustBalance, type User } from '@/lib/db'
 
 
 const HTF_MAP: Record<string, string> = {
@@ -83,7 +83,8 @@ export async function GET(req: NextRequest) {
     const maxLev       = Number(user.ai_max_leverage ?? 20)
 
     const start = Date.now()
-    const { step1, step2, final } = await fullAnalysis(sym, tfLabel, market, candles, [], maxLev, balance, 1.0, '', false)
+    const pairTier = await getPairTier(sym)
+    const { step1, step2, final } = await fullAnalysis(sym, tfLabel, market, candles, [], maxLev, balance, 1.0, '', false, pairTier.tier)
     const elapsed = ((Date.now() - start) / 1000).toFixed(1)
 
     const signal = await saveSignal(user.id, {
@@ -95,7 +96,7 @@ export async function GET(req: NextRequest) {
       final_sl:         final.sl_price || null,
       final_leverage:   final.leverage,
       final_risk_score: final.risk_score,
-      raw_response: { final, market: { price: market.price, rsi: market.rsi, atr14pct: market.atr14pct }, pipeline: { step1, step2 } },
+      raw_response: { final, market: { price: market.price, rsi: market.rsi, atr14pct: market.atr14pct }, pipeline: { step1, step2 }, tier: pairTier.tier },
     })
 
     await createNotification(user.id,

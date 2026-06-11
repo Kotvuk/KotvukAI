@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getUser } from '@/lib/auth-helper'
 import { fullAnalysis, calcMarketData, type Candle } from '@/lib/analysis'
 import { calcEnhancedSMC } from '@/lib/smc'
-import { saveSignal, createNotification, createTrade, getSignalsForPair, getGlobalLossPatterns, checkAndIncrementAnalysis, SUBSCRIPTION_LIMITS, adjustBalance, normalizeTf, sql } from '@/lib/db'
+import { saveSignal, createNotification, createTrade, getSignalsForPair, getGlobalLossPatterns, getPairTier, checkAndIncrementAnalysis, SUBSCRIPTION_LIMITS, adjustBalance, normalizeTf, sql } from '@/lib/db'
 
 const TF_MAP: Record<string, string> = {
   '1м': '1m', '5м': '5m', '15м': '15m', '30м': '30m',
@@ -116,14 +116,15 @@ export async function POST(req: NextRequest) {
     const market = calcMarketData(candles, fundingRate)
     if (htfBias) market.htfBias = htfBias
 
-    const [memorySignals, globalPatterns] = await Promise.all([
+    const [memorySignals, globalPatterns, pairTier] = await Promise.all([
       getSignalsForPair(user.id, pair, 10),
       getGlobalLossPatterns(user.id),
+      getPairTier(pair),
     ])
     const balance       = Number(user.ai_balance ?? 10000)
     const fixedAmount   = Number(user.ai_trade_amount ?? 100)
     const userMaxLev    = Number(user.ai_max_leverage ?? 20)
-    const { step1, step2, final: analysis, methods, consensus } = await fullAnalysis(pair, timeframe, market, candles, memorySignals, userMaxLev, balance, 1.0, globalPatterns)
+    const { step1, step2, final: analysis, methods, consensus } = await fullAnalysis(pair, timeframe, market, candles, memorySignals, userMaxLev, balance, 1.0, globalPatterns, true, pairTier.tier)
 
     const elapsed = ((Date.now() - start) / 1000).toFixed(1)
 
@@ -136,7 +137,7 @@ export async function POST(req: NextRequest) {
       final_sl:         analysis.sl_price,
       final_leverage:   analysis.leverage,
       final_risk_score: analysis.risk_score,
-      raw_response: { analysis, market, pipeline: { step1, step2 } },
+      raw_response: { analysis, market, pipeline: { step1, step2 }, tier: pairTier.tier },
     })
 
     await createNotification(user.id, `📊 ${analysis.verdict} ${pair} ${timeframe} — confidence ${analysis.confidence}%`)
@@ -157,7 +158,9 @@ export async function POST(req: NextRequest) {
             AND status IN ('pending', 'open') AND account_type = 'ai'
           LIMIT 1
         `
-        if (existing.length > 0) {
+        if (pairTier.tier === 'black') {
+          tradeSkipped = 'pair tier black'
+        } else if (existing.length > 0) {
           tradeSkipped = 'duplicate'
         } else {
           const expiresAt     = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)

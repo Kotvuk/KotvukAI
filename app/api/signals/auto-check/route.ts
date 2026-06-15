@@ -169,7 +169,7 @@ export async function GET(req: NextRequest) {
           SELECT id, amount FROM trades
           WHERE user_id = ${signal.user_id} AND pair = ${signal.pair}
             AND account_type = 'ai' AND status = 'pending'
-            AND (created_at < ${signal.created_at} OR expires_at < NOW())
+            AND (signal_id = ${signal.id} OR expires_at < NOW())
             AND created_at > NOW() - INTERVAL '8 days'
         `
         for (const t of staleLimitTrades) {

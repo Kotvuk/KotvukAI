@@ -58,6 +58,7 @@ export interface Trade {
   pnl_pct: number | null
   exit_price: number | null
   timeframe: string | null
+  signal_id: number | null
   closed_at: string | null
   created_at: string
 }
@@ -72,6 +73,8 @@ export interface Subscription {
   created_at: string
   ls_subscription_id?: string | null
   ls_customer_id?: string | null
+  cryptomus_subscription_id?: string | null
+  cryptomus_order_id?: string | null
 }
 
 export const SUBSCRIPTION_LIMITS: Record<string, number> = {
@@ -243,11 +246,19 @@ export async function saveSignal(userId: number, data: Partial<Signal>) {
   return rows[0] as Signal
 }
 
-export async function getSignals(userId: number, limit = 100, offset = 0): Promise<Signal[]> {
-  const rows = await sql`
-    SELECT * FROM signals WHERE user_id = ${userId}
-    ORDER BY created_at DESC LIMIT ${limit} OFFSET ${offset}
-  `
+export const ENTRY_CONFIDENCE_THRESHOLD = 50
+
+export async function getSignals(userId: number, limit = 100, offset = 0, tradableOnly = false): Promise<Signal[]> {
+  const rows = tradableOnly
+    ? await sql`
+        SELECT * FROM signals WHERE user_id = ${userId}
+          AND final_verdict IN ('LONG', 'SHORT') AND final_confidence >= ${ENTRY_CONFIDENCE_THRESHOLD}
+        ORDER BY created_at DESC LIMIT ${limit} OFFSET ${offset}
+      `
+    : await sql`
+        SELECT * FROM signals WHERE user_id = ${userId}
+        ORDER BY created_at DESC LIMIT ${limit} OFFSET ${offset}
+      `
   return rows as Signal[]
 }
 
@@ -362,12 +373,12 @@ export async function getTradeById(id: number, userId: number): Promise<Trade | 
 export async function createTrade(userId: number, data: Partial<Trade>): Promise<Trade> {
   const rows = await sql`
     INSERT INTO trades (user_id, pair, direction, order_type, amount, entry_price, tp_price, sl_price,
-                        leverage, account_type, status, limit_price, expires_at, timeframe)
+                        leverage, account_type, status, limit_price, expires_at, timeframe, signal_id)
     VALUES (${userId}, ${data.pair!}, ${data.direction!}, ${data.order_type ?? 'market'},
             ${data.amount!}, ${data.entry_price ?? null}, ${data.tp_price ?? null},
             ${data.sl_price ?? null}, ${data.leverage ?? 1}, ${data.account_type ?? 'user'},
             ${data.status ?? 'open'}, ${data.limit_price ?? null}, ${data.expires_at ?? null},
-            ${data.timeframe ?? null})
+            ${data.timeframe ?? null}, ${data.signal_id ?? null})
     RETURNING *
   `
   return rows[0] as Trade
@@ -879,6 +890,7 @@ export async function initDB() {
   await sql`ALTER TABLE trades ADD COLUMN IF NOT EXISTS expires_at TIMESTAMPTZ`
   await sql`ALTER TABLE trades ADD COLUMN IF NOT EXISTS exit_price NUMERIC`
   await sql`ALTER TABLE trades ADD COLUMN IF NOT EXISTS timeframe TEXT`
+  await sql`ALTER TABLE trades ADD COLUMN IF NOT EXISTS signal_id INTEGER`
   await sql`
     CREATE TABLE IF NOT EXISTS chart_drawings (
       id SERIAL PRIMARY KEY,
@@ -910,6 +922,8 @@ export async function initDB() {
       created_at TIMESTAMPTZ DEFAULT NOW()
     )
   `
+  await sql`ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS cryptomus_subscription_id TEXT`
+  await sql`ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS cryptomus_order_id TEXT`
   await sql`
     CREATE TABLE IF NOT EXISTS level_alerts (
       id SERIAL PRIMARY KEY,

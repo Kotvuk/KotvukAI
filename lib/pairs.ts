@@ -27,6 +27,7 @@ export const DEFAULT_WATCHLIST: string[] = [
   'TRXUSDT', 'ATOMUSDT',
   'DOGEUSDT', 'TONUSDT', 'NEARUSDT', 'APTUSDT', 'ARBUSDT',
   'OPUSDT', 'SUIUSDT', 'UNIUSDT', 'FILUSDT', 'INJUSDT', 'AAVEUSDT',
+  'LDOUSDT', 'RUNEUSDT', 'TIAUSDT',
 ]
 
 export const BAD_PAIRS = new Set([

@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useLang } from '@/contexts/LangContext'
-import { fmtAlmaty } from '@/lib/fmt'
+import { fmtLocal, fmtPrice } from '@/lib/fmt'
 
 interface Signal {
   id: number; pair: string; timeframe: string
@@ -124,10 +124,10 @@ export default function HistoricalSetupsModal({ currentPair, currentTf, currentV
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
                     <span className={`tag tag-${vc(s.final_verdict)}`} style={{ fontSize: '.55rem' }}>{s.final_verdict}</span>
                     <span style={{ fontSize: '.6rem', color: 'var(--text)' }}>{s.pair} · {s.timeframe}</span>
-                    <span style={{ fontSize: '.58rem', color: 'var(--dim)' }}>{fmtAlmaty(s.created_at)}</span>
+                    <span style={{ fontSize: '.58rem', color: 'var(--dim)' }}>{fmtLocal(s.created_at)}</span>
                   </div>
                   <div style={{ display: 'flex', gap: 10 }}>
-                    <span style={{ fontSize: '.58rem', color: 'var(--muted)' }}>{t('entry_price_short_lbl')}{parseFloat(String(s.final_entry || 0)).toLocaleString()}</span>
+                    <span style={{ fontSize: '.58rem', color: 'var(--muted)' }}>{t('entry_price_short_lbl')}{fmtPrice(s.final_entry)}</span>
                     <span style={{ fontSize: '.58rem', color: 'var(--muted)' }}>{t('conf')} {s.final_confidence}%</span>
                     {rr && <span style={{ fontSize: '.58rem', color: 'var(--muted)' }}>R:R {rr.toFixed(1)}</span>}
                   </div>

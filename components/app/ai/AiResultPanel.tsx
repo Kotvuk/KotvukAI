@@ -2,6 +2,7 @@
 import { useLang } from '@/contexts/LangContext'
 import type { ProbabilityResult } from '@/lib/smc'
 import SMCTooltip from '@/components/ui/SMCTooltip'
+import { fmtPrice } from '@/lib/fmt'
 
 const SMC_TERMS = ['CHoCH', 'BOS', 'FVG', 'OTE', 'BSL', 'SSL', 'HTF', 'OB', 'BB'] as const
 type SMCTerm = typeof SMC_TERMS[number]
@@ -68,7 +69,7 @@ export default function AiResultPanel({ aiData, pair, tf, smcProb, livePrice, on
         <div className="vmeta">
           <div className="vpair">{pair} · {tf.toUpperCase()}</div>
           <div className="vprice" style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-            ${displayPrice.toLocaleString()}
+            ${fmtPrice(displayPrice)}
             {priceMoved && (
               <span style={{ fontSize: '.52rem', color: livePrice! > analysisPrice ? 'var(--long)' : 'var(--short)', fontWeight: 400 }}>
                 {livePrice! > analysisPrice ? '↑' : '↓'}{((Math.abs(livePrice! - analysisPrice) / analysisPrice) * 100).toFixed(2)}%
@@ -104,14 +105,14 @@ export default function AiResultPanel({ aiData, pair, tf, smcProb, livePrice, on
             <span style={{ fontSize: '.6rem', color: '#ffa500', fontWeight: 700, letterSpacing: '.04em' }}>{t('wait_signal_lbl')}</span>
             {watchLevel > 0 && (
               <span style={{ fontSize: '.65rem', background: 'rgba(255,165,0,0.2)', color: '#ffa500', borderRadius: 4, padding: '2px 9px', fontWeight: 700 }}>
-                ${watchLevel.toLocaleString()}
+                ${fmtPrice(watchLevel)}
               </span>
             )}
             {resistances[0] > 0 && (
-              <span style={{ fontSize: '.58rem', color: '#ff6b6b' }}>R ${resistances[0].toLocaleString()}</span>
+              <span style={{ fontSize: '.58rem', color: '#ff6b6b' }}>R ${fmtPrice(resistances[0])}</span>
             )}
             {supports[0] > 0 && (
-              <span style={{ fontSize: '.58rem', color: '#69f0ae' }}>S ${supports[0].toLocaleString()}</span>
+              <span style={{ fontSize: '.58rem', color: '#69f0ae' }}>S ${fmtPrice(supports[0])}</span>
             )}
           </div>
           {!!a.wait_for && (
@@ -175,9 +176,9 @@ export default function AiResultPanel({ aiData, pair, tf, smcProb, livePrice, on
 
       {String(a.verdict) !== 'WAIT' && (
         <div className="levels">
-          <div className="lv"><div className="lv-l">{t('entry')}</div><div className="lv-v lv-entry">${Number(a.entry_price || 0).toLocaleString()}</div><div className="lv-p">{a.entry_type === 'market' ? 'market' : 'limit'}</div></div>
-          <div className="lv"><div className="lv-l">{t('take_profit')}</div><div className="lv-v lv-tp">${Number(a.tp_price || 0).toLocaleString()}</div><div className="lv-p">{a.tp_pct ? `+${Math.abs(Number(a.tp_pct)).toFixed(2)}%` : '—'}</div></div>
-          <div className="lv"><div className="lv-l">{t('stop_loss')}</div><div className="lv-v lv-sl">${Number(a.sl_price || 0).toLocaleString()}</div><div className="lv-p">{a.sl_pct ? `-${Math.abs(Number(a.sl_pct)).toFixed(2)}%` : '—'}</div></div>
+          <div className="lv"><div className="lv-l">{t('entry')}</div><div className="lv-v lv-entry">${fmtPrice(a.entry_price as number)}</div><div className="lv-p">{a.entry_type === 'market' ? 'market' : 'limit'}</div></div>
+          <div className="lv"><div className="lv-l">{t('take_profit')}</div><div className="lv-v lv-tp">${fmtPrice(a.tp_price as number)}</div><div className="lv-p">{a.tp_pct ? `+${Math.abs(Number(a.tp_pct)).toFixed(2)}%` : '—'}</div></div>
+          <div className="lv"><div className="lv-l">{t('stop_loss')}</div><div className="lv-v lv-sl">${fmtPrice(a.sl_price as number)}</div><div className="lv-p">{a.sl_pct ? `-${Math.abs(Number(a.sl_pct)).toFixed(2)}%` : '—'}</div></div>
         </div>
       )}
 

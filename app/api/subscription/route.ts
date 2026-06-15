@@ -19,10 +19,10 @@ export async function GET(req: NextRequest) {
   const today = new Date().toISOString().slice(0, 10)
   const analysesToday = sub.last_reset_date === today ? sub.analyses_today : 0
 
-  const hasLsSub = !!sub.ls_subscription_id
+  const hasCryptomusSub = !!sub.cryptomus_subscription_id
   return NextResponse.json({
     ok: true,
-    subscription: { ...sub, has_ls_sub: hasLsSub },
+    subscription: { ...sub, has_cryptomus_sub: hasCryptomusSub },
     limit,
     analyses_today: analysesToday,
     remaining: Math.max(0, limit - analysesToday),

@@ -12,6 +12,7 @@ import DrawingSettingsModal from '@/components/app/chart/DrawingSettingsModal'
 import HistoricalSetupsModal from '@/components/app/panels/HistoricalSetupsModal'
 import GlossaryModal from '@/components/app/panels/GlossaryModal'
 import AiResultPanel from '@/components/app/ai/AiResultPanel'
+import { fmtPrice } from '@/lib/fmt'
 import AiBacktestModal from '@/components/app/ai/AiBacktestModal'
 import ScreenerModal from '@/components/app/ai/ScreenerModal'
 import MultiTFModal from '@/components/app/ai/MultiTFModal'
@@ -676,7 +677,7 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
               <span style={{ fontSize: '.6rem', color: 'var(--muted)' }}>{chartTitle}</span>
               {marketData && (
                 <span style={{ fontSize: '.68rem', fontWeight: 600, color: 'var(--text)' }}>
-                  ${marketData.close.toLocaleString()}
+                  ${fmtPrice(marketData.close)}
                 </span>
               )}
               <div className="chart-toolbar-r">
@@ -996,10 +997,10 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
             <div className="sidebar-card-title">{t('market_data')}</div>
             {marketData ? (
               <>
-                <div className="ir"><span className="in">Price</span><span className="iv" style={{ color: 'var(--cyan)' }}>${marketData.close.toLocaleString()}</span></div>
-                <div className="ir"><span className="in">Open</span><span className="iv">${marketData.open.toLocaleString()}</span></div>
-                <div className="ir"><span className="in">High</span><span className="iv" style={{ color: 'var(--long)' }}>${marketData.high.toLocaleString()}</span></div>
-                <div className="ir"><span className="in">Low</span><span className="iv" style={{ color: 'var(--short)' }}>${marketData.low.toLocaleString()}</span></div>
+                <div className="ir"><span className="in">Price</span><span className="iv" style={{ color: 'var(--cyan)' }}>${fmtPrice(marketData.close)}</span></div>
+                <div className="ir"><span className="in">Open</span><span className="iv">${fmtPrice(marketData.open)}</span></div>
+                <div className="ir"><span className="in">High</span><span className="iv" style={{ color: 'var(--long)' }}>${fmtPrice(marketData.high)}</span></div>
+                <div className="ir"><span className="in">Low</span><span className="iv" style={{ color: 'var(--short)' }}>${fmtPrice(marketData.low)}</span></div>
                 <div className="ir"><span className="in">Volume</span><span className="iv">{(marketData.volume / 1000).toFixed(1)}K</span></div>
               </>
             ) : (
@@ -1026,7 +1027,7 @@ export default function AiPanel({ active, onGetContext, onNavigate }: AiPanelPro
                   <div className="ir" key={i}>
                     <span className="in">{row.type}</span>
                     <span className="iv" style={{ color: row.type === 'R' ? 'var(--short)' : 'var(--long)' }}>
-                      ${row.value.toLocaleString()}
+                      ${fmtPrice(row.value)}
                     </span>
                   </div>
                 ))

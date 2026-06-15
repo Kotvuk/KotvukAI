@@ -38,7 +38,7 @@ export default function Header() {
           const d = data[sym]
           if (!d) continue
           next[k] = {
-            price: '$' + d.price.toLocaleString('en', { maximumFractionDigits: 2 }),
+            price: '$' + d.price.toLocaleString('en', { maximumFractionDigits: 4 }),
             change: (d.change >= 0 ? '+' : '') + d.change.toFixed(2) + '%',
             up: d.change >= 0,
           }

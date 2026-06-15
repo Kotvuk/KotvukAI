@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import { useLang } from '@/contexts/LangContext'
 import { showToast } from '@/components/ui/Toast'
-import { fmtAlmaty } from '@/lib/fmt'
+import { fmtLocal, fmtPrice } from '@/lib/fmt'
 
 interface Signal {
   id: number; pair: string; timeframe: string; final_verdict: string | null
@@ -418,7 +418,7 @@ export default function HistoryPanel() {
                     const open = expandedId === s.id
                     const rows = [
                     <tr key={s.id}>
-                      <td>{fmtAlmaty(s.created_at)}</td>
+                      <td>{fmtLocal(s.created_at)}</td>
                       <td>{s.pair}</td>
                       <td>{s.timeframe}</td>
                       <td>
@@ -432,9 +432,9 @@ export default function HistoryPanel() {
                         )}
                       </td>
                       <td>{s.final_confidence || '—'}%</td>
-                      <td>${parseFloat(String(s.final_entry || 0)).toLocaleString()}</td>
-                      <td>${parseFloat(String(s.final_tp || 0)).toLocaleString()}</td>
-                      <td>${parseFloat(String(s.final_sl || 0)).toLocaleString()}</td>
+                      <td>${fmtPrice(s.final_entry)}</td>
+                      <td>${fmtPrice(s.final_tp)}</td>
+                      <td>${fmtPrice(s.final_sl)}</td>
                       <td>{s.final_leverage || '—'}×</td>
                       <td>{s.outcome ? <span className={`tag tag-${s.outcome}`}>{s.outcome.toUpperCase()}</span> : '—'}</td>
                       <td>{s.actual_pnl_pct != null ? s.actual_pnl_pct + '%' : '—'}</td>
@@ -512,7 +512,7 @@ export default function HistoryPanel() {
                     borderLeft: reviewSignal?.id === s.id ? '2px solid var(--short)' : '2px solid transparent',
                   }}
                 >
-                  <span style={{ fontSize: '.6rem', color: 'var(--dim)' }}>{fmtAlmaty(s.created_at)}</span>
+                  <span style={{ fontSize: '.6rem', color: 'var(--dim)' }}>{fmtLocal(s.created_at)}</span>
                   <span style={{ fontSize: '.63rem' }}>{s.pair}</span>
                   <span style={{ fontSize: '.6rem', color: 'var(--muted)' }}>{s.timeframe}</span>
                   <span className={`tag tag-${vc(s.final_verdict)}`} style={{ fontSize: '.55rem' }}>{s.final_verdict}</span>

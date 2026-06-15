@@ -1,61 +1,51 @@
 export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyWebhookSignature, VARIANT_ID_TO_TIER } from '@/lib/lemonsqueezy'
+import { verifyCryptomusSignature } from '@/lib/cryptomus'
 import { updateSubscriptionTier, sql } from '@/lib/db'
 
-export async function POST(req: NextRequest) {
-  const body = await req.text()
-  const sig  = req.headers.get('x-signature') || ''
+const PAID_STATUSES = ['paid', 'paid_over']
+const FAILED_STATUSES = ['fail', 'cancel', 'system_fail', 'wrong_amount']
+const REFUND_STATUSES = ['refund_process', 'refund_fail', 'refund_paid']
 
-  if (!verifyWebhookSignature(body, sig)) {
+export async function POST(req: NextRequest) {
+  const body = await req.json().catch(() => null) as Record<string, unknown> | null
+  if (!body) return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
+
+  if (!verifyCryptomusSignature(body)) {
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
   }
 
-  let event: Record<string, unknown>
-  try { event = JSON.parse(body) } catch {
-    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
-  }
+  const orderId = String(body.order_id || '')
+  const uuid    = String(body.uuid || '')
+  const status  = String(body.status || '')
 
-  const meta      = event.meta as Record<string, unknown> | undefined
-  const eventName = String(meta?.event_name || '')
-  const customData = meta?.custom_data as Record<string, unknown> | undefined
-  const userId    = String(customData?.user_id || '')
-  const data      = event.data as Record<string, unknown> | undefined
-  const attrs     = data?.attributes as Record<string, unknown> | undefined
-  const lsSubId   = String(data?.id || '')
-
-  if (!userId) return NextResponse.json({ received: true })
+  if (!orderId && !uuid) return NextResponse.json({ received: true })
 
   try {
-    switch (eventName) {
-      case 'subscription_created':
-      case 'subscription_updated': {
-        const variantId = String(attrs?.variant_id || '')
-        const tier = VARIANT_ID_TO_TIER[variantId] || 'free'
-        const renewsAt = attrs?.renews_at ? new Date(String(attrs.renews_at)) : undefined
-        const lsCustomerId = String(attrs?.customer_id || '')
-        await updateSubscriptionTier(Number(userId), tier, renewsAt)
-        if (lsSubId) {
-          await sql`UPDATE subscriptions SET ls_subscription_id=${lsSubId}, ls_customer_id=${lsCustomerId} WHERE user_id=${Number(userId)}`
-        }
-        break
-      }
-      case 'subscription_cancelled': {
-        await updateSubscriptionTier(Number(userId), 'free')
-        break
-      }
-      case 'order_created': {
-        const firstItem = (attrs?.first_order_item as Record<string, unknown>) || {}
-        const variantId = String(firstItem?.variant_id || '')
-        if (variantId) {
-          const tier = VARIANT_ID_TO_TIER[variantId] || 'free'
-          if (tier !== 'free') await updateSubscriptionTier(Number(userId), tier)
-        }
-        break
-      }
+    const rows = await sql`
+      SELECT user_id, tier FROM subscriptions
+      WHERE cryptomus_order_id = ${orderId} OR cryptomus_subscription_id = ${uuid}
+      LIMIT 1
+    `
+    const sub = rows[0]
+    if (!sub) return NextResponse.json({ received: true })
+
+    const userId = Number(sub.user_id)
+    let additionalData: Record<string, unknown> = {}
+    try { additionalData = JSON.parse(String(body.additional_data || '{}')) } catch {}
+    const tier = String(additionalData.tier || sub.tier || 'free')
+
+    if (PAID_STATUSES.includes(status)) {
+      const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+      await updateSubscriptionTier(userId, tier, expiresAt)
+      await sql`UPDATE subscriptions SET cryptomus_subscription_id=${uuid}, cryptomus_order_id=${orderId} WHERE user_id=${userId}`
+    } else if (REFUND_STATUSES.includes(status) || status === 'cancel') {
+      await updateSubscriptionTier(userId, 'free')
+    } else if (FAILED_STATUSES.includes(status)) {
+      console.error('[cryptomus-webhook] payment failed', { userId, status })
     }
   } catch (e) {
-    console.error('[ls-webhook]', e)
+    console.error('[cryptomus-webhook]', e)
   }
 
   return NextResponse.json({ received: true })

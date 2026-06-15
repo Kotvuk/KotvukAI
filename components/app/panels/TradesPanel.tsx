@@ -3,7 +3,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useLang } from '@/contexts/LangContext'
 import { showToast } from '@/components/ui/Toast'
 import { usePairs } from '@/hooks/usePairs'
-import { fmtAlmaty } from '@/lib/fmt'
+import { fmtLocal, fmtPrice } from '@/lib/fmt'
 import TradePathModal from './TradePathModal'
 
 
@@ -300,10 +300,10 @@ export default function TradesPanel({ defaultAccount = 'user', onTabMounted }: T
                   <span className="tag tag-pending">LIMIT</span>
                   <span style={{ fontSize: '.62rem', color: 'var(--muted)' }}>{tr.leverage}× · ${parseFloat(String(tr.amount)).toFixed(2)}</span>
                   <span style={{ fontSize: '.62rem', color: 'var(--muted)' }}>
-                    {t('trigger_at')} <span style={{ color: '#ffd60a' }}>${parseFloat(String(tr.limit_price || 0)).toLocaleString()}</span>
+                    {t('trigger_at')} <span style={{ color: '#ffd60a' }}>${fmtPrice(tr.limit_price)}</span>
                   </span>
-                  {tr.tp_price && <span style={{ fontSize: '.62rem', color: 'var(--muted)' }}>TP: <span style={{ color: 'var(--long)' }}>${parseFloat(String(tr.tp_price)).toLocaleString()}</span></span>}
-                  {tr.sl_price && <span style={{ fontSize: '.62rem', color: 'var(--muted)' }}>SL: <span style={{ color: 'var(--short)' }}>${parseFloat(String(tr.sl_price)).toLocaleString()}</span></span>}
+                  {tr.tp_price && <span style={{ fontSize: '.62rem', color: 'var(--muted)' }}>TP: <span style={{ color: 'var(--long)' }}>${fmtPrice(tr.tp_price)}</span></span>}
+                  {tr.sl_price && <span style={{ fontSize: '.62rem', color: 'var(--muted)' }}>SL: <span style={{ color: 'var(--short)' }}>${fmtPrice(tr.sl_price)}</span></span>}
                   <span style={{ marginLeft: 'auto', fontSize: '.6rem', color: hoursLeft !== null && hoursLeft < 24 ? '#ff9f0a' : 'var(--dim)' }}>
                     {hoursLeft !== null ? `${t('expires_in_h')} ${hoursLeft}h` : ''}
                   </span>
@@ -400,10 +400,10 @@ export default function TradesPanel({ defaultAccount = 'user', onTabMounted }: T
                   <span className={`tag tag-${tr.direction}`}>{tr.direction.toUpperCase()}</span>
                   <span style={{ fontSize: '.62rem', color: 'var(--muted)' }}>{tr.leverage}× · ${parseFloat(String(tr.amount)).toFixed(2)}</span>
                   <span style={{ marginLeft: 'auto', fontSize: '.62rem', color: 'var(--dim)' }}>
-                    {fmtAlmaty(tr.created_at)}
+                    {fmtLocal(tr.created_at)}
                   </span>
                   <span style={{ fontSize: '.62rem', color: 'var(--muted)' }}>
-                    {cur ? '$' + cur.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 }) : '—'}
+                    {cur ? '$' + cur.toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 6 }) : '—'}
                   </span>
                   {pct != null && (
                     <span style={{ fontWeight: 700, fontSize: '.72rem', color: pct >= 0 ? 'var(--long)' : 'var(--short)' }}>
@@ -481,7 +481,7 @@ export default function TradesPanel({ defaultAccount = 'user', onTabMounted }: T
                             })()
                           : '—'}
                     </td>
-                    <td>{fmtAlmaty(tr.closed_at || tr.created_at)}</td>
+                    <td>{fmtLocal(tr.closed_at || tr.created_at)}</td>
                     <td>
                       {tr.status === 'closed' && (
                         <button className="obtn" style={{ fontSize: '.58rem' }} onClick={() => setPathTrade(tr)} title={t('trade_path_btn')}>

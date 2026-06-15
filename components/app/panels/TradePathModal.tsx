@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import * as klinecharts from 'klinecharts'
 import { LineType } from 'klinecharts'
 import { useLang } from '@/contexts/LangContext'
-import { fmtAlmaty } from '@/lib/fmt'
+import { fmtLocal } from '@/lib/fmt'
 
 interface Trade {
   id: number; pair: string; direction: string; order_type: string
@@ -192,7 +192,7 @@ export default function TradePathModal({ trade, onClose }: Props) {
   const pnl = Number(trade.pnl) || 0
   const pnlPct = Number(trade.pnl_pct) || 0
   const isWin = pnl >= 0
-  const period = `${fmtAlmaty(trade.created_at)} → ${trade.closed_at ? fmtAlmaty(trade.closed_at) : '—'}`
+  const period = `${fmtLocal(trade.created_at)} → ${trade.closed_at ? fmtLocal(trade.closed_at) : '—'}`
 
   return (
     <div

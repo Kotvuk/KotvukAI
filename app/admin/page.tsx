@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
-import { fmtAlmaty } from '@/lib/fmt'
+import { fmtLocal } from '@/lib/fmt'
 
 const TIER_COLORS: Record<string, string> = {
   free: '#666', starter: '#0a84ff', pro: '#30d158', elite: '#ffd60a',
@@ -210,7 +210,7 @@ export default function AdminPage() {
                     </td>
 
                     <td style={{ padding: '10px 12px', color: expired ? '#ff453a' : '#555', whiteSpace: 'nowrap' }}>
-                      {u.expires_at ? fmtAlmaty(u.expires_at) : '∞'}
+                      {u.expires_at ? fmtLocal(u.expires_at) : '∞'}
                     </td>
 
                     <td style={{ padding: '8px 12px' }}>
@@ -240,7 +240,7 @@ export default function AdminPage() {
                     </td>
 
                     <td style={{ padding: '10px 12px', color: '#444', whiteSpace: 'nowrap' }}>
-                      {u.created_at ? fmtAlmaty(u.created_at) : '—'}
+                      {u.created_at ? fmtLocal(u.created_at) : '—'}
                     </td>
 
                     <td style={{ padding: '10px 12px' }}>

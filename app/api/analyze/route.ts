@@ -215,6 +215,7 @@ export async function POST(req: NextRequest) {
               status:       isLimit ? 'pending' : 'open',
               expires_at:   isLimit ? expiresAt.toISOString() : null,
               timeframe:    normalizeTf(timeframe),
+              signal_id:    signal.id,
             })
             if (balance > 0) await adjustBalance(user.id, -Math.min(tradeAmount, balance))
             tradeCreated = true

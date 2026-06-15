@@ -151,6 +151,7 @@ export async function GET(req: NextRequest) {
         status:      isLimit ? 'pending' : 'open',
         expires_at:  isLimit ? expiresAt.toISOString() : null,
         timeframe:   interval,
+        signal_id:   signal.id,
       })
       if (tradeAmount > 0) await adjustBalance(user.id, -tradeAmount)
 

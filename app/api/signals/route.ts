@@ -8,7 +8,8 @@ export async function GET(req: NextRequest) {
   if (!user) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 })
   const limit  = Math.min(1000, Math.max(1, parseInt(req.nextUrl.searchParams.get('limit')  || '100')))
   const offset = Math.max(0, parseInt(req.nextUrl.searchParams.get('offset') || '0'))
-  const signals = await getSignals(user.id, limit, offset)
+  const tradableOnly = req.nextUrl.searchParams.get('tradable') === '1'
+  const signals = await getSignals(user.id, limit, offset, tradableOnly)
   return NextResponse.json({ ok: true, signals })
 }
 

@@ -169,7 +169,7 @@ async function analyzeOne(
       return { ok: true, verdict: 'SKIP', confidence: 45, error: 'groq fallback skipped' }
     }
 
-    await saveSignal(userId, {
+    const signal = await saveSignal(userId, {
       pair: pairFmt, timeframe: tfLabel,
       final_verdict:    final.verdict,
       final_confidence: final.confidence,
@@ -273,6 +273,7 @@ async function analyzeOne(
         status:      isLimit ? 'pending' : 'open',
         expires_at:  isLimit ? expiresAt.toISOString() : null,
         timeframe:   interval,
+        signal_id:   signal.id,
       })
       await adjustBalance(userId, -tradeAmount)
 
@@ -328,7 +329,7 @@ export async function GET(req: NextRequest) {
   const userWatchlist = await getUserWatchlist(Number(user.id))
   const rawList: string[] = (userWatchlist?.length ? userWatchlist : DEFAULT_WATCHLIST)
     .filter(s => !BAD_PAIRS.has(s))
-  const watchlist = (await priceSortedWatchlist(rawList)).slice(0, 24)
+  const watchlist = (await priceSortedWatchlist(rawList)).slice(0, 25)
   const batchIndex = parseInt(req.nextUrl.searchParams.get('batch') || '0', 10)
   const batchSize  = 6
   const start      = batchIndex * batchSize

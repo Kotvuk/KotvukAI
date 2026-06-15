@@ -299,6 +299,8 @@
   "paper_trading_note": "⚠️ This is a virtual account (Paper Trading). No real funds are used.",
   "manage_sub_btn": "⚙ Manage Subscription / Cancel",
   "sub_loading": "Loading...",
+  "cancel_sub_confirm": "Cancel auto-renewal? Your current plan stays active until the paid period ends, then auto-renewal will not trigger.",
+  "sub_cancelled": "Auto-renewal cancelled",
   "export_data_title": "Export Data",
   "export_trades_btn": "📥 Trades CSV",
   "export_signals_btn": "📥 Signals CSV",

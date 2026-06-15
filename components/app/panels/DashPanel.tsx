@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useLang } from '@/contexts/LangContext'
-import { fmtAlmaty } from '@/lib/fmt'
+import { fmtLocal } from '@/lib/fmt'
 
 interface Signal {
   id: number; pair: string; timeframe: string
@@ -49,7 +49,7 @@ export default function DashPanel() {
   async function load() {
     const [sr, dr, br] = await Promise.all([
       fetch('/api/stats'),
-      fetch('/api/signals?limit=10'),
+      fetch('/api/signals?limit=10&tradable=1'),
       fetch('/api/analyze/auto/log'),
     ])
     if (sr.ok) { const s = await sr.json(); if (s.ok) setStats(s) }
@@ -81,7 +81,7 @@ export default function DashPanel() {
               <tbody>
                 {signals.length ? signals.map(s => (
                   <tr key={s.id}>
-                    <td style={{ whiteSpace: 'nowrap', fontSize: '.6rem', color: 'var(--dim)' }}>{fmtAlmaty(s.created_at)}</td>
+                    <td style={{ whiteSpace: 'nowrap', fontSize: '.6rem', color: 'var(--dim)' }}>{fmtLocal(s.created_at)}</td>
                     <td>{s.pair}</td>
                     <td>{s.timeframe}</td>
                     <td><span className={`tag tag-${vc(s.final_verdict)}`}>{s.final_verdict || '—'}</span></td>
@@ -150,7 +150,7 @@ export default function DashPanel() {
                 <tbody>
                   {botLog.map(s => (
                     <tr key={s.id}>
-                      <td style={{ whiteSpace: 'nowrap' }}>{fmtAlmaty(s.created_at)}</td>
+                      <td style={{ whiteSpace: 'nowrap' }}>{fmtLocal(s.created_at)}</td>
                       <td>{s.pair}</td>
                       <td>{s.timeframe}</td>
                       <td><span className={`tag tag-${vc(s.final_verdict)}`}>{s.final_verdict || '—'}</span></td>

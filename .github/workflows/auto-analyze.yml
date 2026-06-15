@@ -7,7 +7,7 @@ name: Auto Analysis
 #   Every  1 h   → also runs 1h TF   (when minute == 0)
 #   Every  4 h   → also runs 4h TF   (when minute == 0 AND hour % 4 == 0)
 #
-# PAIRS: top-15 sorted by price (BTC→ETH→BNB…), batches 0/1/2 (5 pairs each)
+# PAIRS: top-30 sorted by price (BTC→ETH→BNB…), batches 0-4 (6 pairs each)
 #
 # ⚠️ QUOTA NOTE (private repos — 2 000 min/month free tier):
 #   */5 cron × ~2 min/run × 12 runs/hr × 24h × 30 days ≈ 17 280 min/month
@@ -68,7 +68,7 @@ jobs:
           PIDS=()
 
           for TF in $TF_LIST; do
-            for BATCH in 0 1 2; do
+            for BATCH in 0 1 2 3 4; do
               curl -s --max-time 70 \
                 "${APP_URL}/api/analyze/auto?secret=${SECRET}&batch=${BATCH}&tf=${TF}" \
                 -o "/tmp/r_${TF}_${BATCH}.json" &
@@ -84,7 +84,7 @@ jobs:
 
           # Print results
           for TF in $TF_LIST; do
-            for BATCH in 0 1 2; do
+            for BATCH in 0 1 2 3 4; do
               echo "=== ${TF} Batch ${BATCH} ==="
               cat "/tmp/r_${TF}_${BATCH}.json" 2>/dev/null || echo "failed"
             done

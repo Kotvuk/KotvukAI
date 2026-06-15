@@ -12,7 +12,7 @@ const TIER_LABELS: Record<string, { name: string; color: string; analyses: numbe
   elite:   { name: 'Elite',   color: '#ffd60a', analyses: 100 },
 }
 
-interface SubInfo { tier: string; analyses_today: number; remaining: number; limit: number; has_ls_sub?: boolean }
+interface SubInfo { tier: string; analyses_today: number; remaining: number; limit: number; has_cryptomus_sub?: boolean }
 
 export default function SettingsPanel() {
   const { t, lang, setLang } = useLang()
@@ -50,7 +50,7 @@ export default function SettingsPanel() {
     if (user?.displayName) setNickname(user.displayName)
 
     fetch('/api/subscription').then(r => r.json()).then(d => {
-      if (d.ok) setSub({ tier: d.subscription.tier, analyses_today: d.analyses_today, remaining: d.remaining, limit: d.limit, has_ls_sub: d.subscription.has_ls_sub })
+      if (d.ok) setSub({ tier: d.subscription.tier, analyses_today: d.analyses_today, remaining: d.remaining, limit: d.limit, has_cryptomus_sub: d.subscription.has_cryptomus_sub })
     }).catch(() => {})
   }, [user])
 
@@ -91,13 +91,16 @@ export default function SettingsPanel() {
     setPurchasing(null)
   }
 
-  async function openPortal() {
+  async function cancelSubscription() {
+    if (!confirm(t('cancel_sub_confirm'))) return
     setPortalLoading(true)
     try {
       const r = await fetch('/api/billing/portal', { method: 'POST' })
       const d = await r.json()
-      if (d.ok && d.url) window.location.href = d.url
-      else showToast(d.error || t('no_active_sub'), 'err')
+      if (d.ok) {
+        showToast(t('sub_cancelled'))
+        setSub(prev => prev ? { ...prev, has_cryptomus_sub: false } : prev)
+      } else showToast(d.error || t('no_active_sub'), 'err')
     } catch { showToast(t('conn_error'), 'err') }
     setPortalLoading(false)
   }
@@ -216,9 +219,9 @@ export default function SettingsPanel() {
             })}
           </div>
 
-          {sub && sub.tier !== 'free' && sub.has_ls_sub && (
+          {sub && sub.tier !== 'free' && sub.has_cryptomus_sub && (
             <button
-              onClick={openPortal}
+              onClick={cancelSubscription}
               disabled={portalLoading}
               style={{
                 background: 'transparent', border: '1px solid var(--border)',

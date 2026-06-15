@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useLang } from '@/contexts/LangContext'
 import { showToast } from '@/components/ui/Toast'
-import { fmtAlmaty } from '@/lib/fmt'
+import { fmtLocal } from '@/lib/fmt'
 
 interface Notif { id: number; message: string; read: boolean; created_at: string }
 
@@ -44,7 +44,7 @@ export default function NotifsPanel({ onCount }: { onCount?: (n: number) => void
           ) : items.map(n => (
             <div className="no-i" key={n.id} style={{ borderLeftColor: !n.read ? 'var(--cyan)' : 'transparent' }}>
               <span className="no-m">{n.message}</span>
-              <span className="no-t">{fmtAlmaty(n.created_at)}</span>
+              <span className="no-t">{fmtLocal(n.created_at)}</span>
             </div>
           ))}
         </div>

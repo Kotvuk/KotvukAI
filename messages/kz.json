@@ -260,7 +260,6 @@
   "lp_footer_rights": "© 2026 KotvukAI. Барлық құқықтар қорғалған.",
   "lp_privacy_title": "Құпиялылық саясаты",
   "lp_privacy_date": "Соңғы жаңарту: 2026 жылдың мамыры",
-
   "forgot_password": "Құпия сөзді ұмыттыңыз ба?",
   "forgot_send": "Хат жіберу",
   "forgot_back": "← Кіруге оралу",
@@ -269,10 +268,8 @@
   "forgot_sent_check": "Поштаңызды тексеріп, нұсқауларды орындаңыз.",
   "password_min_6": "Кемінде 6 таңба",
   "enter_email_required": "Email енгізіңіз",
-
   "initializing": "инициализация...",
   "admin_btn": "Админ",
-
   "my_account": "Менің шотым",
   "ai_account": "ЖИ шоты",
   "account_desc_both": "ЖИ шоты — сигналдар бойынша автоматты сауда. Менің шотым — сіздің қолмен позицияларыңыз.",
@@ -290,7 +287,6 @@
   "ai_data_loaded_msg": "AI талдау деректері жүктелді",
   "order_cancelled_msg": "Ордер болдырылмады",
   "tp_sl_updated_msg": "TP/SL жаңартылды",
-
   "ai_trading_title": "AI сауда параметрлері",
   "ai_trading_desc": "Талдаудан кейін AI ашатын автоматты сауда параметрлері.",
   "deposit_balance_label": "Депозит балансы ($)",
@@ -304,7 +300,6 @@
   "export_data_title": "Деректерді экспорттау",
   "export_trades_btn": "📥 Сауда CSV",
   "export_signals_btn": "📥 Сигналдар CSV",
-
   "rm_balance_lbl": "БАЛАНС",
   "rm_risk_lbl": "ТӘУЕКЕЛ $",
   "rm_position_lbl": "ПОЗИЦИЯ",
@@ -348,7 +343,6 @@
   "similar_setups_lbl": "Ұқсас сетап тарихы",
   "smc_confluence_lbl": "SMC конфлюэнс",
   "limit_order_at": "Лимиттік ордер бағасы",
-
   "backtest_title_lbl": "📊 OB СТРАТЕГИЯ БЭКТЕСТ",
   "backtest_last_candles_lbl": "соңғы 400 шам",
   "backtest_analyzing_lbl": "Тарихи деректерді талдау...",
@@ -358,10 +352,8 @@
   "backtest_by_quality_lbl": "OB сапасы бойынша",
   "backtest_loading_lbl": "Жүктелуде...",
   "backtest_refresh_lbl": "🔄 Жаңарту",
-
   "chat_done_lbl": "Дайын!",
   "chat_conn_error_lbl": "Қосылу қатесі. GROQ_API_KEY тексеріңіз.",
-
   "draw_custom_color_lbl": "Өзгертпелі түс",
   "draw_fill_color_lbl": "Толтыру түсі",
   "draw_border_color_lbl": "Жиек түсі",
@@ -385,7 +377,6 @@
   "draw_polyline_lbl": "Сынықты сызық",
   "draw_fibonacci_lbl": "Фибоначчи",
   "draw_settings_lbl": "Параметрлер",
-
   "ob_step1_title": "KotvukAI-ге қош келдіңіз",
   "ob_step1_body": "KotvukAI — Smart Money Concepts негізіндегі AI криптоаналитик. Автоматты Order Blocks, Fair Value Gaps табады, HTF Bias анықтайды және LONG/SHORT сигналдарын жасайды.",
   "ob_step2_title": "Қалай пайдалануға болады",
@@ -396,7 +387,6 @@
   "ob_next_lbl": "Келесі →",
   "ob_start_lbl": "Бастау",
   "ob_skip_lbl": "Өткізу",
-
   "subscription_title": "Жазылым",
   "plan_active_lbl": "✓ Белсенді",
   "subscribe_btn": "Жазылу",
@@ -459,13 +449,11 @@
   "balance_add_btn": "Толықтыру",
   "balance_subtract_btn": "Алу",
   "balance_cancel_btn": "Болдырмау",
-
   "verify_email_title": "Поштаңызды тексеріңіз",
   "verify_email_body": "{email} мекенжайына растау сілтемесі жіберілді. Аккаунтты белсендіру үшін оны басыңыз.",
   "verify_email_resend": "Қайта жіберу",
   "verify_email_resent": "Жіберілді!",
   "email_not_verified": "Email расталмаған. Кіріс қалтаңызды тексеріңіз.",
-
   "price_near_bull_ob": "Баға бычий OB {range} жанында",
   "price_near_bear_ob": "Баға аюлы OB {range} жанында",
   "price_near_liq": "Баға {type} {price} жанында",
@@ -480,7 +468,6 @@
   "ai_analysis_subtitle": "4-қадамды SMC талдау · KotvukAI",
   "amount_placeholder": "Сома ($)",
   "after_label": "Кейін:",
-
   "hist_tab_history": "Тарих",
   "hist_tab_review": "Қателерді талдау",
   "hist_tab_quiz": "Квиз",
@@ -501,9 +488,7 @@
   "quiz_next": "Келесі →",
   "quiz_result_btn": "Нәтиже",
   "quiz_restart": "Қайта бастау",
-
   "got_it_btn": "Түсінікті",
-
   "similar_setups_title": "Ұқсас сетаптар — {pair} {tf}",
   "same_signal_filter_lbl": "Бірдей сигнал ({verdict})",
   "all_signals_filter_lbl": "Барлық сигналдар",
@@ -522,7 +507,6 @@
   "virtual_balance_hint": "Виртуалды баланс — нақты қаражат емес",
   "ob_card_title_lbl": "ORDER BLOCK — КІРУ АЙМАҒЫ",
   "candles_abbr_lbl": "шырпы.",
-
   "review_intro_lbl": "Залалды мәмілені таңдап, қате түрін көрсетіп, сабақты жазыңыз.",
   "loss_trades_title_lbl": "ЗАЛАЛДЫ МӘМІЛЕЛЕР ({count})",
   "no_loss_trades_lbl": "\"loss\" деп белгіленген залалды мәмілелер жоқ",
@@ -540,7 +524,6 @@
   "quiz_errors_lbl": "ҚАТЕЛЕР:",
   "quiz_your_answer_lbl": "Сіздің жауабыңыз:",
   "quiz_correct_answer_lbl": "Дұрыс:",
-
   "err_fomo_lbl": "FOMO кіру",
   "err_fomo_desc": "Растаусыз кіру, қозғалысты қуу",
   "err_htf_bias_lbl": "HTF-ға қарсы",
@@ -554,7 +537,6 @@
   "err_session_lbl": "Қате сессия",
   "err_session_desc": "Белсенді емес сағаттарда сауда",
   "err_other_lbl": "Басқа",
-
   "rec_fomo_lbl": "Кіруден бұрын OB/FVG ретестін күтіңіз. Лимиттік ордер қолданыңыз.",
   "rec_htf_bias_lbl": "Әр кіруден бұрын 4H және 1D-дағы HTF bias тексеріңіз. Тек HTF бағытында саудалаңыз.",
   "rec_no_ob_lbl": "Тек расталған A+/A OB немесе толтырылмаған FVG жанында кіріңіз.",
@@ -562,17 +544,23 @@
   "rec_risk_lbl": "Мәміле басына ең көбі 1-2% тәуекел. Кіруден бұрын R:R кемінде 1:1.5 болуы тиіс.",
   "rec_session_lbl": "Тек белсенді сағаттарда саудалаңыз: Лондон (7-16 UTC) және NY (13-21 UTC). Тұрақсыз активтер үшін азиялық сессиядан аулақ болыңыз.",
   "rec_other_lbl": "Жоғарыдағы өріске нақты қатені тіркеп, оны болдырмау ережесін жасаңыз.",
-
   "confluence_abbr_lbl": "Конфлюэнс",
   "glossary_protip_lbl": " — кіру үшін кемінде 3 фактор. Өтімділік сүпірінсіз — күтіңіз.",
-
   "csv_trades_header": "ID,Жұп,Бағыт,Түр,Сомасы,Кіру,TP,SL,Левередж,Мәртебе,PnL,PnL%,Күні",
   "csv_signals_header": "ID,Жұп,ТШ,Вердикт,Сенімділік,Кіру,TP,SL,Левередж,Нәтиже,PnL%,Күні",
-
   "ins_structure_lbl": "ҚҰРЫЛЫМ",
   "ins_zone_lbl": "АЙМАҚ",
   "ins_liquidity_lbl": "ӨТІМДІЛІК",
   "ins_waiting_lbl": "КҮТУ",
   "ins_balance_lbl": "БАЛАНС",
-  "ins_condition_lbl": "ШАРТ"
+  "ins_condition_lbl": "ШАРТ",
+  "market_title": "Нарық",
+  "market_crypto": "Криптовалюта",
+  "market_forex": "Форекс",
+  "market_desc_crypto": "Криптовалюта жұптары · Binance Futures деректері",
+  "market_desc_forex": "Валюта жұптары · Twelve Data · Лондон және Нью-Йорк сессиялары",
+  "lp_badge_fx": "Форекс-трейдерлерге арналған AI платформа",
+  "lp_hero_line1_fx": "AI форексті талдайды.",
+  "lp_hero_desc_fx": "Валюта жұптары бойынша кіру нүктесі, TP және SL бар сигналдар. Telegram хабарламалары, мажорлар мен кросстар, Лондон және Нью-Йорк сессиялары.",
+  "total_pnl": "PnL барлығы"
 }

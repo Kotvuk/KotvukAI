@@ -3,22 +3,33 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useLang } from '@/contexts/LangContext'
 import { useTheme } from '@/contexts/ThemeContext'
+import { useMarket } from '@/contexts/MarketContext'
+import Logo from '@/components/app/Logo'
 
 interface Ticker { price: string; change: string; up: boolean }
 
-const SYMS = [
+const CRYPTO_SYMS = [
   { k: 'btc', sym: 'BTCUSDT', label: 'BTC' },
   { k: 'eth', sym: 'ETHUSDT', label: 'ETH' },
   { k: 'sol', sym: 'SOLUSDT', label: 'SOL' },
   { k: 'bnb', sym: 'BNBUSDT', label: 'BNB' },
 ]
 
+const FOREX_SYMS = [
+  { k: 'eurusd', sym: 'EUR/USD', label: 'EURUSD' },
+  { k: 'gbpusd', sym: 'GBP/USD', label: 'GBPUSD' },
+  { k: 'usdjpy', sym: 'USD/JPY', label: 'USDJPY' },
+  { k: 'audusd', sym: 'AUD/USD', label: 'AUDUSD' },
+]
+
 export default function Header() {
   const { logout, user } = useAuth()
   const { t, lang } = useLang()
   const { theme, toggle } = useTheme()
+  const { market } = useMarket()
   const [time, setTime] = useState('')
   const [tickers, setTickers] = useState<Record<string, Ticker>>({})
+  const syms = market === 'forex' ? FOREX_SYMS : CRYPTO_SYMS
 
   useEffect(() => {
     const tick = () => setTime(new Date().toLocaleTimeString(lang, { timeZone: 'Asia/Almaty', hour: '2-digit', minute: '2-digit', second: '2-digit' }))
@@ -30,15 +41,17 @@ export default function Header() {
   useEffect(() => {
     async function fetchTickers() {
       try {
-        const r = await fetch('/api/ticker')
+        const r = await fetch(market === 'forex' ? '/api/ticker?market=forex' : '/api/ticker')
         if (!r.ok) return
         const data: Record<string, { price: number; change: number }> = await r.json()
         const next: Record<string, Ticker> = {}
-        for (const { k, sym } of SYMS) {
+        for (const { k, sym } of syms) {
           const d = data[sym]
           if (!d) continue
           next[k] = {
-            price: '$' + d.price.toLocaleString('en', { maximumFractionDigits: 4 }),
+            price: market === 'forex'
+              ? d.price.toLocaleString('en', { minimumFractionDigits: 4, maximumFractionDigits: 5 })
+              : '$' + d.price.toLocaleString('en', { maximumFractionDigits: 4 }),
             change: (d.change >= 0 ? '+' : '') + d.change.toFixed(2) + '%',
             up: d.change >= 0,
           }
@@ -46,19 +59,27 @@ export default function Header() {
         setTickers(next)
       } catch {}
     }
+    setTickers({})
     fetchTickers()
-    const iv = setInterval(fetchTickers, 15000)
+    const iv = setInterval(fetchTickers, market === 'forex' ? 60000 : 15000)
     return () => clearInterval(iv)
-  }, [])
+  }, [market])
 
   return (
     <div id="hdr">
       <div className="logo">
-        <div className="logo-mark" />
-        <span className="logo-text">{t('app_name')}</span>
+        {market === 'forex' ? (
+          <>
+            <div className="logo-mark" />
+            <span className="logo-text">{t('app_name')}</span>
+          </>
+        ) : (
+          <Logo />
+        )}
+        {market === 'forex' && <span className="fx-badge">FX</span>}
       </div>
       <div className="ticker">
-        {SYMS.map(({ k, label }) => (
+        {syms.map(({ k, label }) => (
           <div key={k} className="tick">
             <span className="tick-sym">{label}</span>
             <span className="tick-price">{tickers[k]?.price || '—'}</span>

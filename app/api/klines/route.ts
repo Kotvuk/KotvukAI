@@ -1,5 +1,6 @@
 export const maxDuration = 60
 import { NextRequest, NextResponse } from 'next/server'
+import { fetchForexCandles } from '@/lib/providers/twelvedata'
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
@@ -7,6 +8,18 @@ export async function GET(req: NextRequest) {
   const interval = searchParams.get('interval') || '1h'
   const limit    = searchParams.get('limit')    || '500'
   const endTime  = searchParams.get('endTime')  || ''
+  const market   = searchParams.get('market')   || 'crypto'
+
+  if (market === 'forex') {
+    try {
+      const candles = await fetchForexCandles(symbol, interval, Math.min(parseInt(limit) || 500, 1500))
+      const res = NextResponse.json(candles)
+      res.headers.set('Cache-Control', 'public, max-age=300, stale-while-revalidate=60')
+      return res
+    } catch (e: unknown) {
+      return NextResponse.json({ ok: false, error: e instanceof Error ? e.message : 'fetch error' }, { status: 500 })
+    }
+  }
 
   try {
     let url = `https://fapi.binance.com/fapi/v1/klines?symbol=${symbol}&interval=${interval}&limit=${Math.min(parseInt(limit) || 500, 1500)}`

@@ -17,6 +17,7 @@ interface Trade {
 interface Props {
   trade: Trade
   onClose: () => void
+  market?: 'crypto' | 'forex'
 }
 
 function pickInterval(durationMs: number): string {
@@ -88,7 +89,7 @@ try {
   })
 } catch {}
 
-export default function TradePathModal({ trade, onClose }: Props) {
+export default function TradePathModal({ trade, onClose, market = 'crypto' }: Props) {
   const { t } = useLang()
   const containerRef = useRef<HTMLDivElement>(null)
   const chartRef = useRef<any>(null)
@@ -125,7 +126,7 @@ export default function TradePathModal({ trade, onClose }: Props) {
 
     ;(async () => {
       try {
-        const sym = trade.pair.replace('/', '')
+        const sym = market === 'forex' ? trade.pair : trade.pair.replace('/', '')
         const created = new Date(trade.created_at).getTime()
         const closed = trade.closed_at ? new Date(trade.closed_at).getTime() : Date.now()
         const durationMs = Math.max(closed - created, 60_000)
@@ -136,7 +137,8 @@ export default function TradePathModal({ trade, onClose }: Props) {
         const limit = Math.min(Math.max(candlesNeeded, 20), 1500)
         const endTime = closed + 5 * candleMs
 
-        const r = await fetch(`/api/klines?symbol=${sym}&interval=${interval}&limit=${limit}&endTime=${endTime}`)
+        const mq = market === 'forex' ? '&market=forex' : ''
+        const r = await fetch(`/api/klines?symbol=${encodeURIComponent(sym)}&interval=${interval}&limit=${limit}&endTime=${endTime}${mq}`)
         const data: number[][] = await r.json()
         if (disposed || !chartRef.current) return
         if (!Array.isArray(data) || !data.length) { setError(true); setLoading(false); return }

@@ -1,4 +1,5 @@
 import { neon, type NeonQueryFunction } from '@neondatabase/serverless'
+import type { Market } from './markets'
 
 export const sql: NeonQueryFunction<false, false> = neon(process.env.DATABASE_URL!, {
   fetchOptions: { cache: 'no-store' },
@@ -36,6 +37,7 @@ export interface Signal {
   outcome: 'win' | 'loss' | 'expired' | null
   actual_pnl_pct: number | null
   raw_response: Record<string, unknown> | null
+  market: Market
   created_at: string
 }
 
@@ -58,6 +60,7 @@ export interface Trade {
   pnl_pct: number | null
   exit_price: number | null
   timeframe: string | null
+  market: Market
   signal_id: number | null
   closed_at: string | null
   created_at: string
@@ -228,19 +231,19 @@ export function normalizeTf(tf: string): string {
 const num = (v: number | null | undefined): number | null =>
   v == null || !Number.isFinite(v) ? null : v
 
-export async function saveSignal(userId: number, data: Partial<Signal>) {
+export async function saveSignal(userId: number, data: Partial<Signal>, market: Market = 'crypto') {
   if (data.timeframe) data.timeframe = normalizeTf(data.timeframe)
   const riskScore = num(data.final_risk_score)
   const rows = await sql`
     INSERT INTO signals (
       user_id, pair, timeframe, final_verdict, final_confidence,
-      final_entry, final_tp, final_sl, final_leverage, final_risk_score, raw_response
+      final_entry, final_tp, final_sl, final_leverage, final_risk_score, raw_response, market
     ) VALUES (
       ${userId}, ${data.pair!}, ${data.timeframe!}, ${data.final_verdict ?? null},
       ${num(data.final_confidence)}, ${num(data.final_entry)},
       ${num(data.final_tp)}, ${num(data.final_sl)},
       ${num(data.final_leverage)}, ${riskScore != null ? Math.round(riskScore) : null},
-      ${JSON.stringify(data.raw_response ?? {})}
+      ${JSON.stringify(data.raw_response ?? {})}, ${market}
     ) RETURNING *
   `
   return rows[0] as Signal
@@ -248,15 +251,15 @@ export async function saveSignal(userId: number, data: Partial<Signal>) {
 
 export const ENTRY_CONFIDENCE_THRESHOLD = 50
 
-export async function getSignals(userId: number, limit = 100, offset = 0, tradableOnly = false): Promise<Signal[]> {
+export async function getSignals(userId: number, limit = 100, offset = 0, market: Market = 'crypto', tradableOnly = false): Promise<Signal[]> {
   const rows = tradableOnly
     ? await sql`
-        SELECT * FROM signals WHERE user_id = ${userId}
+        SELECT * FROM signals WHERE user_id = ${userId} AND market = ${market}
           AND final_verdict IN ('LONG', 'SHORT') AND final_confidence >= ${ENTRY_CONFIDENCE_THRESHOLD}
         ORDER BY created_at DESC LIMIT ${limit} OFFSET ${offset}
       `
     : await sql`
-        SELECT * FROM signals WHERE user_id = ${userId}
+        SELECT * FROM signals WHERE user_id = ${userId} AND market = ${market}
         ORDER BY created_at DESC LIMIT ${limit} OFFSET ${offset}
       `
   return rows as Signal[]
@@ -273,7 +276,7 @@ export async function updateSignalOutcome(id: number, userId: number, outcome: s
   `
 }
 
-export async function getStats(userId: number) {
+export async function getStats(userId: number, market: Market = 'crypto') {
   const [statsRow] = await sql`
     SELECT
       COUNT(*) AS total,
@@ -282,15 +285,19 @@ export async function getStats(userId: number) {
       COUNT(*) FILTER (WHERE outcome = 'win')::float /
         NULLIF(COUNT(*) FILTER (WHERE outcome IN ('win','loss')), 0) * 100 AS win_rate,
       AVG(actual_pnl_pct) FILTER (WHERE outcome IN ('win','loss') AND actual_pnl_pct <> 'NaN'::numeric) AS avg_pnl_pct
-    FROM signals WHERE user_id = ${userId} AND final_verdict IN ('LONG','SHORT')
+    FROM signals WHERE user_id = ${userId} AND market = ${market} AND final_verdict IN ('LONG','SHORT')
   `
   const byPair = await sql`
     SELECT pair,
       COUNT(*) AS total,
       COUNT(*) FILTER (WHERE outcome = 'win')::float /
         NULLIF(COUNT(*) FILTER (WHERE outcome IN ('win','loss')), 0) * 100 AS win_rate
-    FROM signals WHERE user_id = ${userId} AND final_verdict IN ('LONG','SHORT')
+    FROM signals WHERE user_id = ${userId} AND market = ${market} AND final_verdict IN ('LONG','SHORT')
     GROUP BY pair ORDER BY total DESC LIMIT 10
+  `
+  const [tradesRow] = await sql`
+    SELECT ROUND(SUM(pnl_pct)::numeric, 2) AS total_pnl_pct
+    FROM trades WHERE user_id = ${userId} AND account_type = 'ai' AND status = 'closed'
   `
   const resolved = Number(statsRow.resolved ?? 0)
   return {
@@ -299,6 +306,7 @@ export async function getStats(userId: number) {
     avg_confidence: statsRow.avg_confidence,
     win_rate: resolved >= 3 ? (statsRow.win_rate ? Math.round(Number(statsRow.win_rate)) : null) : null,
     avg_pnl_pct: statsRow.avg_pnl_pct ? Number(statsRow.avg_pnl_pct).toFixed(1) : null,
+    total_pnl_pct: tradesRow?.total_pnl_pct != null ? Number(tradesRow.total_pnl_pct).toFixed(1) : null,
     by_pair: byPair.map(r => ({
       pair: r.pair,
       total: Number(r.total),
@@ -307,11 +315,11 @@ export async function getStats(userId: number) {
   }
 }
 
-export async function getAdvancedStats(userId: number) {
+export async function getAdvancedStats(userId: number, market: Market = 'crypto') {
   const rows = await sql`
     SELECT actual_pnl_pct, outcome
     FROM signals
-    WHERE user_id = ${userId} AND outcome IS NOT NULL AND actual_pnl_pct IS NOT NULL
+    WHERE user_id = ${userId} AND market = ${market} AND outcome IS NOT NULL AND actual_pnl_pct IS NOT NULL
     ORDER BY created_at ASC
   `
   if (!rows.length) return null
@@ -358,10 +366,11 @@ export async function getTrades(
   accountType?: 'user' | 'ai',
   limit = 200,
   offset = 0,
+  market: Market = 'crypto',
 ): Promise<Trade[]> {
   const rows = accountType
-    ? await sql`SELECT * FROM trades WHERE user_id = ${userId} AND account_type = ${accountType} ORDER BY created_at DESC LIMIT ${limit} OFFSET ${offset}`
-    : await sql`SELECT * FROM trades WHERE user_id = ${userId} ORDER BY created_at DESC LIMIT ${limit} OFFSET ${offset}`
+    ? await sql`SELECT * FROM trades WHERE user_id = ${userId} AND account_type = ${accountType} AND market = ${market} ORDER BY created_at DESC LIMIT ${limit} OFFSET ${offset}`
+    : await sql`SELECT * FROM trades WHERE user_id = ${userId} AND market = ${market} ORDER BY created_at DESC LIMIT ${limit} OFFSET ${offset}`
   return rows as Trade[]
 }
 
@@ -370,15 +379,15 @@ export async function getTradeById(id: number, userId: number): Promise<Trade | 
   return (rows[0] as Trade) || null
 }
 
-export async function createTrade(userId: number, data: Partial<Trade>): Promise<Trade> {
+export async function createTrade(userId: number, data: Partial<Trade>, market: Market = 'crypto'): Promise<Trade> {
   const rows = await sql`
     INSERT INTO trades (user_id, pair, direction, order_type, amount, entry_price, tp_price, sl_price,
-                        leverage, account_type, status, limit_price, expires_at, timeframe, signal_id)
+                        leverage, account_type, status, limit_price, expires_at, timeframe, market, signal_id)
     VALUES (${userId}, ${data.pair!}, ${data.direction!}, ${data.order_type ?? 'market'},
             ${data.amount!}, ${data.entry_price ?? null}, ${data.tp_price ?? null},
             ${data.sl_price ?? null}, ${data.leverage ?? 1}, ${data.account_type ?? 'user'},
             ${data.status ?? 'open'}, ${data.limit_price ?? null}, ${data.expires_at ?? null},
-            ${data.timeframe ?? null}, ${data.signal_id ?? null})
+            ${data.timeframe ?? null}, ${data.market ?? market}, ${data.signal_id ?? null})
     RETURNING *
   `
   return rows[0] as Trade
@@ -424,12 +433,12 @@ export async function clearNotifications(userId: number) {
   await sql`DELETE FROM notifications WHERE user_id = ${userId}`
 }
 
-export async function getSignalsForPair(userId: number, pair: string, limit = 10): Promise<Signal[]> {
+export async function getSignalsForPair(userId: number, pair: string, limit = 10, market: Market = 'crypto'): Promise<Signal[]> {
   const rows = await sql`
     SELECT id, pair, timeframe, final_verdict, final_confidence,
            final_entry, final_tp, final_sl, final_leverage, outcome, actual_pnl_pct, raw_response, created_at
     FROM signals
-    WHERE user_id = ${userId} AND pair = ${pair}
+    WHERE user_id = ${userId} AND pair = ${pair} AND market = ${market}
     ORDER BY created_at DESC LIMIT ${limit}
   `
   return rows as Signal[]
@@ -497,16 +506,16 @@ export interface PairTier {
   consecutiveLosses: number
 }
 
-export async function getPairTier(pair: string, userId?: number): Promise<PairTier> {
+export async function getPairTier(pair: string, userId?: number, market: Market = 'crypto'): Promise<PairTier> {
   const rows = userId != null
     ? await sql`
         SELECT outcome FROM signals
-        WHERE pair = ${pair} AND user_id = ${userId} AND outcome IN ('win','loss')
+        WHERE pair = ${pair} AND user_id = ${userId} AND market = ${market} AND outcome IN ('win','loss')
         ORDER BY created_at DESC LIMIT 10
       `
     : await sql`
         SELECT outcome FROM signals
-        WHERE pair = ${pair} AND outcome IN ('win','loss')
+        WHERE pair = ${pair} AND market = ${market} AND outcome IN ('win','loss')
         ORDER BY created_at DESC LIMIT 10
       `
 
@@ -531,10 +540,10 @@ export async function getPairTier(pair: string, userId?: number): Promise<PairTi
   return { tier, resolved, wins, losses, winRate, consecutiveLosses }
 }
 
-export async function getPendingSignals(userId: number): Promise<Signal[]> {
+export async function getPendingSignals(userId: number, market: Market = 'crypto'): Promise<Signal[]> {
   const rows = await sql`
     SELECT * FROM signals
-    WHERE user_id = ${userId}
+    WHERE user_id = ${userId} AND market = ${market}
       AND outcome IS NULL
       AND final_verdict IN ('LONG','SHORT')
       AND final_tp IS NOT NULL
@@ -890,7 +899,9 @@ export async function initDB() {
   await sql`ALTER TABLE trades ADD COLUMN IF NOT EXISTS expires_at TIMESTAMPTZ`
   await sql`ALTER TABLE trades ADD COLUMN IF NOT EXISTS exit_price NUMERIC`
   await sql`ALTER TABLE trades ADD COLUMN IF NOT EXISTS timeframe TEXT`
+  await sql`ALTER TABLE trades ADD COLUMN IF NOT EXISTS market TEXT NOT NULL DEFAULT 'crypto'`
   await sql`ALTER TABLE trades ADD COLUMN IF NOT EXISTS signal_id INTEGER`
+  await sql`ALTER TABLE signals ADD COLUMN IF NOT EXISTS market TEXT NOT NULL DEFAULT 'crypto'`
   await sql`
     CREATE TABLE IF NOT EXISTS chart_drawings (
       id SERIAL PRIMARY KEY,

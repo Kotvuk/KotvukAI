@@ -260,7 +260,6 @@
   "lp_footer_rights": "© 2026 KotvukAI. Все права защищены.",
   "lp_privacy_title": "Политика конфиденциальности",
   "lp_privacy_date": "Последнее обновление: май 2026 г.",
-
   "forgot_password": "Забыли пароль?",
   "forgot_send": "Отправить письмо",
   "forgot_back": "← Назад ко входу",
@@ -269,10 +268,8 @@
   "forgot_sent_check": "Проверьте почту и следуйте инструкции.",
   "password_min_6": "Минимум 6 символов",
   "enter_email_required": "Введите email",
-
   "initializing": "инициализация...",
   "admin_btn": "Админ",
-
   "my_account": "Мой счёт",
   "ai_account": "Счёт ИИ",
   "account_desc_both": "Счёт ИИ — автоматические сделки по сигналам AI. Мой счёт — ваши ручные позиции.",
@@ -290,7 +287,6 @@
   "ai_data_loaded_msg": "Данные из AI анализа загружены",
   "order_cancelled_msg": "Ордер отменён",
   "tp_sl_updated_msg": "TP/SL обновлены",
-
   "ai_trading_title": "Настройки AI-трейдинга",
   "ai_trading_desc": "Параметры для автоматических сделок, которые открывает AI после анализа.",
   "deposit_balance_label": "Баланс депозита ($)",
@@ -304,7 +300,6 @@
   "export_data_title": "Экспорт данных",
   "export_trades_btn": "📥 Сделки CSV",
   "export_signals_btn": "📥 Сигналы CSV",
-
   "rm_balance_lbl": "БАЛАНС",
   "rm_risk_lbl": "РИСК $",
   "rm_position_lbl": "ПОЗИЦИЯ",
@@ -348,7 +343,6 @@
   "similar_setups_lbl": "История похожих сетапов",
   "smc_confluence_lbl": "SMC конфлюэнс",
   "limit_order_at": "Лимитный ордер по",
-
   "backtest_title_lbl": "📊 БЭКТЕСТ OB-СТРАТЕГИИ",
   "backtest_last_candles_lbl": "последние 400 свечей",
   "backtest_analyzing_lbl": "Анализ исторических данных...",
@@ -358,10 +352,8 @@
   "backtest_by_quality_lbl": "По качеству OB",
   "backtest_loading_lbl": "Загрузка...",
   "backtest_refresh_lbl": "🔄 Обновить",
-
   "chat_done_lbl": "Готово!",
   "chat_conn_error_lbl": "Ошибка соединения. Проверьте GROQ_API_KEY.",
-
   "draw_custom_color_lbl": "Свой цвет",
   "draw_fill_color_lbl": "Цвет заливки",
   "draw_border_color_lbl": "Цвет рамки",
@@ -385,7 +377,6 @@
   "draw_polyline_lbl": "Траектория",
   "draw_fibonacci_lbl": "Фибоначчи",
   "draw_settings_lbl": "Настройки",
-
   "ob_step1_title": "Добро пожаловать в KotvukAI",
   "ob_step1_body": "KotvukAI — AI-аналитик криптовалют на основе Smart Money Concepts. Автоматически находит Order Blocks, Fair Value Gaps, определяет HTF Bias и генерирует сигналы LONG/SHORT.",
   "ob_step2_title": "Как пользоваться",
@@ -396,7 +387,6 @@
   "ob_next_lbl": "Далее →",
   "ob_start_lbl": "Начать работу",
   "ob_skip_lbl": "Пропустить",
-
   "subscription_title": "Подписка",
   "plan_active_lbl": "✓ Активен",
   "subscribe_btn": "Оформить",
@@ -459,13 +449,11 @@
   "balance_add_btn": "Пополнить",
   "balance_subtract_btn": "Снять",
   "balance_cancel_btn": "Отмена",
-
   "verify_email_title": "Проверьте почту",
   "verify_email_body": "Ссылка для подтверждения отправлена на {email}. Перейдите по ней, чтобы активировать аккаунт.",
   "verify_email_resend": "Отправить повторно",
   "verify_email_resent": "Отправлено!",
   "email_not_verified": "Email не подтверждён. Проверьте входящие.",
-
   "price_near_bull_ob": "Цена у бычьего OB {range}",
   "price_near_bear_ob": "Цена у медвежьего OB {range}",
   "price_near_liq": "Цена у {type} {price}",
@@ -480,7 +468,6 @@
   "ai_analysis_subtitle": "4-шаговый SMC анализ · KotvukAI",
   "amount_placeholder": "Сумма ($)",
   "after_label": "После:",
-
   "hist_tab_history": "История",
   "hist_tab_review": "Разбор ошибок",
   "hist_tab_quiz": "Квиз",
@@ -501,9 +488,7 @@
   "quiz_next": "Далее →",
   "quiz_result_btn": "Результат",
   "quiz_restart": "Пройти снова",
-
   "got_it_btn": "Понятно",
-
   "similar_setups_title": "Похожие сетапы — {pair} {tf}",
   "same_signal_filter_lbl": "Тот же сигнал ({verdict})",
   "all_signals_filter_lbl": "Все сигналы",
@@ -522,7 +507,6 @@
   "virtual_balance_hint": "Виртуальный баланс — не реальные средства",
   "ob_card_title_lbl": "ORDER BLOCK — ЗОНА ВХОДА",
   "candles_abbr_lbl": "св.",
-
   "review_intro_lbl": "Выберите убыточную сделку для разбора, укажите тип ошибки и запишите урок.",
   "loss_trades_title_lbl": "УБЫТОЧНЫЕ СДЕЛКИ ({count})",
   "no_loss_trades_lbl": "Нет убыточных сделок с отметкой \"loss\"",
@@ -540,7 +524,6 @@
   "quiz_errors_lbl": "ОШИБКИ:",
   "quiz_your_answer_lbl": "Ваш ответ:",
   "quiz_correct_answer_lbl": "Правильно:",
-
   "err_fomo_lbl": "FOMO вход",
   "err_fomo_desc": "Вход без подтверждения, погоня за движением",
   "err_htf_bias_lbl": "Против HTF",
@@ -554,7 +537,6 @@
   "err_session_lbl": "Неверная сессия",
   "err_session_desc": "Торговля в неактивные часы",
   "err_other_lbl": "Прочее",
-
   "rec_fomo_lbl": "Ждать ретест зоны OB/FVG перед входом. Использовать лимитный ордер.",
   "rec_htf_bias_lbl": "Перед каждым входом проверять HTF bias на 4H и 1D. Торговать только в направлении HTF.",
   "rec_no_ob_lbl": "Входить только у подтверждённых OB A+/A или незаполненных FVG.",
@@ -562,17 +544,23 @@
   "rec_risk_lbl": "Максимум 1-2% риска на сделку. R:R должен быть минимум 1:1.5 перед входом.",
   "rec_session_lbl": "Торговать только в активные часы: Лондон (7-16 UTC) и NY (13-21 UTC). Избегать азиатскую сессию для волатильных активов.",
   "rec_other_lbl": "Зафиксируйте конкретную ошибку в поле выше и создайте правило для её избежания.",
-
   "confluence_abbr_lbl": "Конфлюэнс",
   "glossary_protip_lbl": " — минимум 3 фактора для входа. Без свипа ликвидности — ждать.",
-
   "csv_trades_header": "ID,Пара,Направление,Тип,Сумма,Вход,TP,SL,Плечо,Статус,PnL,PnL%,Дата",
   "csv_signals_header": "ID,Пара,ТФ,Вердикт,Уверенность,Вход,TP,SL,Плечо,Исход,PnL%,Дата",
-
   "ins_structure_lbl": "СТРУКТУРА",
   "ins_zone_lbl": "ЗОНА",
   "ins_liquidity_lbl": "ЛИКВИДНОСТЬ",
   "ins_waiting_lbl": "ОЖИДАНИЕ",
   "ins_balance_lbl": "БАЛАНС",
-  "ins_condition_lbl": "УСЛОВИЕ"
+  "ins_condition_lbl": "УСЛОВИЕ",
+  "market_title": "Рынок",
+  "market_crypto": "Криптовалюты",
+  "market_forex": "Форекс",
+  "market_desc_crypto": "Криптовалютные пары · данные Binance Futures",
+  "market_desc_forex": "Валютные пары · данные Twelve Data · сессии Лондон и Нью-Йорк",
+  "lp_badge_fx": "AI-платформа для форекс-трейдеров",
+  "lp_hero_line1_fx": "ИИ анализирует форекс.",
+  "lp_hero_desc_fx": "Торговые сигналы по валютным парам с точкой входа, TP и SL. Уведомления в Telegram, мажоры и кроссы, сессии Лондона и Нью-Йорка.",
+  "total_pnl": "PnL всего"
 }

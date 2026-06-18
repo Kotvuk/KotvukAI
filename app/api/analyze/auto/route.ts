@@ -145,7 +145,6 @@ async function analyzeOne(
     const recentSignal = await sql`
       SELECT id FROM signals
       WHERE user_id = ${userId} AND pair = ${pairFmt}
-        AND timeframe IN (${interval}, ${tfLabel})
         AND created_at > NOW() - INTERVAL '6 hours'
       LIMIT 1
     `

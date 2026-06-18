@@ -1,6 +1,7 @@
 import { calcEnhancedSMC, scoreOrderBlock, type SMCData, type OrderBlock, type Candle } from './smc'
 import { loadGroqKeys, getGroqModel, getGroqFastModel, groqGenerate } from './groq'
 import { analyzeIndicators, analyzePriceAction, analyzeDerivatives, analyzeVolumeProfile, analyzeFunding, calcConsensus, type MethodResult, type ConsensusResult, type OpenInterestPoint, type LongShortRatioPoint } from './indicators'
+import { MARKETS, type Market } from './markets'
 export type { SMCData, Candle }
 
 function extractJSON(text: string): Record<string, unknown> {
@@ -243,8 +244,10 @@ export async function fullAnalysis(
   riskPct = 1.0,
   globalLossPatterns = '',
   translate = true,
-  tier: 'white' | 'grey' | 'black' = 'white'
+  tier: 'white' | 'grey' | 'black' = 'white',
+  marketType: Market = 'crypto'
 ): Promise<{ step1: Step1Result; step2: Step2Result; final: FinalResult; methods: MethodResult[]; consensus: ConsensusResult }> {
+  const marketCfg  = MARKETS[marketType]
   const keys       = loadGroqKeys()
   const finalize = (r: { step1: Step1Result; step2: Step2Result; final: FinalResult; methods?: MethodResult[]; consensus?: ConsensusResult }) => {
     r.final.tier = tier
@@ -263,7 +266,7 @@ export async function fullAnalysis(
   const frResult  = analyzeFunding(market.fundingRate)
 
   const riskUsd = parseFloat((balance * riskPct / 100).toFixed(2))
-  const atrPct  = market.atr14pct ?? 2.0
+  const atrPct  = market.atr14pct ?? marketCfg.defaultAtrPct
   const atrAbs  = market.price * atrPct / 100
 
   const recentOutcomes = memorySignals.slice(0, 3).map(s => s.outcome)
@@ -423,7 +426,7 @@ WAIT: no A/A+ POI | R:R < 1:${s2.min_rr || 2} | HTF/LTF conflict | no sweep | pr
 TP = nearest FVG midpoint or liquidity level. SL = beyond OB low/high + 0.3% buffer.
 ATR-14 = ${atrPct}% = $${atrAbs.toFixed(4)} — use it to size TP/SL:
   SL distance: 1.0–2.0× ATR = $${(atrAbs * 1.0).toFixed(4)}–$${(atrAbs * 2.0).toFixed(4)} from entry.
-  TP distance: min 1.5× SL, ideally 2.5–3× ATR = $${(atrAbs * 2.5).toFixed(4)}–$${(atrAbs * 3.0).toFixed(4)}.
+  TP distance: min 2.0× SL, ideally 2.5–3.5× ATR = $${(atrAbs * 2.5).toFixed(4)}–$${(atrAbs * 3.5).toFixed(4)}. Place SL as tight as structure allows (just beyond invalidation) and TP at the furthest realistic liquidity target to maximize R:R.
   TP/SL must stay within ±10% of the ENTRY price (not current price).
 R:R notation: risk:reward = 1:X (where X is the number, e.g. 1:2 means reward is twice the risk).
 
@@ -490,7 +493,7 @@ Reply with ONLY one line of valid JSON (all numeric fields must be numbers, not 
 
   const { entry: entryPrice, ob: selectedOB } = findEntry(verdict, price, aiEntry, market.smc)
 
-  const LIMIT_THRESHOLD = 0.005
+  const LIMIT_THRESHOLD = marketCfg.limitThreshold
   const autoEntryType: 'market' | 'limit' = (
     (verdict === 'LONG'  && entryPrice < price * (1 - LIMIT_THRESHOLD)) ||
     (verdict === 'SHORT' && entryPrice > price * (1 + LIMIT_THRESHOLD))
@@ -498,15 +501,31 @@ Reply with ONLY one line of valid JSON (all numeric fields must be numbers, not 
 
   const isLongV  = verdict === 'LONG'
   const isShortV = verdict === 'SHORT'
-  const sigFigs  = entryPrice >= 1000 ? 2 : entryPrice >= 1 ? 4 : 6
+  const sigFigs  = entryPrice >= 1000 ? 4 : entryPrice >= 1 ? 6 : 8
 
+  let structuralTargets = 0
   if (isLongV || isShortV) {
-    const MAX_DEV = 0.20
-    const tpBad = !tpPrice || (isLongV ? tpPrice <= entryPrice : tpPrice >= entryPrice) || Math.abs(tpPrice - entryPrice) / entryPrice > MAX_DEV
+    const MAX_DEV = marketCfg.maxDeviation
     const slBad = !slPrice || (isLongV ? slPrice >= entryPrice : slPrice <= entryPrice) || Math.abs(entryPrice - slPrice) / entryPrice > MAX_DEV
-
     if (slBad) slPrice = isLongV ? entryPrice - atrAbs * 1.2 : entryPrice + atrAbs * 1.2
-    if (tpBad) tpPrice = isLongV ? entryPrice + atrAbs * 2.5 : entryPrice - atrAbs * 2.5
+
+    const slDist = Math.abs(entryPrice - slPrice)
+    const liqTargets = market.smc.liquidityLevels
+      .filter(l => isLongV ? (l.type === 'buy' && l.price > entryPrice && !l.isSwept) : (l.type === 'sell' && l.price < entryPrice && !l.isSwept))
+      .map(l => l.price)
+    const fvgTargets = market.smc.fvgs
+      .filter(f => isLongV ? (f.type === 'bullish' && f.low > entryPrice && !f.isFilled) : (f.type === 'bearish' && f.high < entryPrice && !f.isFilled))
+      .map(f => isLongV ? f.low : f.high)
+    const targets = [...liqTargets, ...fvgTargets].filter(p => Math.abs(p - entryPrice) / entryPrice <= MAX_DEV)
+    structuralTargets = targets.length
+
+    const qualifying = slDist > 0 ? targets.filter(p => Math.abs(p - entryPrice) / slDist >= marketCfg.minRR) : []
+    if (qualifying.length) {
+      tpPrice = isLongV ? Math.min(...qualifying) : Math.max(...qualifying)
+    } else {
+      const tpBad = !tpPrice || (isLongV ? tpPrice <= entryPrice : tpPrice >= entryPrice) || Math.abs(tpPrice - entryPrice) / entryPrice > MAX_DEV
+      if (tpBad) tpPrice = isLongV ? entryPrice + atrAbs * 2.5 : entryPrice - atrAbs * 2.5
+    }
 
     tpPrice = parseFloat(tpPrice.toFixed(sigFigs))
     slPrice = parseFloat(slPrice.toFixed(sigFigs))
@@ -516,9 +535,22 @@ Reply with ONLY one line of valid JSON (all numeric fields must be numbers, not 
   const sl_pct = parseFloat(((entryPrice - slPrice) / entryPrice * 100).toFixed(2))
   const rrStr  = sl_pct !== 0 ? (Math.abs(tp_pct) / Math.abs(sl_pct)).toFixed(1) : '?'
 
+  if (isLongV || isShortV) {
+    const actualRR = sl_pct !== 0 ? Math.abs(tp_pct) / Math.abs(sl_pct) : 0
+    if (actualRR < marketCfg.minRR) {
+      const reason = structuralTargets > 0
+        ? `Структура не даёт цель ≥1:${marketCfg.minRR} (ближайшие магниты ликвидности дают 1:${actualRR.toFixed(1)}). Жду сетап с настоящим 2R-уровнем.`
+        : `R:R 1:${actualRR.toFixed(1)} ниже минимума 1:${marketCfg.minRR} и нет структурной цели. Жду сетап с лучшей геометрией.`
+      const rr1: Step1Result = { signal: 'WAIT', strength: 3, trend: trendDir, summary: summary1 }
+      const rr2: Step2Result = { verdict: 'WAIT', confidence: 50, risk_score: 5, leverage: 1, summary: reason }
+      const rrf = makeWait(50, `R:R 1:${actualRR.toFixed(1)} below minimum 1:${marketCfg.minRR}. No structural liquidity target reaches the required reward — waiting for a setup where structure genuinely offers ${marketCfg.minRR}R.`, riskUsd, balance, riskPct, allMethods, consensus)
+      return finalize({ step1: rr1, step2: rr2, final: rrf, methods: allMethods, consensus })
+    }
+  }
+
   const i1 = String(json.i1 || trend)
-  const i2 = String(json.i2 || `Entry $${entryPrice} → TP $${tpPrice.toFixed(2)} (+${Math.abs(tp_pct).toFixed(2)}%)`)
-  const i3 = String(json.i3 || `SL $${slPrice.toFixed(2)} (-${Math.abs(sl_pct).toFixed(2)}%) | R:R 1:${rrStr}`)
+  const i2 = String(json.i2 || `Entry $${entryPrice} → TP $${tpPrice.toFixed(sigFigs)} (+${Math.abs(tp_pct).toFixed(2)}%)`)
+  const i3 = String(json.i3 || `SL $${slPrice.toFixed(sigFigs)} (-${Math.abs(sl_pct).toFixed(2)}%) | R:R 1:${rrStr}`)
 
   const whyFinal = desc || [summary1, step2Summary, confluenceStr]
     .filter(s => s.trim().length > 3).join('. ')

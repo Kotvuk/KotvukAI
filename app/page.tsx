@@ -1,8 +1,11 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
 import { useLang } from '@/contexts/LangContext'
+import { useMarket } from '@/contexts/MarketContext'
 import Link from 'next/link'
 import LangSwitcher from '@/components/ui/LangSwitcher'
+import ForexLanding from '@/components/app/forex/ForexLanding'
+import Logo from '@/components/app/Logo'
 
 function useInView(threshold = 0.15) {
   const ref = useRef<HTMLDivElement>(null)
@@ -49,13 +52,28 @@ const TICKER_SYMS = [
   { sym: 'ATOM/USDT', key: 'ATOMUSDT' },
   { sym: 'POL/USDT', key: 'POLUSDT' },
 ]
+const FX_TICKER_SYMS = [
+  { sym: 'EUR/USD', key: 'EUR/USD' },
+  { sym: 'GBP/USD', key: 'GBP/USD' },
+  { sym: 'USD/JPY', key: 'USD/JPY' },
+  { sym: 'AUD/USD', key: 'AUD/USD' },
+  { sym: 'USD/CAD', key: 'USD/CAD' },
+  { sym: 'USD/CHF', key: 'USD/CHF' },
+  { sym: 'NZD/USD', key: 'NZD/USD' },
+  { sym: 'EUR/GBP', key: 'EUR/GBP' },
+  { sym: 'EUR/JPY', key: 'EUR/JPY' },
+  { sym: 'GBP/JPY', key: 'GBP/JPY' },
+]
+
 type TickerMap = Record<string, { price: number; change: number }>
 
-function useLiveTicker(): TickerMap {
+function useLiveTicker(market: 'crypto' | 'forex'): TickerMap {
   const [tickers, setTickers] = useState<TickerMap>({})
   useEffect(() => {
-    fetch('/api/ticker').then(r => r.json()).then(d => setTickers(d)).catch(() => {})
-  }, [])
+    setTickers({})
+    fetch(market === 'forex' ? '/api/ticker?market=forex' : '/api/ticker')
+      .then(r => r.json()).then(d => setTickers(d)).catch(() => {})
+  }, [market])
   return tickers
 }
 
@@ -190,10 +208,15 @@ function Divider({ num, label }: { num: string; label: string }) {
 
 export default function LandingPage() {
   const { t } = useLang()
+  const { market, setMarket } = useMarket()
   const heroRef = useRef<HTMLDivElement>(null)
   const [scrollY, setScrollY] = useState(0)
   const [privacyOpen, setPrivacyOpen] = useState(false)
-  const liveTickers = useLiveTicker()
+  const liveTickers = useLiveTicker(market)
+  const fx = market === 'forex'
+  const acc = fx ? '#2ea27a' : '#00d4ff'
+  const acc2 = fx ? '#c9a356' : '#a855f7'
+  const tickerSyms = fx ? FX_TICKER_SYMS : TICKER_SYMS
 
   const statsSection = useInView(0.2)
   const featuresSection = useInView()
@@ -223,6 +246,8 @@ export default function LandingPage() {
     document.addEventListener('keydown', handler)
     return () => document.removeEventListener('keydown', handler)
   }, [privacyOpen])
+
+  if (fx) return <ForexLanding />
 
   const NAV_LINKS = [
     { id: 'section-features', label: t('lp_nav_about') },
@@ -304,12 +329,10 @@ export default function LandingPage() {
       </div>
 
       <div style={{ position: 'relative', zIndex: 2 }}>
-        <nav style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px', height: 56, borderBottom: `1px solid #1a1a1a`, background: 'rgba(8,8,8,.95)', backdropFilter: 'blur(20px)', position: 'sticky', top: 0, zIndex: 100, gap: 16 }}>
+        <nav style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 28px', height: 60, borderBottom: `1px solid #1a1a1a`, background: 'rgba(8,8,8,.95)', backdropFilter: 'blur(20px)', position: 'sticky', top: 0, zIndex: 100, gap: 12 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-            <div className="lp-glow" style={{ width: 22, height: 22, background: 'linear-gradient(135deg,#00d4ff,#a855f7)', clipPath: 'polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%)' }} />
-            <span style={{ fontFamily: "'Syne',sans-serif", fontWeight: 800, fontSize: '1rem', color: '#fff', letterSpacing: '-0.02em' }}>
-              KOTVUK<span style={{ color: '#00d4ff' }}>AI</span>
-            </span>
+            <Logo size={22} />
+            {fx && <span style={{ fontFamily: "'Cormorant Garamond',Georgia,serif", fontStyle: 'italic', fontWeight: 700, fontSize: '.68rem', letterSpacing: '.1em', color: '#c9a356', border: '1px solid rgba(201,163,86,.45)', borderRadius: 999, padding: '2px 8px 3px' }}>FX</span>}
           </div>
           <div style={{ display: 'flex', gap: 4, flex: 1, justifyContent: 'center' }}>
             {NAV_LINKS.map(s => (
@@ -320,10 +343,29 @@ export default function LandingPage() {
               >{s.label}</button>
             ))}
           </div>
-          <div style={{ display: 'flex', gap: 8, flexShrink: 0, alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: 10, flexShrink: 0, alignItems: 'center' }}>
+            <div style={{ display: 'inline-flex', border: '1px solid #2c2c2c', borderRadius: 999, overflow: 'hidden' }}>
+              {(['crypto', 'forex'] as const).map(m => {
+                const on = market === m
+                const label = m === 'crypto' ? 'CRYPTO' : 'FX'
+                const onBg = m === 'crypto' ? '#00d4ff' : '#2ea27a'
+                return (
+                  <button key={m} onClick={() => setMarket(m)}
+                    style={{
+                      border: 'none', cursor: 'pointer', padding: '6px 12px',
+                      fontFamily: "'Geist Mono',monospace", fontSize: '.6rem', fontWeight: 600,
+                      letterSpacing: '.08em', textTransform: 'uppercase',
+                      background: on ? onBg : 'transparent',
+                      color: on ? '#080808' : '#4a5568',
+                      transition: 'background .15s, color .15s',
+                    }}
+                  >{label}</button>
+                )
+              })}
+            </div>
             <LangSwitcher />
-            <Link href="/login" className="nav-link" style={{ padding: '6px 18px', fontSize: '.7rem', letterSpacing: '.06em', border: '1px solid #2c2c2c', color: '#888', textDecoration: 'none' }}>{t('lp_login_btn')}</Link>
-            <Link href="/register" className="cta-btn" style={{ padding: '6px 18px', fontSize: '.7rem', letterSpacing: '.06em', background: '#00d4ff', color: '#080808', fontWeight: 700, textDecoration: 'none' }}>{t('lp_start_btn')}</Link>
+            <Link href="/login" className="nav-link" style={{ display: 'inline-block', padding: '7px 16px', fontSize: '.7rem', letterSpacing: '.06em', border: '1px solid #2c2c2c', color: '#888', textDecoration: 'none', minWidth: 74, textAlign: 'center', boxSizing: 'border-box' }}>{t('lp_login_btn')}</Link>
+            <Link href="/register" className="cta-btn" style={{ display: 'inline-block', padding: '7px 16px', fontSize: '.7rem', letterSpacing: '.06em', background: '#00d4ff', color: '#080808', fontWeight: 700, textDecoration: 'none', minWidth: 120, textAlign: 'center', boxSizing: 'border-box' }}>{t('lp_start_btn')}</Link>
           </div>
         </nav>
 
@@ -331,12 +373,12 @@ export default function LandingPage() {
           <div className="lp-ticker-fade-l" />
           <div className="lp-ticker-fade-r" />
           <div className="lp-ticker">
-            {[...TICKER_SYMS, ...TICKER_SYMS].map((tk, i) => {
+            {[...tickerSyms, ...tickerSyms].map((tk, i) => {
               const live = liveTickers[tk.key]
               return (
                 <span key={i} style={{ fontSize: '.68rem', display: 'flex', alignItems: 'center', gap: 8 }}>
                   <span style={{ color: '#c8d4e0', fontWeight: 600, letterSpacing: '.04em' }}>{tk.sym}</span>
-                  <span style={{ color: '#4a5568' }}>{live ? `$${live.price.toLocaleString(undefined, { maximumFractionDigits: live.price < 1 ? 5 : 2 })}` : '—'}</span>
+                  <span style={{ color: '#4a5568' }}>{live ? `${fx ? '' : '$'}${live.price.toLocaleString(undefined, { maximumFractionDigits: fx ? 5 : live.price < 1 ? 7 : 4 })}` : '—'}</span>
                   {live && <span style={{ color: live.change >= 0 ? '#00e676' : '#ff3d57', fontWeight: 600 }}>{live.change >= 0 ? '+' : ''}{live.change.toFixed(2)}%</span>}
                   <span style={{ width: 1, height: 12, background: 'rgba(255,255,255,.08)', display: 'inline-block' }} />
                 </span>
@@ -346,26 +388,26 @@ export default function LandingPage() {
         </div>
 
         <section ref={heroRef} style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '120px 40px 100px', position: 'relative' }}>
-          <div style={{ position: 'absolute', top: '20%', left: '50%', transform: 'translateX(-50%)', width: 600, height: 400, background: 'radial-gradient(ellipse,rgba(0,212,255,.06) 0%,transparent 70%)', pointerEvents: 'none' }} />
+          <div style={{ position: 'absolute', top: '20%', left: '50%', transform: 'translateX(-50%)', width: 600, height: 400, background: `radial-gradient(ellipse,${fx ? 'rgba(46,162,122,.07)' : 'rgba(0,212,255,.06)'} 0%,transparent 70%)`, pointerEvents: 'none' }} />
 
-          <div className="fade-up" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: '.68rem', letterSpacing: '.18em', color: '#00d4ff', textTransform: 'uppercase', marginBottom: 28 }}>
-            <span className="lp-pulse" style={{ width: 5, height: 5, borderRadius: '50%', background: '#00d4ff', display: 'inline-block' }} />
-            {t('lp_badge')}
-            <span className="lp-pulse-d" style={{ width: 5, height: 5, borderRadius: '50%', background: '#00d4ff', display: 'inline-block' }} />
+          <div className="fade-up" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: '.68rem', letterSpacing: '.18em', color: acc, textTransform: 'uppercase', marginBottom: 28 }}>
+            <span className="lp-pulse" style={{ width: 5, height: 5, borderRadius: '50%', background: acc, display: 'inline-block' }} />
+            {fx ? t('lp_badge_fx') : t('lp_badge')}
+            <span className="lp-pulse-d" style={{ width: 5, height: 5, borderRadius: '50%', background: acc, display: 'inline-block' }} />
           </div>
 
-          <h1 className="fade-up-1" style={{ fontFamily: "'Syne',sans-serif", fontWeight: 800, fontSize: 'clamp(2.8rem,7vw,5.5rem)', lineHeight: 1.02, letterSpacing: '-0.04em', marginBottom: 24, background: 'linear-gradient(150deg,#fff 0%,#fff 45%,#00d4ff 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', maxWidth: 860, margin: '0 auto 24px' }}>
-            {t('lp_hero_line1')}<br />
+          <h1 className="fade-up-1" style={{ fontFamily: fx ? "'Cormorant Garamond',Georgia,serif" : "'Syne',sans-serif", fontWeight: fx ? 700 : 800, fontSize: 'clamp(2.8rem,7vw,5.5rem)', lineHeight: 1.02, letterSpacing: fx ? '-0.01em' : '-0.04em', marginBottom: 24, backgroundImage: `linear-gradient(150deg,#fff 0%,#fff 45%,${acc} 100%)`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', maxWidth: 860, margin: '0 auto 24px' }}>
+            {fx ? t('lp_hero_line1_fx') : t('lp_hero_line1')}<br />
             {t('lp_hero_line2')}
           </h1>
 
           <p className="fade-up-2" style={{ fontSize: 'clamp(.88rem,2vw,1.05rem)', color: '#4a5568', maxWidth: 500, lineHeight: 1.8, marginBottom: 40 }}>
-            {t('lp_hero_desc')}
+            {fx ? t('lp_hero_desc_fx') : t('lp_hero_desc')}
           </p>
 
           <div className="fade-up-3" style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 64 }}>
-            <Link href="/register" style={{ padding: '14px 40px', background: 'linear-gradient(135deg,#00d4ff,#a855f7)', color: '#fff', fontWeight: 700, fontSize: '.88rem', letterSpacing: '.06em', textDecoration: 'none', borderRadius: 8, transition: 'transform .2s,box-shadow .2s', display: 'inline-block' }}
-              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 16px 48px rgba(0,212,255,.3)' }}
+            <Link href="/register" style={{ padding: '14px 40px', background: `linear-gradient(135deg,${acc},${acc2})`, color: '#fff', fontWeight: 700, fontSize: '.88rem', letterSpacing: '.06em', textDecoration: 'none', borderRadius: 8, transition: 'transform .2s,box-shadow .2s', display: 'inline-block' }}
+              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = fx ? '0 16px 48px rgba(46,162,122,.3)' : '0 16px 48px rgba(0,212,255,.3)' }}
               onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = '' }}
             >
               {t('lp_cta_free')}
@@ -589,8 +631,7 @@ export default function LandingPage() {
           <div style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr', gap: 40, marginBottom: 40 }}>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-                <div style={{ width: 22, height: 22, background: 'linear-gradient(135deg,#00d4ff,#a855f7)', clipPath: 'polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%)' }} />
-                <span style={{ fontFamily: "'Syne',sans-serif", fontWeight: 800, fontSize: '.95rem', color: '#fff' }}>KOTVUK<span style={{ color: '#00d4ff' }}>AI</span></span>
+                <Logo size={22} />
               </div>
               <p style={{ fontSize: '.76rem', color: '#4a5568', lineHeight: 1.75, maxWidth: 260 }}>{t('lp_footer_desc')}</p>
             </div>

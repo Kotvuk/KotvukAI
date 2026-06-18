@@ -260,7 +260,6 @@
   "lp_footer_rights": "© 2026 KotvukAI. All rights reserved.",
   "lp_privacy_title": "Privacy Policy",
   "lp_privacy_date": "Last updated: May 2026",
-
   "forgot_password": "Forgot password?",
   "forgot_send": "Send email",
   "forgot_back": "← Back to login",
@@ -269,10 +268,8 @@
   "forgot_sent_check": "Check your email and follow the instructions.",
   "password_min_6": "Minimum 6 characters",
   "enter_email_required": "Please enter email",
-
   "initializing": "initializing...",
   "admin_btn": "Admin",
-
   "my_account": "My Account",
   "ai_account": "AI Account",
   "account_desc_both": "AI Account — automated trades by AI signals. My Account — your manual positions.",
@@ -290,7 +287,6 @@
   "ai_data_loaded_msg": "AI analysis data loaded",
   "order_cancelled_msg": "Order cancelled",
   "tp_sl_updated_msg": "TP/SL updated",
-
   "ai_trading_title": "AI Trading Settings",
   "ai_trading_desc": "Parameters for automatic trades opened by AI after analysis.",
   "deposit_balance_label": "Deposit Balance ($)",
@@ -304,7 +300,6 @@
   "export_data_title": "Export Data",
   "export_trades_btn": "📥 Trades CSV",
   "export_signals_btn": "📥 Signals CSV",
-
   "rm_balance_lbl": "BALANCE",
   "rm_risk_lbl": "RISK $",
   "rm_position_lbl": "POSITION",
@@ -348,7 +343,6 @@
   "similar_setups_lbl": "Similar setup history",
   "smc_confluence_lbl": "SMC confluence",
   "limit_order_at": "Limit order at",
-
   "backtest_title_lbl": "📊 OB STRATEGY BACKTEST",
   "backtest_last_candles_lbl": "last 400 candles",
   "backtest_analyzing_lbl": "Analyzing historical data...",
@@ -358,10 +352,8 @@
   "backtest_by_quality_lbl": "By OB Quality",
   "backtest_loading_lbl": "Loading...",
   "backtest_refresh_lbl": "🔄 Refresh",
-
   "chat_done_lbl": "Done!",
   "chat_conn_error_lbl": "Connection error. Check GROQ_API_KEY.",
-
   "draw_custom_color_lbl": "Custom color",
   "draw_fill_color_lbl": "Fill color",
   "draw_border_color_lbl": "Border color",
@@ -385,7 +377,6 @@
   "draw_polyline_lbl": "Polyline",
   "draw_fibonacci_lbl": "Fibonacci",
   "draw_settings_lbl": "Settings",
-
   "ob_step1_title": "Welcome to KotvukAI",
   "ob_step1_body": "KotvukAI is an AI crypto analyst based on Smart Money Concepts. It automatically finds Order Blocks, Fair Value Gaps, determines HTF Bias and generates LONG/SHORT signals.",
   "ob_step2_title": "How to use",
@@ -396,7 +387,6 @@
   "ob_next_lbl": "Next →",
   "ob_start_lbl": "Get Started",
   "ob_skip_lbl": "Skip",
-
   "subscription_title": "Subscription",
   "plan_active_lbl": "✓ Active",
   "subscribe_btn": "Subscribe",
@@ -459,13 +449,11 @@
   "balance_add_btn": "Add funds",
   "balance_subtract_btn": "Withdraw",
   "balance_cancel_btn": "Cancel",
-
   "verify_email_title": "Check your email",
   "verify_email_body": "Verification link sent to {email}. Click it to activate your account.",
   "verify_email_resend": "Resend email",
   "verify_email_resent": "Sent!",
   "email_not_verified": "Email not verified. Check your inbox.",
-
   "price_near_bull_ob": "Price near bullish OB {range}",
   "price_near_bear_ob": "Price near bearish OB {range}",
   "price_near_liq": "Price near {type} {price}",
@@ -480,7 +468,6 @@
   "ai_analysis_subtitle": "4-step SMC analysis · KotvukAI",
   "amount_placeholder": "Amount ($)",
   "after_label": "After:",
-
   "hist_tab_history": "History",
   "hist_tab_review": "Error Review",
   "hist_tab_quiz": "Quiz",
@@ -501,9 +488,7 @@
   "quiz_next": "Next →",
   "quiz_result_btn": "Results",
   "quiz_restart": "Restart quiz",
-
   "got_it_btn": "Got it",
-
   "similar_setups_title": "Similar setups — {pair} {tf}",
   "same_signal_filter_lbl": "Same signal ({verdict})",
   "all_signals_filter_lbl": "All signals",
@@ -522,7 +507,6 @@
   "virtual_balance_hint": "Virtual balance — not real funds",
   "ob_card_title_lbl": "ORDER BLOCK — ENTRY ZONE",
   "candles_abbr_lbl": "c.",
-
   "review_intro_lbl": "Select a losing trade to review, identify the error type, and write down your lesson.",
   "loss_trades_title_lbl": "LOSING TRADES ({count})",
   "no_loss_trades_lbl": "No losing trades marked as \"loss\"",
@@ -540,7 +524,6 @@
   "quiz_errors_lbl": "ERRORS:",
   "quiz_your_answer_lbl": "Your answer:",
   "quiz_correct_answer_lbl": "Correct:",
-
   "err_fomo_lbl": "FOMO entry",
   "err_fomo_desc": "Entry without confirmation, chasing the move",
   "err_htf_bias_lbl": "Against HTF",
@@ -554,7 +537,6 @@
   "err_session_lbl": "Wrong session",
   "err_session_desc": "Trading during inactive hours",
   "err_other_lbl": "Other",
-
   "rec_fomo_lbl": "Wait for an OB/FVG retest before entering. Use a limit order.",
   "rec_htf_bias_lbl": "Check HTF bias on 4H and 1D before every entry. Trade only in the HTF direction.",
   "rec_no_ob_lbl": "Only enter near confirmed A+/A OBs or unfilled FVGs.",
@@ -562,17 +544,23 @@
   "rec_risk_lbl": "Max 1-2% risk per trade. R:R must be at least 1:1.5 before entry.",
   "rec_session_lbl": "Trade only during active hours: London (7-16 UTC) and NY (13-21 UTC). Avoid the Asian session for volatile assets.",
   "rec_other_lbl": "Record the specific mistake above and create a rule to prevent it.",
-
   "confluence_abbr_lbl": "Confluence",
   "glossary_protip_lbl": " — minimum 3 factors for entry. Without liquidity sweep — wait.",
-
   "csv_trades_header": "ID,Pair,Direction,Type,Amount,Entry,TP,SL,Leverage,Status,PnL,PnL%,Date",
   "csv_signals_header": "ID,Pair,TF,Verdict,Confidence,Entry,TP,SL,Leverage,Outcome,PnL%,Date",
-
   "ins_structure_lbl": "STRUCTURE",
   "ins_zone_lbl": "ZONE",
   "ins_liquidity_lbl": "LIQUIDITY",
   "ins_waiting_lbl": "WAITING",
   "ins_balance_lbl": "BALANCE",
-  "ins_condition_lbl": "CONDITION"
+  "ins_condition_lbl": "CONDITION",
+  "market_title": "Market",
+  "market_crypto": "Crypto",
+  "market_forex": "Forex",
+  "market_desc_crypto": "Cryptocurrency pairs · Binance Futures data",
+  "market_desc_forex": "Currency pairs · Twelve Data feed · London & New York sessions",
+  "lp_badge_fx": "AI platform for forex traders",
+  "lp_hero_line1_fx": "AI analyzes forex.",
+  "lp_hero_desc_fx": "Currency pair signals with entry, TP and SL. Telegram alerts, majors and crosses, London & New York sessions.",
+  "total_pnl": "Total PnL"
 }

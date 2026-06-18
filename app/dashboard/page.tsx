@@ -4,9 +4,12 @@ import dynamic from 'next/dynamic'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { useLang } from '@/contexts/LangContext'
+import { useMarket } from '@/contexts/MarketContext'
 import Header from '@/components/app/Header'
 import Toast from '@/components/ui/Toast'
 import DashPanel from '@/components/app/panels/DashPanel'
+
+const ForexShell = dynamic(() => import('@/components/app/forex/ForexShell'), { ssr: false })
 
 const AiPanel      = dynamic(() => import('@/components/app/panels/AiPanel'),      { ssr: false })
 const TradesPanel  = dynamic(() => import('@/components/app/panels/TradesPanel'),  { ssr: false })
@@ -24,6 +27,7 @@ type Panel = 'dash' | 'ai' | 'trades' | 'news' | 'notifs' | 'history' | 'setting
 export default function DashboardPage() {
   const { user, loading, getValidToken } = useAuth()
   const { t } = useLang()
+  const { market } = useMarket()
   const router = useRouter()
   const [active, setActive] = useState<Panel>('dash')
   const [notifCount, setNotifCount] = useState(0)
@@ -126,6 +130,16 @@ export default function DashboardPage() {
 
   const handleNavigate = (panel: Panel) => {
     setActive(panel)
+  }
+
+  if (market === 'forex') {
+    return (
+      <>
+        <Toast />
+        <ForexShell />
+        <AiChat onNavigate={setActive} getContext={getChatContext} />
+      </>
+    )
   }
 
   return (

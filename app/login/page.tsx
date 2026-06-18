@@ -4,6 +4,7 @@ import { signInWithEmailAndPassword, sendPasswordResetEmail, sendEmailVerificati
 import { auth, googleProvider } from '@/lib/firebase'
 import { useLang } from '@/contexts/LangContext'
 import LangSwitcher from '@/components/ui/LangSwitcher'
+import Logo from '@/components/app/Logo'
 
 function EyeIcon({ open }: { open: boolean }) {
   return open ? (
@@ -124,8 +125,7 @@ export default function LoginPage() {
           <LangSwitcher />
         </div>
         <div className="auth-logo">
-          <div className="auth-logo-mark" />
-          <span className="auth-logo-text">{t('app_name')}</span>
+          <Logo size={24} />
         </div>
         <div className="auth-title">{t('login')}</div>
         <div className="auth-sub">{t('login_sub')}</div>

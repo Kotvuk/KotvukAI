@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
 import { NextRequest, NextResponse } from 'next/server'
-import { getAllPendingSignals, getAllPendingTrades, getAllOpenTrades, expireOldSignals, setSignalOutcome, activateTrade, cancelTrade, closeTrade, adjustBalance, createNotification, getUserById, normalizeTf, getMarketTrend, sql } from '@/lib/db'
+import { getAllPendingSignals, getAllPendingTrades, getAllOpenTrades, getOpenTradesWithoutEntry, patchTradeEntryPrice, expireOldSignals, setSignalOutcome, activateTrade, cancelTrade, closeTrade, adjustBalance, createNotification, getUserById, normalizeTf, getMarketTrend, sql } from '@/lib/db'
 import { sendTelegram, sendTelegramToUser } from '@/lib/telegram'
 
 const INTERVAL_MS: Record<string, number> = {
@@ -251,6 +251,17 @@ export async function GET(req: NextRequest) {
           tradesActivated++
         }
       }
+    }
+  }
+
+  const nullEntryTrades = await getOpenTradesWithoutEntry()
+  if (nullEntryTrades.length) {
+    const nullSyms = Array.from(new Set(nullEntryTrades.map(t => t.pair.replace('/', ''))))
+    const nullPrices = await fetchPrices(nullSyms)
+    for (const t of nullEntryTrades) {
+      const sym = t.pair.replace('/', '')
+      const p = nullPrices[sym]
+      if (p) await patchTradeEntryPrice(t.id, p)
     }
   }
 

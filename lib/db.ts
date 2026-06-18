@@ -250,7 +250,7 @@ export async function saveSignal(userId: number, data: Partial<Signal>, market: 
   return rows[0] as Signal
 }
 
-export const ENTRY_CONFIDENCE_THRESHOLD = 50
+export const ENTRY_CONFIDENCE_THRESHOLD = 62
 
 export async function getSignals(userId: number, limit = 100, offset = 0, market: Market = 'crypto', tradableOnly = false): Promise<Signal[]> {
   const rows = tradableOnly
@@ -277,37 +277,37 @@ export async function updateSignalOutcome(id: number, userId: number, outcome: s
   `
 }
 
-export async function getStats(userId: number, market: Market = 'crypto') {
-  const [statsRow] = await sql`
+export async function getStats(userId: number, _market: Market = 'crypto') {
+  const [tradesRow] = await sql`
     SELECT
-      COUNT(*) AS total,
-      COUNT(*) FILTER (WHERE outcome IN ('win','loss')) AS resolved,
-      AVG(final_confidence) FILTER (WHERE outcome IS NOT NULL)::int AS avg_confidence,
-      COUNT(*) FILTER (WHERE outcome = 'win')::float /
-        NULLIF(COUNT(*) FILTER (WHERE outcome IN ('win','loss')), 0) * 100 AS win_rate,
-      AVG(actual_pnl_pct) FILTER (WHERE outcome IN ('win','loss') AND actual_pnl_pct <> 'NaN'::numeric) AS avg_pnl_pct
-    FROM signals WHERE user_id = ${userId} AND market = ${market} AND final_verdict IN ('LONG','SHORT')
+      COUNT(*) FILTER (WHERE status = 'closed') AS total_closed,
+      COUNT(*) FILTER (WHERE status IN ('open','pending')) AS open_count,
+      COUNT(*) FILTER (WHERE status = 'closed' AND pnl_pct > 0)::float /
+        NULLIF(COUNT(*) FILTER (WHERE status = 'closed'), 0) * 100 AS win_rate,
+      ROUND(SUM(pnl_pct) FILTER (WHERE status = 'closed')::numeric, 2) AS total_pnl_pct,
+      ROUND(AVG(pnl_pct) FILTER (WHERE status = 'closed' AND pnl_pct > 0)::numeric, 2) AS avg_win,
+      ROUND(AVG(pnl_pct) FILTER (WHERE status = 'closed' AND pnl_pct < 0)::numeric, 2) AS avg_loss
+    FROM trades WHERE user_id = ${userId} AND account_type = 'ai'
   `
   const byPair = await sql`
     SELECT pair,
       COUNT(*) AS total,
-      COUNT(*) FILTER (WHERE outcome = 'win')::float /
-        NULLIF(COUNT(*) FILTER (WHERE outcome IN ('win','loss')), 0) * 100 AS win_rate
-    FROM signals WHERE user_id = ${userId} AND market = ${market} AND final_verdict IN ('LONG','SHORT')
+      COUNT(*) FILTER (WHERE pnl_pct > 0)::float /
+        NULLIF(COUNT(*) FILTER (WHERE status = 'closed'), 0) * 100 AS win_rate
+    FROM trades WHERE user_id = ${userId} AND account_type = 'ai' AND status = 'closed'
     GROUP BY pair ORDER BY total DESC LIMIT 10
   `
-  const [tradesRow] = await sql`
-    SELECT ROUND(SUM(pnl_pct)::numeric, 2) AS total_pnl_pct
-    FROM trades WHERE user_id = ${userId} AND account_type = 'ai' AND status = 'closed'
-  `
-  const resolved = Number(statsRow.resolved ?? 0)
+  const closed = Number(tradesRow.total_closed ?? 0)
   return {
-    total: Number(statsRow.total),
-    resolved,
-    avg_confidence: statsRow.avg_confidence,
-    win_rate: resolved >= 3 ? (statsRow.win_rate ? Math.round(Number(statsRow.win_rate)) : null) : null,
-    avg_pnl_pct: statsRow.avg_pnl_pct ? Number(statsRow.avg_pnl_pct).toFixed(1) : null,
+    total: closed,
+    resolved: closed,
+    open_count: Number(tradesRow.open_count ?? 0),
+    win_rate: closed >= 3 ? (tradesRow.win_rate ? Math.round(Number(tradesRow.win_rate)) : null) : null,
+    avg_confidence: null,
+    avg_pnl_pct: null,
     total_pnl_pct: tradesRow?.total_pnl_pct != null ? Number(tradesRow.total_pnl_pct).toFixed(1) : null,
+    avg_win: tradesRow?.avg_win != null ? Number(tradesRow.avg_win).toFixed(1) : null,
+    avg_loss: tradesRow?.avg_loss != null ? Number(tradesRow.avg_loss).toFixed(1) : null,
     by_pair: byPair.map(r => ({
       pair: r.pair,
       total: Number(r.total),
@@ -748,6 +748,20 @@ export async function getAllOpenTrades(): Promise<Trade[]> {
     LIMIT 500
   `
   return rows as Trade[]
+}
+
+export async function getOpenTradesWithoutEntry(): Promise<Trade[]> {
+  const rows = await sql`
+    SELECT * FROM trades
+    WHERE status = 'open' AND entry_price IS NULL
+    ORDER BY created_at ASC
+    LIMIT 100
+  `
+  return rows as Trade[]
+}
+
+export async function patchTradeEntryPrice(id: number, entryPrice: number): Promise<void> {
+  await sql`UPDATE trades SET entry_price = ${entryPrice} WHERE id = ${id} AND entry_price IS NULL`
 }
 
 export async function activateTrade(id: number, userId: number, entryPrice: number): Promise<boolean> {

@@ -19,12 +19,6 @@ interface BotSummary {
   wins: number; losses: number; lastRunAgo: number | null; activeSignals: number
 }
 
-function vc(v: string | null) {
-  if (!v) return 'wait'
-  const u = v.toUpperCase()
-  return u === 'LONG' ? 'long' : u === 'SHORT' ? 'short' : 'wait'
-}
-
 function timeAgo(mins: number | null, justNow: string, mAgo: string, hAgo: string): string {
   if (mins === null) return '—'
   if (mins < 2) return justNow
@@ -82,14 +76,13 @@ export default function DashPanel() {
           <div className="thead"><span className="thead-t">{t('recent_trades')}</span></div>
           <div className="twrap">
             <table className="tbl">
-              <thead><tr><th>{t('date')}</th><th>{t('pair')}</th><th>{t('tf')}</th><th>{t('signal')}</th><th>PnL</th></tr></thead>
+              <thead><tr><th>{t('date')}</th><th>{t('pair')}</th><th>{t('tf')}</th><th>PnL</th></tr></thead>
               <tbody>
                 {recentTrades.length ? recentTrades.map(tr => (
                   <tr key={tr.id}>
                     <td style={{ whiteSpace: 'nowrap', fontSize: '.6rem', color: 'var(--dim)' }}>{tr.closed_at ? fmtLocal(tr.closed_at) : '—'}</td>
                     <td>{tr.pair}</td>
                     <td>{tr.timeframe || '—'}</td>
-                    <td><span className={`tag tag-${tr.direction}`}>{tr.direction.toUpperCase()}</span></td>
                     <td style={{ color: tr.pnl_pct != null ? (tr.pnl_pct >= 0 ? 'var(--long)' : 'var(--short)') : 'var(--dim)', fontWeight: 600 }}>
                       {tr.pnl_pct != null ? (tr.pnl_pct >= 0 ? '+' : '') + tr.pnl_pct + '%' : '—'}
                     </td>
@@ -133,8 +126,6 @@ export default function DashPanel() {
           <div style={{ display: 'flex', gap: 6, padding: '8px 10px', flexWrap: 'wrap' }}>
             {[
               { l: t('bot_total'), v: botSummary.total,        c: 'var(--text)' },
-              { l: 'LONG',         v: botSummary.long,          c: 'var(--long)' },
-              { l: 'SHORT',        v: botSummary.short,         c: 'var(--short)' },
               { l: 'WAIT',         v: botSummary.wait,          c: 'var(--dim)' },
               { l: 'Win',          v: botSummary.wins,          c: 'var(--long)' },
               { l: 'Loss',         v: botSummary.losses,        c: 'var(--short)' },
@@ -150,7 +141,7 @@ export default function DashPanel() {
             <div className="twrap" style={{ maxHeight: 240, overflowY: 'auto' }}>
               <table className="tbl">
                 <thead>
-                  <tr><th>{t('bot_time_lbl')}</th><th>{t('pair')}</th><th>TF</th><th>{t('signal')}</th><th>Conf</th><th>{t('result')}</th></tr>
+                  <tr><th>{t('bot_time_lbl')}</th><th>{t('pair')}</th><th>TF</th><th>Conf</th><th>{t('result')}</th></tr>
                 </thead>
                 <tbody>
                   {botLog.map(s => (
@@ -158,7 +149,6 @@ export default function DashPanel() {
                       <td style={{ whiteSpace: 'nowrap' }}>{fmtLocal(s.created_at)}</td>
                       <td>{s.pair}</td>
                       <td>{s.timeframe}</td>
-                      <td><span className={`tag tag-${vc(s.final_verdict)}`}>{s.final_verdict || '—'}</span></td>
                       <td>{s.final_confidence || '—'}%</td>
                       <td>{s.outcome ? <span className={`tag tag-${s.outcome}`}>{s.outcome.toUpperCase()}</span> : <span style={{ color: 'var(--dim)' }}>—</span>}</td>
                     </tr>

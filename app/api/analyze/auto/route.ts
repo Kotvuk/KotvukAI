@@ -187,7 +187,7 @@ async function analyzeOne(
 
     const tierMark = pairTier.tier === 'grey' ? '🟡' : pairTier.tier === 'black' ? '⚫' : ''
 
-    if ((final.verdict === 'LONG' || final.verdict === 'SHORT') && final.confidence >= 50) {
+    if ((final.verdict === 'LONG' || final.verdict === 'SHORT') && final.confidence >= 62) {
       if (pairTier.tier === 'black') {
         const dir   = final.verdict === 'LONG' ? '📈' : '📉'
         const msg   = `${tierMark} <b>AUTO ${final.verdict}</b> ${pairFmt} ${tfLabel} ${dir}\n`
@@ -249,7 +249,7 @@ async function analyzeOne(
       const isLimit     = final.entry_type === 'limit'
       const expiresAt   = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
 
-      let marketEntry = final.entry_price || null
+      let marketEntry = final.entry_price || market.price || null
       if (!isLimit && !marketEntry) {
         try {
           const pr = await fetch(`https://fapi.binance.com/fapi/v1/ticker/price?symbol=${sym}`, { signal: AbortSignal.timeout(4000), cache: 'no-store' })
@@ -257,6 +257,7 @@ async function analyzeOne(
           if (pd.price) marketEntry = parseFloat(pd.price)
         } catch {}
       }
+      if (!isLimit && !marketEntry) marketEntry = market.price || null
 
       await createTrade(userId, {
         pair:        pairFmt,

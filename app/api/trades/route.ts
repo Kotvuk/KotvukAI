@@ -3,8 +3,6 @@ export const maxDuration = 60
 import { NextRequest, NextResponse } from 'next/server'
 import { getUser } from '@/lib/auth-helper'
 import { getTrades, createTrade, adjustBalance } from '@/lib/db'
-import type { Market } from '@/lib/markets'
-import { fetchForexPrice } from '@/lib/providers/twelvedata'
 
 export async function GET(req: NextRequest) {
   const user = await getUser(req)
@@ -12,8 +10,7 @@ export async function GET(req: NextRequest) {
   const accountType = req.nextUrl.searchParams.get('account') as 'user' | 'ai' | null
   const limit  = Math.min(500, Math.max(1, parseInt(req.nextUrl.searchParams.get('limit')  || '200')))
   const offset = Math.max(0, parseInt(req.nextUrl.searchParams.get('offset') || '0'))
-  const market = (req.nextUrl.searchParams.get('market') as Market) || 'crypto'
-  const trades = await getTrades(user.id, accountType ?? undefined, limit, offset, market)
+  const trades = await getTrades(user.id, accountType ?? undefined, limit, offset, 'crypto')
   return NextResponse.json({ ok: true, trades })
 }
 
@@ -29,15 +26,10 @@ export async function POST(req: NextRequest) {
 
   if (body.order_type === 'market' && !body.entry_price) {
     try {
-      if (body.market === 'forex') {
-        const price = await fetchForexPrice(body.pair)
-        if (price) body.entry_price = price
-      } else {
-        const sym = body.pair.replace('/', '')
-        const res = await fetch(`https://fapi.binance.com/fapi/v1/ticker/price?symbol=${sym}`, { signal: AbortSignal.timeout(6_000) })
-        const d: { price?: string } = await res.json()
-        if (d.price) body.entry_price = parseFloat(d.price)
-      }
+      const sym = body.pair.replace('/', '')
+      const res = await fetch(`https://fapi.binance.com/fapi/v1/ticker/price?symbol=${sym}`, { signal: AbortSignal.timeout(6_000) })
+      const d: { price?: string } = await res.json()
+      if (d.price) body.entry_price = parseFloat(d.price)
     } catch {}
   }
   const trade = await createTrade(user.id, { ...body, account_type: body.account_type ?? 'user' })

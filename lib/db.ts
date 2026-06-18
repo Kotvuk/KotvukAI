@@ -1,5 +1,6 @@
 import { neon, type NeonQueryFunction } from '@neondatabase/serverless'
-import type { Market } from './markets'
+
+type Market = 'crypto'
 
 export const sql: NeonQueryFunction<false, false> = neon(process.env.DATABASE_URL!, {
   fetchOptions: { cache: 'no-store' },

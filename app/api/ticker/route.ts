@@ -1,8 +1,6 @@
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
-import { NextRequest, NextResponse } from 'next/server'
-import { FOREX_WATCHLIST } from '@/lib/markets'
-import { fetchForexCandles } from '@/lib/providers/twelvedata'
+import { NextResponse } from 'next/server'
 
 const SYMBOLS = ['BTCUSDT','ETHUSDT','SOLUSDT','BNBUSDT','XRPUSDT','AVAXUSDT','DOGEUSDT','LINKUSDT','ADAUSDT','DOTUSDT','TRXUSDT','LTCUSDT','ATOMUSDT','POLUSDT']
 
@@ -11,31 +9,7 @@ const BINANCE_APIS = [
   'https://data.binance.com/api/v3/ticker/24hr',
 ]
 
-async function getForexTicker() {
-  const result: Record<string, { price: number; change: number }> = {}
-  await Promise.all(FOREX_WATCHLIST.map(async sym => {
-    try {
-      const candles = await fetchForexCandles(sym, '1h', 25)
-      if (candles.length < 2) return
-      const last = candles[candles.length - 1]
-      const prev = candles[0]
-      const price = last[4]
-      const change = ((price - prev[4]) / prev[4]) * 100
-      result[sym] = { price, change }
-    } catch {}
-  }))
-  return result
-}
-
-export async function GET(req: NextRequest) {
-  const market = req.nextUrl.searchParams.get('market') || 'crypto'
-  if (market === 'forex') {
-    const result = await getForexTicker()
-    return NextResponse.json(result, {
-      headers: { 'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=60' }
-    })
-  }
-
+export async function GET() {
   for (const baseUrl of BINANCE_APIS) {
     try {
       const joined = JSON.stringify(SYMBOLS)

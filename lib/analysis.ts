@@ -1,7 +1,9 @@
 import { calcEnhancedSMC, scoreOrderBlock, type SMCData, type OrderBlock, type Candle } from './smc'
 import { loadGroqKeys, getGroqModel, getGroqFastModel, groqGenerate } from './groq'
 import { analyzeIndicators, analyzePriceAction, analyzeDerivatives, analyzeVolumeProfile, analyzeFunding, calcConsensus, type MethodResult, type ConsensusResult, type OpenInterestPoint, type LongShortRatioPoint } from './indicators'
-import { MARKETS, type Market } from './markets'
+const MARKETS = {
+  crypto: { limitThreshold: 0.005, defaultAtrPct: 2.0, maxDeviation: 0.20, minRR: 2.0 },
+}
 export type { SMCData, Candle }
 
 function extractJSON(text: string): Record<string, unknown> {
@@ -245,7 +247,7 @@ export async function fullAnalysis(
   globalLossPatterns = '',
   translate = true,
   tier: 'white' | 'grey' | 'black' = 'white',
-  marketType: Market = 'crypto'
+  marketType: 'crypto' = 'crypto'
 ): Promise<{ step1: Step1Result; step2: Step2Result; final: FinalResult; methods: MethodResult[]; consensus: ConsensusResult }> {
   const marketCfg  = MARKETS[marketType]
   const keys       = loadGroqKeys()

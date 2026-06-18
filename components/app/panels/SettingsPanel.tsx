@@ -3,7 +3,6 @@ import { useEffect, useState } from 'react'
 import { updatePassword } from 'firebase/auth'
 import { useLang } from '@/contexts/LangContext'
 import { useAuth } from '@/contexts/AuthContext'
-import { useMarket } from '@/contexts/MarketContext'
 import { showToast } from '@/components/ui/Toast'
 
 const TIER_LABELS: Record<string, { name: string; color: string; analyses: number }> = {
@@ -18,7 +17,6 @@ interface SubInfo { tier: string; analyses_today: number; remaining: number; lim
 export default function SettingsPanel() {
   const { t, lang, setLang } = useLang()
   const { user } = useAuth()
-  const { market, setMarket } = useMarket()
   const [nickname, setNickname] = useState('')
   const [email, setEmail]       = useState('')
   const [pass, setPass]         = useState('')
@@ -344,20 +342,6 @@ export default function SettingsPanel() {
             <div className="ff full"><label className="fl">{t('confirm_password')}</label>
               <input type="password" className="fi" value={pass2} onChange={e => setPass2(e.target.value)} placeholder="••••••••" /></div>
           </div>
-        </div>
-
-        <div className="sb2">
-          <div className="st">{t('market_title')}</div>
-          <div className="tg" style={{ maxWidth: 260 }}>
-            {(['crypto', 'forex'] as const).map(m => (
-              <button key={m} className={`tb ${market === m ? 'a-d' : ''}`} onClick={() => setMarket(m)}>
-                {m === 'crypto' ? t('market_crypto') : t('market_forex')}
-              </button>
-            ))}
-          </div>
-          <p style={{ fontSize: '.6rem', color: 'var(--dim)', marginTop: 8 }}>
-            {market === 'crypto' ? t('market_desc_crypto') : t('market_desc_forex')}
-          </p>
         </div>
 
         <div className="sb2">

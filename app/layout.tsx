@@ -3,7 +3,6 @@ import './globals.css'
 import { AuthProvider } from '@/contexts/AuthContext'
 import { LangProvider } from '@/contexts/LangContext'
 import { ThemeProvider } from '@/contexts/ThemeContext'
-import { MarketProvider } from '@/contexts/MarketContext'
 import { Analytics } from '@vercel/analytics/next'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 
@@ -98,9 +97,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <AuthProvider>
           <LangProvider>
             <ThemeProvider>
-              <MarketProvider>
-                {children}
-              </MarketProvider>
+              {children}
             </ThemeProvider>
           </LangProvider>
         </AuthProvider>

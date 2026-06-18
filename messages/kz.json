@@ -554,13 +554,5 @@
   "ins_waiting_lbl": "КҮТУ",
   "ins_balance_lbl": "БАЛАНС",
   "ins_condition_lbl": "ШАРТ",
-  "market_title": "Нарық",
-  "market_crypto": "Криптовалюта",
-  "market_forex": "Форекс",
-  "market_desc_crypto": "Криптовалюта жұптары · Binance Futures деректері",
-  "market_desc_forex": "Валюта жұптары · Twelve Data · Лондон және Нью-Йорк сессиялары",
-  "lp_badge_fx": "Форекс-трейдерлерге арналған AI платформа",
-  "lp_hero_line1_fx": "AI форексті талдайды.",
-  "lp_hero_desc_fx": "Валюта жұптары бойынша кіру нүктесі, TP және SL бар сигналдар. Telegram хабарламалары, мажорлар мен кросстар, Лондон және Нью-Йорк сессиялары.",
   "total_pnl": "PnL барлығы"
 }

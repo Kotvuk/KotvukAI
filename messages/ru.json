@@ -554,13 +554,5 @@
   "ins_waiting_lbl": "ОЖИДАНИЕ",
   "ins_balance_lbl": "БАЛАНС",
   "ins_condition_lbl": "УСЛОВИЕ",
-  "market_title": "Рынок",
-  "market_crypto": "Криптовалюты",
-  "market_forex": "Форекс",
-  "market_desc_crypto": "Криптовалютные пары · данные Binance Futures",
-  "market_desc_forex": "Валютные пары · данные Twelve Data · сессии Лондон и Нью-Йорк",
-  "lp_badge_fx": "AI-платформа для форекс-трейдеров",
-  "lp_hero_line1_fx": "ИИ анализирует форекс.",
-  "lp_hero_desc_fx": "Торговые сигналы по валютным парам с точкой входа, TP и SL. Уведомления в Telegram, мажоры и кроссы, сессии Лондона и Нью-Йорка.",
   "total_pnl": "PnL всего"
 }

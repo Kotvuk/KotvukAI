@@ -554,13 +554,5 @@
   "ins_waiting_lbl": "WAITING",
   "ins_balance_lbl": "BALANCE",
   "ins_condition_lbl": "CONDITION",
-  "market_title": "Market",
-  "market_crypto": "Crypto",
-  "market_forex": "Forex",
-  "market_desc_crypto": "Cryptocurrency pairs · Binance Futures data",
-  "market_desc_forex": "Currency pairs · Twelve Data feed · London & New York sessions",
-  "lp_badge_fx": "AI platform for forex traders",
-  "lp_hero_line1_fx": "AI analyzes forex.",
-  "lp_hero_desc_fx": "Currency pair signals with entry, TP and SL. Telegram alerts, majors and crosses, London & New York sessions.",
   "total_pnl": "Total PnL"
 }

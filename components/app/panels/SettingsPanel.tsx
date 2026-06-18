@@ -12,7 +12,24 @@ const TIER_LABELS: Record<string, { name: string; color: string; analyses: numbe
   elite:   { name: 'Elite',   color: '#ffd60a', analyses: 100 },
 }
 
-interface SubInfo { tier: string; analyses_today: number; remaining: number; limit: number; has_cryptomus_sub?: boolean }
+interface SubInfo { tier: string; analyses_today: number; remaining: number; limit: number }
+
+interface PendingPayment { paymentId: number; address: string; amount: string; network: string; tier: string }
+
+const TIER_PRICES_UI: Record<string, { price: string; period: string }> = {
+  starter: { price: '$49.90',  period: '/мес' },
+  pro:     { price: '$149.90', period: '/мес' },
+  elite:   { price: '$399.90', period: '/год' },
+}
+
+const NETWORKS = [
+  { id: 'trc20', label: 'TRC20' },
+  { id: 'eth',   label: 'ERC20' },
+  { id: 'bsc',   label: 'BEP20' },
+  { id: 'apt',   label: 'APT'   },
+  { id: 'sol',   label: 'SOL'   },
+  { id: 'ton',   label: 'TON'   },
+]
 
 export default function SettingsPanel() {
   const { t, lang, setLang } = useLang()
@@ -22,9 +39,12 @@ export default function SettingsPanel() {
   const [pass, setPass]         = useState('')
   const [pass2, setPass2]       = useState('')
   const [sub, setSub]           = useState<SubInfo | null>(null)
-  const [exporting, setExporting]     = useState(false)
-  const [purchasing, setPurchasing]   = useState<string | null>(null)
-  const [portalLoading, setPortalLoading] = useState(false)
+  const [exporting, setExporting]       = useState(false)
+  const [purchasing, setPurchasing]     = useState<string | null>(null)
+  const [selectedNetwork, setSelectedNetwork] = useState('trc20')
+  const [pendingPayment, setPendingPayment]   = useState<PendingPayment | null>(null)
+  const [txHash, setTxHash]             = useState('')
+  const [verifying, setVerifying]       = useState(false)
   const [aiBalance, setAiBalance]       = useState(1000)
   const [aiTradeAmount, setAiTradeAmount] = useState(100)
   const [aiLeverage, setAiLeverage] = useState(20)
@@ -50,7 +70,7 @@ export default function SettingsPanel() {
     if (user?.displayName) setNickname(user.displayName)
 
     fetch('/api/subscription').then(r => r.json()).then(d => {
-      if (d.ok) setSub({ tier: d.subscription.tier, analyses_today: d.analyses_today, remaining: d.remaining, limit: d.limit, has_cryptomus_sub: d.subscription.has_cryptomus_sub })
+      if (d.ok) setSub({ tier: d.subscription.tier, analyses_today: d.analyses_today, remaining: d.remaining, limit: d.limit })
     }).catch(() => {})
   }, [user])
 
@@ -82,27 +102,36 @@ export default function SettingsPanel() {
     try {
       const r = await fetch('/api/billing/checkout', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tier }),
+        body: JSON.stringify({ tier, network: selectedNetwork }),
       })
       const d = await r.json()
-      if (d.ok && d.url) window.location.href = d.url
-      else showToast(d.error || t('payment_error'), 'err')
+      if (d.ok) {
+        setPendingPayment({ paymentId: d.paymentId, address: d.address, amount: d.amount, network: d.network, tier })
+        setTxHash('')
+      } else showToast(d.error || t('payment_error'), 'err')
     } catch { showToast(t('conn_error'), 'err') }
     setPurchasing(null)
   }
 
-  async function cancelSubscription() {
-    if (!confirm(t('cancel_sub_confirm'))) return
-    setPortalLoading(true)
+  async function confirmPayment() {
+    if (!pendingPayment || !txHash.trim()) { showToast('Введите TX Hash', 'err'); return }
+    setVerifying(true)
     try {
-      const r = await fetch('/api/billing/portal', { method: 'POST' })
+      const r = await fetch('/api/billing/verify', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paymentId: pendingPayment.paymentId, txHash: txHash.trim() }),
+      })
       const d = await r.json()
       if (d.ok) {
-        showToast(t('sub_cancelled'))
-        setSub(prev => prev ? { ...prev, has_cryptomus_sub: false } : prev)
-      } else showToast(d.error || t('no_active_sub'), 'err')
+        showToast('Оплата подтверждена!')
+        setPendingPayment(null)
+        setTxHash('')
+        fetch('/api/subscription').then(r => r.json()).then(d => {
+          if (d.ok) setSub({ tier: d.subscription.tier, analyses_today: d.analyses_today, remaining: d.remaining, limit: d.limit })
+        }).catch(() => {})
+      } else showToast(d.error || 'Ошибка верификации', 'err')
     } catch { showToast(t('conn_error'), 'err') }
-    setPortalLoading(false)
+    setVerifying(false)
   }
 
   async function exportCSV(type: 'trades' | 'signals') {
@@ -173,14 +202,29 @@ export default function SettingsPanel() {
             </div>
           )}
 
+          <div style={{ marginBottom: 10 }}>
+            <div style={{ fontSize: '.6rem', color: 'var(--dim)', marginBottom: 6 }}>Выберите сеть оплаты USDT:</div>
+            <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginBottom: 10 }}>
+              {NETWORKS.map(n => (
+                <button key={n.id} onClick={() => setSelectedNetwork(n.id)} style={{
+                  padding: '4px 10px', fontSize: '.6rem', fontWeight: selectedNetwork === n.id ? 700 : 400,
+                  borderRadius: 5, border: `1px solid ${selectedNetwork === n.id ? 'var(--accent)' : 'var(--border)'}`,
+                  background: selectedNetwork === n.id ? 'var(--accent)' : 'var(--bg2)',
+                  color: selectedNetwork === n.id ? '#000' : 'var(--text)', cursor: 'pointer',
+                }}>{n.label}</button>
+              ))}
+            </div>
+          </div>
+
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 12 }}>
             {([
-              { tier: 'starter', price: '$9.90',   period: '/мес',  color: '#0a84ff', features: ['30 AI-анализов/день', 'Авто-сканер', 'Telegram-сигналы'] },
-              { tier: 'pro',     price: '$29.90',  period: '/мес',  color: '#30d158', features: ['Безлимит анализов', '6 методов + плечо', 'Приоритет'] },
-              { tier: 'elite',   price: '$79.90',  period: '/год',  color: '#ffd60a', features: ['Всё из Pro', 'Ранний доступ', 'API'] },
-            ] as const).map(({ tier, price, period, color, features }) => {
+              { tier: 'starter', color: '#0a84ff', features: ['10 AI-анализов/день', 'Авто-сканер', 'Telegram-сигналы'] },
+              { tier: 'pro',     color: '#30d158', features: ['30 AI-анализов/день', '6 методов + плечо', 'Приоритет'] },
+              { tier: 'elite',   color: '#ffd60a', features: ['Безлимит анализов', 'Ранний доступ', 'API'] },
+            ] as const).map(({ tier, color, features }) => {
               const isCurrent = sub?.tier === tier
               const isLoading = purchasing === tier
+              const { price, period } = TIER_PRICES_UI[tier]
               return (
                 <div key={tier} style={{
                   background: isCurrent ? color + '11' : 'var(--bg2)',
@@ -219,18 +263,61 @@ export default function SettingsPanel() {
             })}
           </div>
 
-          {sub && sub.tier !== 'free' && sub.has_cryptomus_sub && (
-            <button
-              onClick={cancelSubscription}
-              disabled={portalLoading}
-              style={{
-                background: 'transparent', border: '1px solid var(--border)',
-                color: 'var(--dim)', padding: '6px 14px', borderRadius: 6,
-                fontSize: '.6rem', cursor: 'pointer', width: '100%',
-              }}
-            >
-              {portalLoading ? t('sub_loading') : t('manage_sub_btn')}
-            </button>
+          {pendingPayment && (
+            <div style={{
+              background: 'var(--bg3)', border: '1px solid var(--accent)',
+              borderRadius: 8, padding: 14, marginBottom: 10,
+            }}>
+              <div style={{ fontSize: '.65rem', fontWeight: 700, marginBottom: 8 }}>
+                Оплата {pendingPayment.tier.toUpperCase()} — ${pendingPayment.amount} USDT
+              </div>
+              <div style={{ fontSize: '.6rem', color: 'var(--dim)', marginBottom: 4 }}>
+                Отправьте точно <b style={{ color: 'var(--text)' }}>${pendingPayment.amount} USDT</b> на адрес:
+              </div>
+              <div style={{
+                fontFamily: 'monospace', fontSize: '.58rem', wordBreak: 'break-all',
+                background: 'var(--bg2)', border: '1px solid var(--border)',
+                borderRadius: 5, padding: '8px 10px', marginBottom: 10, color: 'var(--text)',
+                userSelect: 'all',
+              }}>
+                {pendingPayment.address}
+              </div>
+              <div style={{ fontSize: '.58rem', color: 'var(--dim)', marginBottom: 10 }}>
+                После отправки вставьте TX Hash транзакции и нажмите «Подтвердить». Срок действия — 24 часа.
+              </div>
+              <input
+                type="text"
+                className="fi"
+                placeholder="TX Hash транзакции"
+                value={txHash}
+                onChange={e => setTxHash(e.target.value)}
+                style={{ marginBottom: 8 }}
+              />
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  onClick={confirmPayment}
+                  disabled={verifying || !txHash.trim()}
+                  style={{
+                    flex: 1, background: 'var(--accent)', color: '#000',
+                    border: 'none', borderRadius: 5, padding: '7px 0',
+                    fontSize: '.62rem', fontWeight: 700, cursor: 'pointer',
+                    opacity: verifying ? 0.6 : 1,
+                  }}
+                >
+                  {verifying ? 'Проверка...' : 'Подтвердить оплату'}
+                </button>
+                <button
+                  onClick={() => { setPendingPayment(null); setTxHash('') }}
+                  style={{
+                    background: 'transparent', border: '1px solid var(--border)',
+                    color: 'var(--dim)', padding: '7px 14px', borderRadius: 5,
+                    fontSize: '.62rem', cursor: 'pointer',
+                  }}
+                >
+                  Отмена
+                </button>
+              </div>
+            </div>
           )}
         </div>
 

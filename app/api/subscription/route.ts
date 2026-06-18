@@ -4,10 +4,10 @@ import { getUser } from '@/lib/auth-helper'
 import { getSubscription, SUBSCRIPTION_LIMITS } from '@/lib/db'
 
 const SUBSCRIPTION_PLANS = [
-  { tier: 'free',    name: 'Free',    price: 0,     analyses_per_day: SUBSCRIPTION_LIMITS.free },
-  { tier: 'starter', name: 'Starter', price: 9,  analyses_per_day: SUBSCRIPTION_LIMITS.starter },
-  { tier: 'pro',     name: 'Pro',     price: 29, analyses_per_day: SUBSCRIPTION_LIMITS.pro },
-  { tier: 'elite',   name: 'Elite',   price: 79, analyses_per_day: SUBSCRIPTION_LIMITS.elite },
+  { tier: 'free',    name: 'Free',    price: 0,      analyses_per_day: SUBSCRIPTION_LIMITS.free },
+  { tier: 'starter', name: 'Starter', price: 49.90,  analyses_per_day: SUBSCRIPTION_LIMITS.starter },
+  { tier: 'pro',     name: 'Pro',     price: 149.90, analyses_per_day: SUBSCRIPTION_LIMITS.pro },
+  { tier: 'elite',   name: 'Elite',   price: 399.90, analyses_per_day: SUBSCRIPTION_LIMITS.elite },
 ]
 
 export async function GET(req: NextRequest) {
@@ -19,10 +19,9 @@ export async function GET(req: NextRequest) {
   const today = new Date().toISOString().slice(0, 10)
   const analysesToday = sub.last_reset_date === today ? sub.analyses_today : 0
 
-  const hasCryptomusSub = !!sub.cryptomus_subscription_id
   return NextResponse.json({
     ok: true,
-    subscription: { ...sub, has_cryptomus_sub: hasCryptomusSub },
+    subscription: sub,
     limit,
     analyses_today: analysesToday,
     remaining: Math.max(0, limit - analysesToday),

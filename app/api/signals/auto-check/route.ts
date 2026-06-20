@@ -9,7 +9,7 @@ const INTERVAL_MS: Record<string, number> = {
   '1h': 3_600_000, '4h': 14_400_000, '1d': 86_400_000,
 }
 
-async function fetchCandles(sym: string, sinceMs: number, interval = '1h'): Promise<{ candles: { high: number; low: number; openTime: number }[]; startMs: number }> {
+async function fetchCandles(sym: string, sinceMs: number, interval = '1h'): Promise<{ candles: { openTime: number; open: number; high: number; low: number; close: number }[]; startMs: number }> {
   const candleMs = INTERVAL_MS[interval] ?? 3_600_000
   const startMs = Math.max(sinceMs, Date.now() - 196 * candleMs)
   const url = `https://fapi.binance.com/fapi/v1/klines?symbol=${sym}&interval=${interval}&startTime=${startMs}&limit=200`
@@ -20,7 +20,7 @@ async function fetchCandles(sym: string, sinceMs: number, interval = '1h'): Prom
     clearTimeout(t)
     if (!res.ok) return { candles: [], startMs }
     const raw: number[][] = await res.json()
-    return { candles: raw.map(c => ({ openTime: Number(c[0]), high: parseFloat(String(c[2])), low: parseFloat(String(c[3])) })), startMs }
+    return { candles: raw.map(c => ({ openTime: Number(c[0]), open: parseFloat(String(c[1])), high: parseFloat(String(c[2])), low: parseFloat(String(c[3])), close: parseFloat(String(c[4])) })), startMs }
   } catch {
     return { candles: [], startMs }
   }
@@ -57,13 +57,20 @@ function groupBySymbolTf<T extends { pair: string; timeframe?: string | null }>(
 }
 
 function scanTpSl(
-  slice: { high: number; low: number }[],
+  slice: { high: number; low: number; open?: number; close?: number }[],
   tp: number, sl: number, isLong: boolean,
 ): 'tp' | 'sl' | null {
-  for (const c of slice) {
-    const hitTp = isLong ? c.high >= tp : c.low  <= tp
-    const hitSl = isLong ? c.low  <= sl : c.high >= sl
-    if (hitTp && hitSl) return 'sl'
+  for (let i = 0; i < slice.length; i++) {
+    const c = slice[i]
+    const hitTp = isLong ? c.high >= tp : c.low <= tp
+    const hitSl = isLong ? c.low <= sl : c.high >= sl
+    if (hitTp && hitSl) {
+      const next = slice[i + 1]
+      if (next && next.open != null && next.close != null) {
+        return (isLong ? next.close > next.open : next.close < next.open) ? 'tp' : 'sl'
+      }
+      return 'sl'
+    }
     if (hitTp) return 'tp'
     if (hitSl) return 'sl'
   }
@@ -160,7 +167,9 @@ export async function GET(req: NextRequest) {
         const outcome: 'win' | 'loss' = hit === 'tp' ? 'win' : 'loss'
         const hitPrice = hit === 'tp' ? tp : sl
         const diff     = isLong ? hitPrice - entry : entry - hitPrice
-        const pnlPct   = parseFloat(((diff / entry) * leverage * 100).toFixed(2))
+        const pnlPctGross = (diff / entry) * leverage * 100
+        const commission  = 0.0004 * 2 * leverage * 100
+        const pnlPct   = parseFloat((pnlPctGross - commission).toFixed(2))
 
         const outcomeRows = await setSignalOutcome(signal.id, outcome, pnlPct, signal.user_id)
         if (!outcomeRows.length) continue
@@ -296,10 +305,12 @@ export async function GET(req: NextRequest) {
         const hit = scanTpSl(slice, tp, sl, isLong)
         if (!hit) continue
 
-        const hitPrice = hit === 'tp' ? tp : sl
-        const diff     = isLong ? hitPrice - entry : entry - hitPrice
-        const pnlPct   = parseFloat(((diff / entry) * lev * 100).toFixed(2))
-        const pnlUsd   = parseFloat(((amount * pnlPct) / 100).toFixed(2))
+        const hitPrice    = hit === 'tp' ? tp : sl
+        const diff        = isLong ? hitPrice - entry : entry - hitPrice
+        const pnlPctGross = (diff / entry) * lev * 100
+        const commission  = 0.0004 * 2 * lev * 100
+        const pnlPct      = parseFloat((pnlPctGross - commission).toFixed(2))
+        const pnlUsd      = parseFloat(((amount * pnlPct) / 100).toFixed(2))
 
         const wasClosed = await closeTrade(trade.id, trade.user_id, pnlUsd, pnlPct, hitPrice)
         if (!wasClosed) continue

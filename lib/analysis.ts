@@ -478,6 +478,12 @@ Reply with ONLY one line of valid JSON (all numeric fields must be numbers, not 
   const strongConsensus = verdict === 'LONG' ? consensus.long >= 4 : verdict === 'SHORT' ? consensus.short >= 4 : false
   const convictionScore = [htfAligned, fundingAgrees, strongConsensus].filter(Boolean).length
   const convictionFactor = convictionScore >= 3 ? 1.0 : convictionScore === 2 ? 0.65 : convictionScore === 1 ? 0.4 : 0.25
+  if (convictionScore === 0) {
+    const cv1: Step1Result = { signal: 'WAIT', strength: 3, trend: trendDir, summary: summary1 }
+    const cv2: Step2Result = { verdict: 'WAIT', confidence: 30, risk_score: 8, leverage: 1, summary: 'HTF, funding and consensus all against entry — no conviction.' }
+    const cvf = makeWait(30, 'No conviction — HTF, funding and consensus all against entry.', riskUsd, balance, riskPct, allMethods, consensus)
+    return finalize({ step1: cv1, step2: cv2, final: cvf, methods: allMethods, consensus })
+  }
   const aiLeverage  = Math.min(Number(json.l || json.leverage || 2), maxLeverage)
   const leverage    = Math.max(2, Math.min(aiLeverage, Math.round(maxLeverage * convictionFactor)))
   const waitFor     = String(json.wait_for || '')

@@ -29,7 +29,8 @@ function timeAgo(mins: number | null, justNow: string, mAgo: string, hAgo: strin
 export default function DashPanel() {
   const { t } = useLang()
   const [stats, setStats] = useState<{
-    total: number; resolved: number; win_rate: number | null; avg_confidence: number | null; avg_pnl_pct: string | null; total_pnl_pct: string | null
+    total: number; resolved: number; open_count: number; win_rate: number | null
+    total_pnl_pct: string | null; avg_win: string | null; avg_loss: string | null
     by_pair: { pair: string; total: number; win_rate: number | null }[]
   } | null>(null)
   const [recentTrades, setRecentTrades] = useState<ClosedTrade[]>([])
@@ -67,8 +68,8 @@ export default function DashPanel() {
           <div className="kpi-l">{t('win_rate')}</div>
           {stats != null && <div style={{ fontSize: '.52rem', color: 'var(--dim)', marginTop: 2 }}>{stats.resolved} {t('resolved_lbl')}</div>}
         </div>
-        <div className="kpi"><div className="kpi-v">{stats?.total || 0}</div><div className="kpi-l">{t('signals')}</div></div>
-        <div className="kpi"><div className="kpi-v">{stats?.avg_confidence != null ? stats.avg_confidence + '%' : '—'}</div><div className="kpi-l">{t('avg_confidence')}</div></div>
+        <div className="kpi"><div className="kpi-v">{stats?.open_count ?? 0}</div><div className="kpi-l">Открыто</div></div>
+        <div className="kpi"><div className="kpi-v">{stats?.avg_win != null ? stats.avg_win + '%' : '—'}</div><div className="kpi-l">Avg Win</div></div>
         <div className="kpi"><div className="kpi-v" style={{ color: stats?.total_pnl_pct != null ? (parseFloat(stats.total_pnl_pct) >= 0 ? 'var(--long)' : 'var(--short)') : undefined }}>{stats?.total_pnl_pct != null ? (parseFloat(stats.total_pnl_pct) >= 0 ? '+' : '') + stats.total_pnl_pct + '%' : '—'}</div><div className="kpi-l">{t('total_pnl')}</div></div>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 10 }}>

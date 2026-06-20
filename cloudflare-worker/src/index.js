@@ -39,7 +39,7 @@ async function runAnalysis(env, tfs) {
 
   const urls = []
   for (const tf of tfs) {
-    for (let batch = 0; batch < 5; batch++) {
+    for (let batch = 0; batch < 3; batch++) {
       urls.push(`${base}/api/analyze/auto?secret=${secret}&batch=${batch}&tf=${tf}`)
     }
   }

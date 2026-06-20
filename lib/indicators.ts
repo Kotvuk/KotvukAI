@@ -53,29 +53,43 @@ function stochRSI(closes: number[], period = 14): number {
   return ((rsiArr[rsiArr.length - 1] - minRsi) / (maxRsi - minRsi)) * 100
 }
 
-export function analyzeIndicators(candles: Candle[]): MethodResult {
+export interface IndicatorParams {
+  rsiPeriod?: number
+  rsiLow?: number
+  rsiHigh?: number
+  scoreThreshold?: number
+  volSurge?: number
+}
+
+export function analyzeIndicators(candles: Candle[], p: IndicatorParams = {}): MethodResult {
+  const rsiPeriod     = p.rsiPeriod     ?? 14
+  const rsiLow        = p.rsiLow        ?? 30
+  const rsiHigh       = p.rsiHigh       ?? 70
+  const scoreThreshold = p.scoreThreshold ?? 25
+  const volSurgeMulti = p.volSurge       ?? 1.3
+
   const closes   = candles.map(c => c.close)
   const price    = closes[closes.length - 1]
-  const rsiVal   = rsi(closes)
+  const rsiVal   = rsi(closes, rsiPeriod)
   const ema50    = ema(closes, 50)
   const ema200   = ema(closes, 200)
   const macd     = macdLine(closes)
   const prevMacd = macdLine(closes.slice(0, -1))
   const bb       = bollingerBands(closes)
-  const stoch    = stochRSI(closes)
+  const stoch    = stochRSI(closes, rsiPeriod)
 
   const recentVols = candles.slice(-10).map(c => c.volume)
   const avgVol = recentVols.slice(0, -1).reduce((a, b) => a + b, 0) / (recentVols.length - 1)
-  const volSurge = recentVols[recentVols.length - 1] > avgVol * 1.3
+  const volSurge = recentVols[recentVols.length - 1] > avgVol * volSurgeMulti
 
   let score = 0
   const longFactors: string[] = []
   const shortFactors: string[] = []
 
-  if (rsiVal < 30) { score += 25; longFactors.push(`RSI ${rsiVal.toFixed(1)} — oversold`) }
-  else if (rsiVal < 40) { score += 10; longFactors.push(`RSI ${rsiVal.toFixed(1)} — moderately oversold`) }
-  else if (rsiVal > 70) { score -= 25; shortFactors.push(`RSI ${rsiVal.toFixed(1)} — overbought`) }
-  else if (rsiVal > 60) { score -= 10; shortFactors.push(`RSI ${rsiVal.toFixed(1)} — moderately overbought`) }
+  if (rsiVal < rsiLow) { score += 25; longFactors.push(`RSI ${rsiVal.toFixed(1)} — oversold`) }
+  else if (rsiVal < rsiLow + 10) { score += 10; longFactors.push(`RSI ${rsiVal.toFixed(1)} — moderately oversold`) }
+  else if (rsiVal > rsiHigh) { score -= 25; shortFactors.push(`RSI ${rsiVal.toFixed(1)} — overbought`) }
+  else if (rsiVal > rsiHigh - 10) { score -= 10; shortFactors.push(`RSI ${rsiVal.toFixed(1)} — moderately overbought`) }
 
   if (price > ema50 && ema50 > ema200) { score += 20; longFactors.push('EMA50 > EMA200 — bullish trend') }
   else if (price < ema50 && ema50 < ema200) { score -= 20; shortFactors.push('EMA50 < EMA200 — bearish trend') }
@@ -103,7 +117,7 @@ export function analyzeIndicators(candles: Candle[]): MethodResult {
   const absScore = Math.abs(score)
   const confidence = Math.min(95, Math.max(20, 30 + absScore))
 
-  if (score >= 25 && absScore >= 25) {
+  if (score >= scoreThreshold && absScore >= scoreThreshold) {
     return {
       method: 'Indicators',
       signal: 'LONG',
@@ -112,7 +126,7 @@ export function analyzeIndicators(candles: Candle[]): MethodResult {
       summary: `RSI ${rsiVal.toFixed(1)}, MACD ${macd > 0 ? 'bullish' : 'bearish'}, EMA: ${price > ema50 ? 'above 50' : 'below 50'}`,
     }
   }
-  if (score <= -25 && absScore >= 25) {
+  if (score <= -scoreThreshold && absScore >= scoreThreshold) {
     return {
       method: 'Indicators',
       signal: 'SHORT',
@@ -130,7 +144,15 @@ export function analyzeIndicators(candles: Candle[]): MethodResult {
   }
 }
 
-export function analyzePriceAction(candles: Candle[]): MethodResult {
+export interface PriceActionParams {
+  wickMult?: number
+  bodyRatioMax?: number
+}
+
+export function analyzePriceAction(candles: Candle[], p: PriceActionParams = {}): MethodResult {
+  const wickMult    = p.wickMult    ?? 2
+  const bodyRatioMax = p.bodyRatioMax ?? 0.4
+
   if (candles.length < 5) {
     return { method: 'Price Action', signal: 'WAIT', confidence: 30, factors: ['Insufficient data'], summary: 'Not enough candles' }
   }
@@ -150,12 +172,12 @@ export function analyzePriceAction(candles: Candle[]): MethodResult {
   let signal: 'LONG' | 'SHORT' | 'WAIT' = 'WAIT'
   let confidence = 35
 
-  if (bullish && lowerWick >= body * 2 && upperWick <= body * 0.3 && bodyRatio < 0.4) {
+  if (bullish && lowerWick >= body * wickMult && upperWick <= body * 0.3 && bodyRatio < bodyRatioMax) {
     patterns.push('Hammer (bullish reversal)')
     signal = 'LONG'; confidence = Math.max(confidence, 62)
   }
 
-  if (!bullish && upperWick >= body * 2 && lowerWick <= body * 0.3 && bodyRatio < 0.4) {
+  if (!bullish && upperWick >= body * wickMult && lowerWick <= body * 0.3 && bodyRatio < bodyRatioMax) {
     patterns.push('Shooting Star (bearish reversal)')
     signal = 'SHORT'; confidence = Math.max(confidence, 62)
   }
@@ -232,11 +254,24 @@ export interface LongShortRatioPoint {
   timestamp: number
 }
 
+export interface DerivativesParams {
+  oiThreshold?: number
+  oiStrong?: number
+  lsHigh?: number
+  lsLow?: number
+}
+
 export function analyzeDerivatives(
   oiHist: OpenInterestPoint[] | null,
   lsRatio: LongShortRatioPoint[] | null,
   candles: Candle[],
+  p: DerivativesParams = {},
 ): MethodResult {
+  const oiThreshold = p.oiThreshold ?? 1
+  const oiStrong    = p.oiStrong    ?? 3
+  const lsHigh      = p.lsHigh      ?? 2.2
+  const lsLow       = p.lsLow       ?? 0.7
+
   if (!oiHist || oiHist.length < 2) {
     return { method: 'Derivatives', signal: 'WAIT', confidence: 25, factors: ['Open interest data unavailable'], summary: 'No OI data' }
   }
@@ -257,21 +292,21 @@ export function analyzeDerivatives(
   let signal: 'LONG' | 'SHORT' | 'WAIT' = 'WAIT'
 
   const absDelta = Math.abs(oiDeltaPct)
-  let confidence = absDelta > 3 ? 65 : absDelta > 1 ? 50 : 35
+  let confidence = absDelta > oiStrong ? 65 : absDelta > oiThreshold ? 50 : 35
 
   factors.push(`OI ${oiDeltaPct >= 0 ? '+' : ''}${oiDeltaPct.toFixed(2)}% | Price ${priceDeltaPct >= 0 ? '+' : ''}${priceDeltaPct.toFixed(2)}%`)
 
-  if (oiDeltaPct > 1 && priceDeltaPct > 0) {
+  if (oiDeltaPct > oiThreshold && priceDeltaPct > 0) {
     factors.push('Open interest rising with price — fresh money entering the trend')
     signal = 'LONG'
-  } else if (oiDeltaPct > 1 && priceDeltaPct < 0) {
+  } else if (oiDeltaPct > oiThreshold && priceDeltaPct < 0) {
     factors.push('Open interest rising while price falls — new shorts pressuring the market')
     signal = 'SHORT'
-  } else if (oiDeltaPct < -1 && priceDeltaPct > 0) {
+  } else if (oiDeltaPct < -oiThreshold && priceDeltaPct > 0) {
     factors.push('Open interest falling while price rises — short squeeze, weak move')
     signal = 'WAIT'
     confidence = Math.min(confidence, 35)
-  } else if (oiDeltaPct < -1 && priceDeltaPct < 0) {
+  } else if (oiDeltaPct < -oiThreshold && priceDeltaPct < 0) {
     factors.push('Open interest falling with price — longs capitulating, position unwind')
     signal = 'WAIT'
     confidence = Math.min(confidence, 35)
@@ -283,11 +318,11 @@ export function analyzeDerivatives(
     const avgRatio = lsRatio.reduce((a, p) => a + p.longShortRatio, 0) / lsRatio.length
     factors.push(`Top traders L/S ratio avg ${avgRatio.toFixed(2)}`)
 
-    if (avgRatio > 2.2) {
+    if (avgRatio > lsHigh) {
       factors.push('Top traders heavily long — contrarian bias toward shorts')
       if (signal === 'LONG') { signal = 'WAIT'; confidence = Math.min(confidence, 40) }
       else if (signal === 'WAIT') { signal = 'SHORT'; confidence = Math.max(confidence, 45) }
-    } else if (avgRatio < 0.7) {
+    } else if (avgRatio < lsLow) {
       factors.push('Top traders heavily short — contrarian bias toward longs')
       if (signal === 'SHORT') { signal = 'WAIT'; confidence = Math.min(confidence, 40) }
       else if (signal === 'WAIT') { signal = 'LONG'; confidence = Math.max(confidence, 45) }
@@ -303,13 +338,25 @@ export function analyzeDerivatives(
   }
 }
 
-export function analyzeVolumeProfile(candles: Candle[]): MethodResult {
+export interface VolumeProfileParams {
+  lookback?: number
+  vwapBand?: number
+  valueAreaPct?: number
+  volSurge?: number
+}
+
+export function analyzeVolumeProfile(candles: Candle[], p: VolumeProfileParams = {}): MethodResult {
+  const lookback    = p.lookback    ?? 50
+  const vwapBand    = p.vwapBand    ?? 0.01
+  const valueAreaPct = p.valueAreaPct ?? 0.7
+  const volSurgeMult = p.volSurge    ?? 1.5
+
   if (candles.length < 20) {
     return { method: 'Volume Profile', signal: 'WAIT', confidence: 30, factors: ['Insufficient data'], summary: 'No data' }
   }
 
   const price = candles[candles.length - 1].close
-  const slice = candles.slice(-50)
+  const slice = candles.slice(-lookback)
   const totalVolume = slice.reduce((a, c) => a + c.volume, 0)
   const vwap = slice.reduce((a, c) => a + ((c.high + c.low + c.close) / 3) * c.volume, 0) / totalVolume
 
@@ -318,7 +365,7 @@ export function analyzeVolumeProfile(candles: Candle[]): MethodResult {
 
   const sorted    = [...slice].sort((a, b) => ((b.high + b.low) / 2) - ((a.high + a.low) / 2))
   let cumVol = 0
-  const targetVol = totalVolume * 0.7
+  const targetVol = totalVolume * valueAreaPct
   let vah = 0, val = 0
   for (const c of sorted) {
     cumVol += c.volume
@@ -333,10 +380,10 @@ export function analyzeVolumeProfile(candles: Candle[]): MethodResult {
   let confidence = 35
 
   const vwapDist = ((price - vwap) / vwap) * 100
-  if (price < vwap * 0.99) {
+  if (price < vwap * (1 - vwapBand)) {
     factors.push(`Price below VWAP ($${vwap.toFixed(2)}) by ${Math.abs(vwapDist).toFixed(1)}% — bearish bias`)
     signal = 'SHORT'; confidence = Math.max(confidence, 55)
-  } else if (price > vwap * 1.01) {
+  } else if (price > vwap * (1 + vwapBand)) {
     factors.push(`Price above VWAP ($${vwap.toFixed(2)}) by ${vwapDist.toFixed(1)}% — bullish bias`)
     signal = 'LONG'; confidence = Math.max(confidence, 55)
   } else {
@@ -364,7 +411,7 @@ export function analyzeVolumeProfile(candles: Candle[]): MethodResult {
 
   const recentVols = candles.slice(-5).map(c => c.volume)
   const avgRecentVol = recentVols.reduce((a, b) => a + b, 0) / recentVols.length
-  if (avgRecentVol > totalVolume / slice.length * 1.5) {
+  if (avgRecentVol > totalVolume / slice.length * volSurgeMult) {
     factors.push('Volume surge confirms direction')
     confidence = Math.min(confidence + 8, 85)
   }
@@ -378,7 +425,21 @@ export function analyzeVolumeProfile(candles: Candle[]): MethodResult {
   }
 }
 
-export function analyzeFunding(fundingRate: number | null): MethodResult {
+export interface FundingParams {
+  thrExtreme?: number
+  thrHigh?: number
+  thrMid?: number
+  thrLowNeg?: number
+  thrExtremeNeg?: number
+}
+
+export function analyzeFunding(fundingRate: number | null, p: FundingParams = {}): MethodResult {
+  const thrExtreme    = p.thrExtreme    ?? 0.1
+  const thrHigh       = p.thrHigh       ?? 0.05
+  const thrMid        = p.thrMid        ?? 0.02
+  const thrLowNeg     = p.thrLowNeg     ?? -0.01
+  const thrExtremeNeg = p.thrExtremeNeg ?? -0.05
+
   if (fundingRate === null) {
     return {
       method: 'Funding Rate',
@@ -394,21 +455,21 @@ export function analyzeFunding(fundingRate: number | null): MethodResult {
   let signal: 'LONG' | 'SHORT' | 'WAIT' = 'WAIT'
   let confidence = 35
 
-  if (rate > 0.1) {
+  if (rate > thrExtreme) {
     factors.push('EXTREME long overheating — high probability of downward squeeze')
     factors.push('Market makers will hunt long stops')
     signal = 'SHORT'; confidence = 72
-  } else if (rate > 0.05) {
+  } else if (rate > thrHigh) {
     factors.push('Longs overheated — bearish pressure through expensive funding')
     signal = 'SHORT'; confidence = 60
-  } else if (rate > 0.02) {
+  } else if (rate > thrMid) {
     factors.push('Weak bullish imbalance — moderate bearish bias')
     signal = 'SHORT'; confidence = 45
-  } else if (rate < -0.05) {
+  } else if (rate < thrExtremeNeg) {
     factors.push('EXTREME short overheating — high probability of upward squeeze')
     factors.push('Shorts paying longs — upward squeeze likely')
     signal = 'LONG'; confidence = 72
-  } else if (rate < -0.01) {
+  } else if (rate < thrLowNeg) {
     factors.push('Shorts overheated — bullish pressure through expensive funding')
     signal = 'LONG'; confidence = 60
   } else {

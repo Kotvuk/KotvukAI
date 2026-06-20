@@ -70,6 +70,9 @@ tsconfig.tsbuildinfo
 /dist-electron-new/
 /out/
 
+# Backtest cache (local data, never commit)
+.bt-cache/
+
 # Misc temp files
 =
 
